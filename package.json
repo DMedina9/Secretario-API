@@ -1,0 +1,28 @@
+{
+  "name": "dmedina9.github.io",
+  "version": "1.0.0",
+  "description": "Página personal",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DMedina9/dmedina9.github.io.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/DMedina9/dmedina9.github.io/issues"
+  },
+  "homepage": "https://github.com/DMedina9/dmedina9.github.io#readme",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7"
+  }
+}
