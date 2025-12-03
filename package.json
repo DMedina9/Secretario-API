@@ -1,23 +1,24 @@
 {
-  "name": "dmedina9.github.io",
+  "name": "secretario-api",
   "version": "1.0.0",
-  "description": "Página personal",
-  "main": "app.js",
+  "description": "API para el secretario",
+  "main": "app.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.mjs"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DMedina9/dmedina9.github.io.git"
+    "url": "git+https://github.com/DMedina9/Secretario-API.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/DMedina9/dmedina9.github.io/issues"
+    "url": "https://github.com/DMedina9/Secretario-API/issues"
   },
-  "homepage": "https://github.com/DMedina9/dmedina9.github.io#readme",
+  "homepage": "https://github.com/DMedina9/Secretario-API#readme",
   "dependencies": {
     "ajv": "^8.17.1",
     "express": "^5.2.1",

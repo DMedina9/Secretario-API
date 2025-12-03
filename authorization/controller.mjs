@@ -9,7 +9,7 @@ const schema = {
     required: ['username', 'email', 'password', 'firstName', 'lastName', 'age'],
     properties: {
         username: { type: 'string', minLength: 3, maxLength: 20 },
-        email: { type: 'string', format: 'email' },
+        email: { type: 'string', minLength: 5, maxLength: 100 },
         password: { type: 'string', minLength: 6, maxLength: 20 },
         firstName: { type: 'string', minLength: 3, maxLength: 20 },
         lastName: { type: 'string', minLength: 3, maxLength: 20 },
@@ -23,7 +23,7 @@ const encryptPassword = (password) =>
     crypto.createHash('sha256').update(password).digest('hex');
 
 const generateAccessToken = (username, userId) =>
-    jwt.sign({ username, userId }, 'your-secret-key', { expiresIn: '24h' });
+    jwt.sign({ username, userId }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
 const register = async (req, res) => {
     try {
@@ -61,4 +61,4 @@ const login = async (req, res) => {
     const token = generateAccessToken(username, user.id);
     res.json({ success: true, user, token });
 };
-export { register, login };
+export default { register, login };

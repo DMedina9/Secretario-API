@@ -13,4 +13,4 @@ const getAllUsers = async (req, res) => {
     res.json({ success: true, data: users });
 };
 
-export { getUser, getAllUsers };
+export default { getUser, getAllUsers };
