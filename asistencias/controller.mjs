@@ -1,7 +1,7 @@
 import { Asistencias, sequelize } from '../common/models/Secretario.mjs'
 import { QueryTypes } from 'sequelize'
 
-export const getAsistencia = async (req, res) => {
+const getAsistencia = async (req, res) => {
     const asistencia = await Asistencias.findByPk(req.params.id);
     if (!asistencia) return res.status(404).json({ error: 'Asistencia not found' });
     res.json({ success: true, data: asistencia });
@@ -10,7 +10,7 @@ export const getAsistencia = async (req, res) => {
 // =====================================================================================
 // OBTENER ASISTENCIAS (RAW)
 // =====================================================================================
-export const getAllAsistencias = async (req, res) => {
+const getAllAsistencias = async (req, res) => {
     try {
         const rows = await sequelize.query(
             `SELECT *,
@@ -29,7 +29,7 @@ export const getAllAsistencias = async (req, res) => {
 // =====================================================================================
 // AGREGAR ASISTENCIA
 // =====================================================================================
-export const addAsistencia = async (req, res) => {
+const addAsistencia = async (req, res) => {
     try {
         const item = await Asistencias.create(req.body)
         res.json({ success: true, id: item.id })
@@ -41,7 +41,7 @@ export const addAsistencia = async (req, res) => {
 // =====================================================================================
 // ACTUALIZAR ASISTENCIA
 // =====================================================================================
-export const updateAsistencia = async (req, res) => {
+const updateAsistencia = async (req, res) => {
     try {
         const result = await Asistencias.update(
             req.body,
@@ -56,7 +56,7 @@ export const updateAsistencia = async (req, res) => {
 // =====================================================================================
 // ELIMINAR ASISTENCIA
 // =====================================================================================
-export const deleteAsistencia = async (req, res) => {
+const deleteAsistencia = async (req, res) => {
     try {
         const result = await Asistencias.destroy({ where: { id: req.params.id } })
         res.json({ success: true, changes: result })
@@ -68,7 +68,7 @@ export const deleteAsistencia = async (req, res) => {
 // =====================================================================================
 // CARGAR ASISTENCIAS (INSERT OR UPDATE)
 // =====================================================================================
-export const uploadAsistencias = async (req, res) => {
+const uploadAsistencias = async (req, res) => {
     try {
         for (const a of req.body) {
             await Asistencias.upsert({
@@ -82,3 +82,12 @@ export const uploadAsistencias = async (req, res) => {
         res.json({ success: false, error: error.message })
     }
 }
+
+export default {
+    getAsistencia,
+    getAllAsistencias,
+    addAsistencia,
+    updateAsistencia,
+    deleteAsistencia,
+    uploadAsistencias
+};

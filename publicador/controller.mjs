@@ -4,7 +4,7 @@ import { QueryTypes } from 'sequelize'
 // =====================================================================================
 // OBTENER PUBLICADOR
 // =====================================================================================
-export const getPublicador = async (req, res) => {
+const getPublicador = async (req, res) => {
     const publicador = await Publicadores.findByPk(req.params.id);
     if (!publicador) return res.status(404).json({ error: 'Publicador not found' });
     res.json({ success: true, data: publicador });
@@ -13,14 +13,14 @@ export const getPublicador = async (req, res) => {
 // =====================================================================================
 // OBTENER PUBLICADORES
 // =====================================================================================
-export const getAllPublicadores = async (req, res) => {
+const getAllPublicadores = async (req, res) => {
     const publicadores = await Publicadores.findAll();
     res.json({ success: true, data: publicadores });
 };
 // =====================================================================================
 // OBTENER PUBLICADORES (RAW por el CASE)
 // =====================================================================================
-export const getPublicadores = async (req, res) => {
+const getPublicadores = async (req, res) => {
     try {
         const rows = await sequelize.query(`
             SELECT
@@ -43,7 +43,7 @@ export const getPublicadores = async (req, res) => {
 // =====================================================================================
 // AGREGAR PUBLICADOR
 // =====================================================================================
-export const addPublicador = async (req, res) => {
+const addPublicador = async (req, res) => {
     try {
         const item = await Publicadores.create(req.body)
         res.json({ success: true, lastID: item.id })
@@ -55,7 +55,7 @@ export const addPublicador = async (req, res) => {
 // =====================================================================================
 // ACTUALIZAR PUBLICADOR
 // =====================================================================================
-export const updatePublicador = async (req, res) => {
+const updatePublicador = async (req, res) => {
     try {
         const result = await Publicadores.update(
             req.body,
@@ -70,7 +70,7 @@ export const updatePublicador = async (req, res) => {
 // =====================================================================================
 // ELIMINAR PUBLICADOR + SUS INFORMES
 // =====================================================================================
-export const deletePublicador = async (req, res) => {
+const deletePublicador = async (req, res) => {
     try {
         await Informes.destroy({ where: { id_publicador: req.params.id } })
         const result = await Publicadores.destroy({ where: { id: req.params.id } })
@@ -79,3 +79,11 @@ export const deletePublicador = async (req, res) => {
         res.json({ success: false, error: error.message })
     }
 }
+export default {
+    getPublicador,
+    getAllPublicadores,
+    getPublicadores,
+    addPublicador,
+    updatePublicador,
+    deletePublicador
+};

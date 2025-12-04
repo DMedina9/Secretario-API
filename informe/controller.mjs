@@ -3,7 +3,7 @@ import { QueryTypes } from 'sequelize'
 // =====================================================================================
 // OBTENER INFORMES (RAW) - consulta compleja
 // =====================================================================================
-export const getInformes = async (req, res) => {
+const getInformes = async (req, res) => {
     try {
         const anio_servicio = req.params.anio_servicio;
         const id_publicador = req.params.id_publicador;
@@ -51,7 +51,7 @@ export const getInformes = async (req, res) => {
 // =====================================================================================
 // AGREGAR INFORME
 // =====================================================================================
-export const addInforme = async (req, res) => {
+const addInforme = async (req, res) => {
     try {
         const item = await Informes.create(req.body)
         res.json({ success: true, id: item.id })
@@ -63,7 +63,7 @@ export const addInforme = async (req, res) => {
 // =====================================================================================
 // ACTUALIZAR INFORME
 // =====================================================================================
-export const updateInforme = async (req, res) => {
+const updateInforme = async (req, res) => {
     try {
         const result = await Informes.update(
             req.body,
@@ -78,7 +78,7 @@ export const updateInforme = async (req, res) => {
 // =====================================================================================
 // ELIMINAR INFORME
 // =====================================================================================
-export const deleteInforme = async (req, res) => {
+const deleteInforme = async (req, res) => {
     try {
         const result = await Informes.destroy({ where: { id: req.params.id } })
         res.json({ success: true, changes: result })
@@ -87,3 +87,9 @@ export const deleteInforme = async (req, res) => {
     }
 }
 
+export default {
+    getInformes,
+    addInforme,
+    updateInforme,
+    deleteInforme
+};
