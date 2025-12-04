@@ -10,10 +10,11 @@ const schema = {
     properties: {
         username: { type: 'string', minLength: 3, maxLength: 20 },
         email: { type: 'string', minLength: 5, maxLength: 100 },
-        password: { type: 'string', minLength: 6, maxLength: 20 },
+        password: { type: 'string' },
         firstName: { type: 'string', minLength: 3, maxLength: 20 },
         lastName: { type: 'string', minLength: 3, maxLength: 20 },
-        age: { type: 'integer', minimum: 18, maximum: 120 }
+        age: { type: 'integer', minimum: 18, maximum: 120 },
+        role: { type: 'string', enum: ['user', 'admin'] }
     }
 };
 const validate = ajv.compile(schema);
@@ -30,7 +31,7 @@ const register = async (req, res) => {
         if (!validate(req.body)) {
             return res.status(400).json({ error: 'Invalid input', details: validate.errors });
         }
-        const { username, email, password, firstName, lastName, age } = req.body;
+        const { username, email, password, firstName, lastName, age, role } = req.body;
         const encryptedPassword = encryptPassword(password);
         const user = await User.create({
             username,
@@ -38,6 +39,7 @@ const register = async (req, res) => {
             password: encryptedPassword,
             firstName,
             lastName,
+            role,
             age
         });
         const accessToken = generateAccessToken(username, user.id);

@@ -1,0 +1,14 @@
+import express from 'express';
+import AsistenciasController from './controller.mjs';
+import { check } from '../common/middlewares/IsAuthenticated.mjs';
+import { has } from '../common/middlewares/CheckPermission.mjs';
+
+const router = express.Router();
+
+router.get('/:id', check, AsistenciasController.getAsistencia);
+router.get('/all', check, has('admin'), AsistenciasController.getAllAsistencias);
+router.post('/add', check, has('admin'), AsistenciasController.addAsistencia);
+router.put('/:id', check, has('admin'), AsistenciasController.updateAsistencia);
+router.delete('/:id', check, has('admin'), AsistenciasController.deleteAsistencia);
+
+export default router;

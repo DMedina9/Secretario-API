@@ -1,16 +1,22 @@
 import express from 'express';
-import sequelize from './common/database.mjs';
-import defineUser from './common/models/User.mjs';
+import { initDb } from './common/models/Secretario.mjs';
 import authRoutes from './authorization/routes.mjs';
-//const User = defineUser(sequelize);
 import userRoutes from './users/routes.mjs';
+import publicadorRoutes from './publicador/routes.mjs';
+import informeRoutes from './informe/routes.mjs';
+import asistenciasRoutes from './asistencias/routes.mjs';
+import dotenv from 'dotenv';
+dotenv.config();
 
-sequelize.sync();
+initDb();
 const app = express();
 
 app.use(express.json());
 app.use('/', authRoutes);
 app.use('/user', userRoutes);
+app.use('/publicador', publicadorRoutes);
+app.use('/informe', informeRoutes);
+app.use('/asistencias', asistenciasRoutes);
 app.get('/status', (req, res) => {
     res.json({
         status: 'Running',

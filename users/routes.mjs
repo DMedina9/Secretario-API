@@ -6,6 +6,6 @@ import { has } from '../common/middlewares/CheckPermission.mjs';
 const router = express.Router();
 
 router.get('/', check, UserController.getUser);
-router.get('/all', check, has('ADMIN'), UserController.getAllUsers);
+router.get('/all', check, has('admin'), UserController.getAllUsers);
 
 export default router;
