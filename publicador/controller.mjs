@@ -1,4 +1,4 @@
-import { Publicadores, sequelize } from '../common/models/Secretario.mjs';
+import { Publicadores, Informes, sequelize } from '../common/models/Secretario.mjs';
 import { QueryTypes } from 'sequelize'
 
 // =====================================================================================
@@ -29,8 +29,8 @@ const getPublicadores = async (req, res) => {
                 pr.descripcion AS privilegio,
                 tp.descripcion AS tipo_publicador
             FROM Publicadores p
-            LEFT JOIN Privilegio pr ON pr.id = p.id_privilegio
-            LEFT JOIN Tipo_Publicador tp ON tp.id = p.id_tipo_publicador
+            LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador
             ORDER BY grupo, apellidos, nombre
         `, { type: QueryTypes.SELECT })
 

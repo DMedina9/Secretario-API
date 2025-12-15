@@ -154,7 +154,7 @@ export const getS1 = async (month) => {
                     SELECT 0 AS id, '' AS titulo
                     UNION ALL
                     SELECT id, REPLACE(descripcion, 'sor', 'sores') || 'es' AS titulo
-                    FROM Tipo_Publicador
+                    FROM Tipos_Publicadores
                 ) a
             )
             SELECT * FROM tmp ORDER BY id`,
@@ -168,7 +168,7 @@ export const getS1 = async (month) => {
                     SUM(horas) AS horas,
                     SUM(cursos_biblicos) AS cursos_biblicos
              FROM Informes i
-             INNER JOIN Tipo_Publicador tp ON tp.id = i.id_tipo_publicador
+             INNER JOIN Tipos_Publicadores tp ON tp.id = i.id_tipo_publicador
              WHERE i.predico_en_el_mes = 1
                AND i.mes = ?
              GROUP BY tp.id

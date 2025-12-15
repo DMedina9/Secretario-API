@@ -1,22 +1,33 @@
 import express from 'express';
+import cors from 'cors';
 import { initDb } from './common/models/Secretario.mjs';
 import authRoutes from './authorization/routes.mjs';
 import userRoutes from './users/routes.mjs';
 import publicadorRoutes from './publicador/routes.mjs';
 import informeRoutes from './informe/routes.mjs';
 import asistenciasRoutes from './asistencias/routes.mjs';
+import secretarioRoutes from './secretario/routes.mjs';
 import dotenv from 'dotenv';
 dotenv.config();
 
 initDb();
 const app = express();
 
+// Enable CORS for all routes
+//Desarrollo:
+app.use(cors());
+//Producción:
+//app.use(cors({
+//    origin: ['http://127.0.0.1:5500', 'http://localhost:5500'],
+//    credentials: true
+//}));
 app.use(express.json());
 app.use('/', authRoutes);
 app.use('/user', userRoutes);
 app.use('/publicador', publicadorRoutes);
 app.use('/informe', informeRoutes);
 app.use('/asistencias', asistenciasRoutes);
+app.use('/secretario', secretarioRoutes);
 app.get('/status', (req, res) => {
     res.json({
         status: 'Running',

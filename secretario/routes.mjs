@@ -1,0 +1,79 @@
+import express from 'express';
+import { check } from '../common/middlewares/IsAuthenticated.mjs';
+import * as SecretarioController from './controller.mjs';
+
+const router = express.Router();
+
+// Get S1 report
+router.post('/s1', check, async (req, res) => {
+    try {
+        const { month } = req.body;
+        const result = await SecretarioController.getS1(month);
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Get S3 report
+router.post('/s3', check, async (req, res) => {
+    try {
+        const { anio, type } = req.body;
+        const result = await SecretarioController.getS3([anio, type]);
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Get privilegios
+router.get('/privilegios', check, async (req, res) => {
+    try {
+        const result = await SecretarioController.getPrivilegios();
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Get tipos de publicador
+router.get('/tipos-publicador', check, async (req, res) => {
+    try {
+        const result = await SecretarioController.getTiposPublicador();
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Get mes informe
+router.get('/mes-informe', check, async (req, res) => {
+    try {
+        const result = await SecretarioController.getMesInforme();
+        res.json({ success: true, data: result });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Initialize privilegios
+router.post('/init-privilegios', check, async (req, res) => {
+    try {
+        const result = await SecretarioController.insertPrivilegios();
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+// Initialize tipos de publicador
+router.post('/init-tipos', check, async (req, res) => {
+    try {
+        const result = await SecretarioController.insertTipoPublicador();
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+export default router;

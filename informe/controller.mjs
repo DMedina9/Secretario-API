@@ -33,7 +33,7 @@ const getInformes = async (req, res) => {
                 ) > 0 THEN 'Activo' ELSE 'Inactivo' END AS Estatus
             FROM Informes i
             LEFT JOIN Publicadores p ON i.id_publicador = p.id
-            LEFT JOIN Tipo_Publicador tp ON tp.id = i.id_tipo_publicador
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = i.id_tipo_publicador
             WHERE 1 = 1
             ${anio_servicio ? `AND (CASE WHEN CAST(STRFTIME('%m', i.mes) AS INTEGER) > 8 THEN 1 ELSE 0 END + CAST(STRFTIME('%Y', i.mes) AS INTEGER)) = ${anio_servicio}` : ''}
             ${id_publicador ? `AND p.id = ${id_publicador}` : ''}
