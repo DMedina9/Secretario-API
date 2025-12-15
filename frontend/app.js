@@ -199,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const closeAuthModalBtn = document.getElementById('closeAuthModal');
-    const showSignupLink = document.getElementById('showSignup');
     const showLoginLink = document.getElementById('showLogin');
 
     loginBtn.addEventListener('click', openAuthModal);
@@ -217,17 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Toggle between login and signup forms
-    showSignupLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('loginForm').classList.add('hidden');
-        document.getElementById('signupForm').classList.remove('hidden');
-        document.getElementById('authModalTitle').textContent = 'Registrarse';
-    });
-
     showLoginLink.addEventListener('click', (e) => {
         e.preventDefault();
-        document.getElementById('signupForm').classList.add('hidden');
         document.getElementById('loginForm').classList.remove('hidden');
         document.getElementById('authModalTitle').textContent = 'Iniciar Sesión';
     });
