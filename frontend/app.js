@@ -8,6 +8,7 @@ import { renderPublicadores } from './modules/publicadores.js';
 import { renderAsistencias } from './modules/asistencias.js';
 import { renderInformes } from './modules/informes.js';
 import { renderSecretario } from './modules/secretario.js';
+import { renderFillPDF } from './modules/fillpdf.js';
 
 // ============================================
 // API CONFIGURATION
@@ -102,7 +103,8 @@ const routes = {
     publicadores: renderPublicadores,
     asistencias: renderAsistencias,
     informes: renderInformes,
-    secretario: renderSecretario
+    secretario: renderSecretario,
+    fillpdf: renderFillPDF
 };
 
 export function navigateTo(page) {

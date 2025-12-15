@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/DMedina9/Secretario-API#readme",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "ajv": "^8.17.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

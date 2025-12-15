@@ -1,7 +1,8 @@
-import { initDb, allAsync } from './database/db.mjs';
-import getS88 from './getS88.mjs';
+import { sequelize } from '../common/models/Secretario.mjs'
+import { Op, QueryTypes } from 'sequelize'
 import * as fs from 'node:fs';
 import { PDFDocument } from 'pdf-lib';
+import AdmZip from 'adm-zip';
 
 // Import required utilities
 import { fileURLToPath } from 'url';
@@ -97,17 +98,13 @@ const dataFields = {
 // Ruta del archivo PDF
 const rutaPDF = __dirname + '\\..\\resources\\PDF\\S-21_S.pdf';
 
-async function GenerarS21Totales(anio, id_tipo_publicador = null, fileDir = null, showMessage = null) {
-    if (!fileDir)
-        fileDir = "./Tarjetas actuales";
-    fileDir += "/";
-
-    const filePaths = [];
-    // Conectar a la base de datos
-    const db = await initDb();
+async function getS21Totales(anio, id_tipo_publicador = null, zip = null) {
+    if (!zip && !id_tipo_publicador)
+        zip = new AdmZip();
     const filtro = id_tipo_publicador ? ` where id = ${id_tipo_publicador}` : '';
-    const Tipo_Publicador = await allAsync(db, `SELECT * FROM Tipo_Publicador${filtro}`);
-    let count = 0;
+    const Tipo_Publicador = await sequelize.query(`SELECT * FROM Tipos_Publicadores${filtro}`, { type: QueryTypes.SELECT });
+    let bytes = null;
+    let fileName = null;
     for (let tipo_publicador of Tipo_Publicador) {
         const pdfDoc = await PDFDocument.load(fs.readFileSync(rutaPDF));
         const form = pdfDoc.getForm()
@@ -121,15 +118,18 @@ async function GenerarS21Totales(anio, id_tipo_publicador = null, fileDir = null
 
         form.getTextField(dataFields['Año de servicio']).setText(anio.toString());
 
-        const Informes = await allAsync(db, `select mes, 1 as predico_en_el_mes, sum(i.cursos_biblicos) as cursos_biblicos, tp.descripcion as tipo_publicador, sum(horas) as horas, count(1) as notas,
+        const Informes = await sequelize.query(`select mes, 1 as predico_en_el_mes, sum(i.cursos_biblicos) as cursos_biblicos, tp.descripcion as tipo_publicador, sum(horas) as horas, count(1) as notas,
 				(cast(strftime('%m', mes) as integer) + 3) % 12 + 1 as iNumMes
 			from Informes i
-			left join Tipo_Publicador tp
+			left join Tipos_Publicadores tp
 				on tp.id = i.id_tipo_publicador
 			where i.predico_en_el_mes = 1
 			and tp.id = ?
 			and case when cast(strftime('%m', mes) as integer) > 8 then 1 else 0 end + cast(strftime('%Y', mes) as integer) = ${anio}
-			group by mes, tp.descripcion;`, [tipo_publicador.id]);
+			group by mes, tp.descripcion;`, {
+            replacements: [tipo_publicador.id],
+            type: QueryTypes.SELECT
+        });
 
         let totalHoras = 0;
 
@@ -151,45 +151,39 @@ async function GenerarS21Totales(anio, id_tipo_publicador = null, fileDir = null
 
         // Guardar el PDF modificado
         await pdfDoc.save({ useObjectStreams: false });
-        const pdfBytes = await pdfDoc.save({ useObjectStreams: true });
+        bytes = await pdfDoc.save({ useObjectStreams: true });
         //const pdfBytes = await pdfDoc.save();
-        let dir = fileDir + "01 Tarjetas de totales mensuales";
-
-        if (!fs.existsSync(dir))
-            fs.mkdirSync(dir, { recursive: true });
-
-        const filePath = `${dir}/S-21-S - ${anio} - ${tipo_publicador.descripcion}.pdf`;
-        fs.writeFileSync(filePath, pdfBytes);
-        count++;
-        if (showMessage)
-            showMessage({ progress: Math.round(100 * count / Tipo_Publicador.length), message: `S-21 (${anio}) generado para ${tipo_publicador.descripcion}...` });
-        filePaths.push(filePath);
+        fileName = `S-21-S - ${anio} - ${tipo_publicador.descripcion}.pdf`;
+        if (zip) zip.addFile(`01 Tarjetas de totales mensuales/${fileName}`, bytes, `${tipo_publicador.descripcion}`);
     }
-    return { success: true, filePaths };
+    if (!zip) return { success: true, bytes, fileName };
+    return { success: true, zip, fileName: "S-21-S - " + anio + " - Totales mensuales.zip" };
 }
 // Generar y exportar el PDF rellenado
-async function GenerarS21(anio, id_publicador = null, fileDir = null, showMessage = null) {
-    if (!fileDir)
-        fileDir = "./Tarjetas actuales";
-    fileDir += "/";
-    let count = 0;
-    const filePaths = [];
-    //GenerarS21Totales(anio).catch((err) => console.error(err));
-    // Conectar a la base de datos
-    const db = await initDb();
+async function getS21(anio, id_publicador = null, zip = null) {
+    if (!zip && !id_publicador)
+        zip = new AdmZip();
+    if (!id_publicador) {
+        const result = await getS21Totales(anio, null, zip);
+        if (!result.success) return result;
+        zip = result.zip;
+    }
+    let bytes = null;
+    let fileName = null;
     const filtro = id_publicador ? ` where p.id = ${id_publicador}` : '';
     // Leer todos los publicadores
-    const Publicadores = await allAsync(db, `select p.id, nombre, apellidos, fecha_nacimiento, fecha_bautismo, grupo, case sup_grupo when 1 then 'Sup' when 2 then 'Aux' else null end as sup_grupo,
+    const Publicadores = await sequelize.query(`select p.id, nombre, apellidos, fecha_nacimiento, fecha_bautismo, grupo, case sup_grupo when 1 then 'Sup' when 2 then 'Aux' else null end as sup_grupo,
 		sexo, pr.descripcion as privilegio, tp.descripcion as tipo_publicador, ungido, calle, num, colonia, telefono_fijo, telefono_movil, contacto_emergencia, tel_contacto_emergencia, correo_contacto_emergencia
 		from Publicadores p
-		left join Privilegio pr
+		left join Privilegios pr
 			on pr.id = p.id_privilegio
-		left join Tipo_Publicador tp
+		left join Tipos_Publicadores tp
 			on tp.id = p.id_tipo_publicador
-		${filtro}`);
+		${filtro}`, {
+        type: QueryTypes.SELECT
+    });
     if (Publicadores.length === 0) {
-        console.log("No se encontraron publicadores");
-        return;
+        return { success: false, error: "No se encontraron publicadores" };
     }
     for (let publicador of Publicadores) {
         const pdfDoc = await PDFDocument.load(fs.readFileSync(rutaPDF));
@@ -217,7 +211,7 @@ async function GenerarS21(anio, id_publicador = null, fileDir = null, showMessag
         form.getTextField(dataFields['Año de servicio']).setText(anio.toString());
 
         let estatus;
-        const Informes = await allAsync(db, `select p.nombre || ' ' || p.apellidos as publicador,
+        const Informes = await sequelize.query(`select p.nombre || ' ' || p.apellidos as publicador,
 				mes, predico_en_el_mes, i.cursos_biblicos,
 				tp.descripcion as tipo_publicador,
 				horas,
@@ -230,10 +224,13 @@ async function GenerarS21(anio, id_publicador = null, fileDir = null, showMessag
 			from Informes i
 			left join Publicadores p
 				on i.id_Publicador = p.id
-			left join Tipo_Publicador tp
+			left join Tipos_Publicadores tp
 				on tp.id = i.id_tipo_publicador
 			where p.id = ?
-			and case when cast(strftime('%m', mes) as integer) > 8 then 1 else 0 end + cast(strftime('%Y', mes) as integer) = ${anio};`, [publicador.id]);
+			and case when cast(strftime('%m', mes) as integer) > 8 then 1 else 0 end + cast(strftime('%Y', mes) as integer) = ${anio};`, {
+            replacements: [publicador.id],
+            type: QueryTypes.SELECT
+        });
 
         let totalHoras = 0;
 
@@ -264,25 +261,20 @@ async function GenerarS21(anio, id_publicador = null, fileDir = null, showMessag
 
         // Guardar el PDF modificado
         await pdfDoc.save({ useObjectStreams: false });
-        const pdfBytes = await pdfDoc.save({ useObjectStreams: true });
+        bytes = await pdfDoc.save({ useObjectStreams: true });
 
-        let dir = fileDir;
+        let dir;
         if (estatus === "Activo")
-            dir += `02 Activos/${(publicador.tipo_publicador === 'Precursor regular' ? "01 Precursores regulares" : "02 Publicadores por grupo/Grupo " + publicador.grupo)}`;
+            dir = `02 Activos/${(publicador.tipo_publicador === 'Precursor regular' ? "01 Precursores regulares" : "02 Publicadores por grupo/Grupo " + publicador.grupo)}`;
         else
-            dir += `03 Inactivos (Por grupo de servicio)/Grupo ${publicador.grupo}`;
+            dir = `03 Inactivos (Por grupo de servicio)/Grupo ${publicador.grupo}`;
 
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        const filePath = `${dir}/S-21-S - ${anio} - ${publicador.apellidos}, ${publicador.nombre}.pdf`;
-        fs.writeFileSync(filePath, pdfBytes);
-        count++;
-        if (showMessage)
-            showMessage({ progress: Math.round(100 * count / Publicadores.length), message: `S-21 (${anio}) generado para ${publicador.nombre} ${publicador.apellidos}...` });
-        filePaths.push(filePath);
+        fileName = `S-21-S - ${anio} - ${publicador.apellidos}, ${publicador.nombre}.pdf`;
+        const filePath = `${dir}/${fileName}`;
+        if (zip) zip.addFile(filePath, bytes, `${publicador.apellidos}, ${publicador.nombre}`);
     }
-    return { success: true, filePaths };
+    if (!zip) return { success: true, bytes, fileName };
+    return { success: true, zip, fileName: "S-21-S - " + anio + " - Tarjetas de publicadores.zip" };
 }
 const calcularPromedio = (item) =>
     item.num_reuniones ? item.asistencia / item.num_reuniones : 0
@@ -302,12 +294,42 @@ const promedioDePromedios = (matriz) => {
     return promedios.reduce((a, b) => a + b, 0) / promedios.length
 }
 
+const getS88Data = async (anio, type) => {
+    // Validar año
+    if (!anio || isNaN(anio) || anio < 2020) {
+        return { success: false, error: 'Año inválido' }
+    }
+    try {
+        const rows = await sequelize.query(
+            `select
+                    (month + 3) % 12 + 1 as id,
+                    month, num_reuniones, asistencia
+                from (
+                    SELECT
+                        CASE WHEN CAST(STRFTIME('%w', fecha) AS INTEGER) IN (0,6) THEN 'FS' ELSE 'ES' END as type,
+                        CAST(strftime('%m', fecha) AS INTEGER) AS month,
+                        CAST(strftime('%Y', fecha) AS INTEGER) AS year,
+                        COUNT(1) AS num_reuniones,
+                        SUM(asistentes) AS asistencia
+                    FROM Asistencias
+                    where asistentes is not null
+                    GROUP BY strftime('%Y-%m', fecha), CASE WHEN CAST(STRFTIME('%w', fecha) AS INTEGER) IN (0,6) THEN 'FS' ELSE 'ES' END
+                ) a
+                WHERE case when month > 8 then 1 else 0 end + year = ?
+                and type = ?;
+`,
+            { replacements: [anio, type], type: QueryTypes.SELECT }
+        )
+        return { success: true, data: rows }
+    } catch (error) {
+        console.error('Database query error:', error)
+        return { success: false, error: error.message }
+    }
+}
+
 // Generar y exportar el PDF rellenado
-async function GenerarS88(anio, fileDir = null, showMessage = null) {
+async function getS88(anio) {
     const rutaPDF = __dirname + '\\..\\resources\\PDF\\S-88_S.pdf';
-    if (!fileDir)
-        fileDir = "./Tarjetas actuales";
-    fileDir += "/";
     const pdfDoc = await PDFDocument.load(fs.readFileSync(rutaPDF));
     //pdfDoc.registerFontkit(fontkit);
     const form = pdfDoc.getForm()
@@ -332,13 +354,9 @@ async function GenerarS88(anio, fileDir = null, showMessage = null) {
                 type = "FS"
                 break;
         }
-        const { success, data } = await getS88(null, [year, type]);
+        const { success, data } = await getS88Data(year, type);
         const rows = data;
-        console.log(year, type, rows)
-        if (!success || rows.length === 0) {
-            console.log("No se encontraron registros");
-            return;
-        }
+        if (!success || rows.length === 0) continue;
 
         for (let row of rows) {
             // Rellenar campos del formulario
@@ -354,18 +372,9 @@ async function GenerarS88(anio, fileDir = null, showMessage = null) {
     }
     // Guardar el PDF modificado
     await pdfDoc.save({ useObjectStreams: false });
-    const pdfBytes = await pdfDoc.save({ useObjectStreams: true });
+    const bytes = await pdfDoc.save({ useObjectStreams: true });
 
-    let dir = fileDir;
-
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-    const filePath = `${dir}/S-88-S - ${anio - 1} - ${anio}.pdf`;
-    fs.writeFileSync(filePath, pdfBytes);
-    //if (showMessage)
-    //	showMessage({ progress: Math.round(100 * count / Publicadores.length), message: `S-21 (${anio}) generado para ${publicador.nombre} ${publicador.apellidos}...` });
-    return { success: true, filePath };
+    return { success: true, fileName: `S-88-S - ${anio - 1} - ${anio}.pdf`, bytes };
 }
 
 function getDateFormat(date) {
@@ -376,6 +385,7 @@ function getDateFormat(date) {
     const day = dateParts[2];
     return `${day}/${month}/${year}`;
 }
-export { GenerarS21, GenerarS21Totales, GenerarS88 };
+
+export { getS21, getS21Totales, getS88 };
 //GenerarS21(2024).catch((err) => console.error(err));
 //GenerarS21(2025).catch((err) => console.error(err));

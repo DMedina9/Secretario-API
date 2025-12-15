@@ -7,6 +7,7 @@ import publicadorRoutes from './publicador/routes.mjs';
 import informeRoutes from './informe/routes.mjs';
 import asistenciasRoutes from './asistencias/routes.mjs';
 import secretarioRoutes from './secretario/routes.mjs';
+import fillPDFRoutes from './fillPDF/routes.mjs';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/publicador', publicadorRoutes);
 app.use('/informe', informeRoutes);
 app.use('/asistencias', asistenciasRoutes);
 app.use('/secretario', secretarioRoutes);
+app.use('/fillPDF', fillPDFRoutes);
 app.get('/status', (req, res) => {
     res.json({
         status: 'Running',
