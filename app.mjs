@@ -18,7 +18,7 @@ const app = express();
 //app.use(cors());
 //Producción:
 app.use(cors({
-    origin: ['https://secretario-api.onrender.com'],
+    origin: ['https://dmedina9.github.io/', 'https://secretario-api.onrender.com'],
     credentials: true
 }));
 app.use(express.json());
