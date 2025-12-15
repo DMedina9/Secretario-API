@@ -59,34 +59,6 @@ export async function login(username, password) {
 }
 
 // ============================================
-// SIGNUP
-// ============================================
-export async function signup(name, username, email, password, role = 'user') {
-    try {
-        const data = await apiRequest('/signup', {
-            method: 'POST',
-            body: JSON.stringify({ name, username, email, password, role })
-        });
-
-        if (data && data.success) {
-            showToast('¡Registro exitoso! Ahora puedes iniciar sesión.', 'success');
-
-            // Switch to login form
-            document.getElementById('signupForm').classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('authModalTitle').textContent = 'Iniciar Sesión';
-
-            return true;
-        }
-
-        return false;
-    } catch (error) {
-        showToast('Error al registrarse', 'error');
-        return false;
-    }
-}
-
-// ============================================
 // LOGOUT
 // ============================================
 export function logout() {
@@ -143,7 +115,6 @@ export function initAuth() {
 
     // Setup form handlers
     const loginForm = document.getElementById('loginForm');
-    const signupForm = document.getElementById('signupForm');
 
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -151,16 +122,5 @@ export function initAuth() {
         const password = document.getElementById('loginPassword').value;
 
         await login(username, password);
-    });
-
-    signupForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('signupName').value;
-        const username = document.getElementById('signupUsername').value;
-        const email = document.getElementById('signupEmail').value;
-        const password = document.getElementById('signupPassword').value;
-        const role = document.getElementById('signupRole').value;
-
-        await signup(name, username, email, password, role);
     });
 }

@@ -199,7 +199,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const closeAuthModalBtn = document.getElementById('closeAuthModal');
-    const showLoginLink = document.getElementById('showLogin');
 
     loginBtn.addEventListener('click', openAuthModal);
     logoutBtn.addEventListener('click', () => {
@@ -214,12 +213,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'authModal') {
             closeAuthModal();
         }
-    });
-
-    showLoginLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('loginForm').classList.remove('hidden');
-        document.getElementById('authModalTitle').textContent = 'Iniciar Sesión';
     });
 
     // Load initial page
