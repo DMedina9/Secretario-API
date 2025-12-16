@@ -86,10 +86,44 @@ const deleteInforme = async (req, res) => {
         res.json({ success: false, error: error.message })
     }
 }
+// =====================================================================================
+// ACTUALIZAR/AGREGAR INFORMES EN MASA
+// =====================================================================================
+const upsertInformesBulk = async (req, res) => {
+    try {
+        const informesData = req.body; // Espera un array de objetos informe
+        if (!Array.isArray(informesData) || informesData.length === 0) {
+            return res.status(400).json({ success: false, error: 'El cuerpo de la solicitud debe ser un array no vacío de objetos informe.' });
+        }
+
+        const results = await Promise.all(informesData.map(async (informe) => {
+            const { id_publicador, mes, ...updateFields } = informe;
+            if (!id_publicador || !mes) {
+                throw new Error('Cada informe debe tener id_publicador y mes.');
+            }
+
+            const [record, created] = await Informes.findOrCreate({
+                where: { id_publicador, mes },
+                defaults: informe,
+            });
+
+            if (!created) {
+                // Si el registro ya existía, actualízalo
+                await record.update(updateFields);
+            }
+            return { id: record.id, created: created };
+        }));
+
+        res.json({ success: true, results });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 export default {
     getInformes,
     addInforme,
     updateInforme,
-    deleteInforme
+    deleteInforme,
+    upsertInformesBulk
 };

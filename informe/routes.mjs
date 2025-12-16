@@ -9,5 +9,6 @@ router.get('/:anio_servicio/:id_publicador/:dir', check, InformeController.getIn
 router.post('/add', check, has('admin'), InformeController.addInforme);
 router.put('/:id', check, has('admin'), InformeController.updateInforme);
 router.delete('/:id', check, has('admin'), InformeController.deleteInforme);
+router.post('/bulk', check, has('admin'), InformeController.upsertInformesBulk);
 
 export default router;

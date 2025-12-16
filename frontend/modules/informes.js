@@ -8,6 +8,10 @@ import { hasPermission } from './auth.js';
 let currentInformes = [];
 let currentPublicadores = [];
 let currentYear = new Date().getFullYear();
+let bulkInformesData = [];
+let selectedMonth = '';
+let selectedGroup = '';
+
 export async function renderInformes(container) {
     const mesData = await apiRequest('/secretario/mes-informe');
     const currentMonth = (mesData && mesData.data) ? new Date(mesData.data) : new Date();
@@ -15,11 +19,42 @@ export async function renderInformes(container) {
     if (currentMonth.getMonth() > 8) {
         currentYear++;
     }
+
+    // Set default month to current month
+    const defaultMonth = currentMonth.toISOString().substring(0, 7);
+
     container.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Informes de Predicación</h1>
             <p class="page-description">Gestión de informes mensuales de predicación</p>
         </div>
+        
+        ${hasPermission('admin') ? `
+        <div class="card mb-lg">
+            <div class="card-header">
+                <h3 class="card-title">✏️ Editor Masivo de Informes</h3>
+                <p class="card-subtitle">Edita múltiples informes simultáneamente por grupo</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-3 gap-lg mb-lg">
+                    <div class="form-group">
+                        <label class="form-label">Mes</label>
+                        <input type="month" class="form-input" id="bulkMonth" value="${defaultMonth}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Grupo</label>
+                        <select class="form-select" id="bulkGroup">
+                            <option value="">Seleccionar grupo</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%;">Cargar Publicadores</button>
+                    </div>
+                </div>
+                <div id="bulkEditorContainer"></div>
+            </div>
+        </div>
+        ` : ''}
         
         <div class="card mb-lg">
             <div class="card-header">
@@ -64,6 +99,12 @@ export async function renderInformes(container) {
     `;
 
     await renderPublicadores();
+
+    // Setup bulk editor if admin
+    if (hasPermission('admin')) {
+        await loadGroups();
+        document.getElementById('loadBulkBtn').addEventListener('click', loadBulkEditor);
+    }
 
     // Setup filter buttons
     document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
@@ -328,4 +369,217 @@ window.deleteInforme = (id) => {
     showConfirm('¿Estás seguro de que deseas eliminar este informe?', () => {
         deleteInformeById(id);
     });
+};
+
+// ============================================
+// BULK EDITOR FUNCTIONS
+// ============================================
+
+async function loadGroups() {
+    try {
+        const data = await apiRequest('/publicador/all');
+        if (data && data.data) {
+            const grupos = [...new Set(data.data.map(p => p.grupo).filter(g => g))];
+            grupos.sort();
+
+            const select = document.getElementById('bulkGroup');
+            select.innerHTML = '<option value="">Seleccionar grupo</option>' +
+                grupos.map(g => `<option value="${g}">${g}</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Error loading groups:', error);
+    }
+}
+
+async function loadBulkEditor() {
+    const month = document.getElementById('bulkMonth').value;
+    const group = document.getElementById('bulkGroup').value;
+
+    if (!month || !group) {
+        showToast('Por favor selecciona mes y grupo', 'warning');
+        return;
+    }
+
+    selectedMonth = month;
+    selectedGroup = group;
+
+    try {
+        showLoading();
+
+        // Load publicadores from selected group
+        const pubData = await apiRequest('/publicador/all');
+        const publicadores = pubData.data.filter(p => p.grupo === group);
+
+        if (publicadores.length === 0) {
+            hideLoading();
+            showToast('No hay publicadores en este grupo', 'warning');
+            return;
+        }
+
+        // Load existing informes for this month
+        const monthDate = new Date(month + '-01');
+        const year = monthDate.getFullYear();
+        const existingInformes = {};
+
+        // Load informes for each publicador
+        for (const pub of publicadores) {
+            try {
+                const informeData = await apiRequest(`/informe/${year}/${pub.id}/DESC`);
+                if (informeData && informeData.data) {
+                    const informe = informeData.data.find(i => {
+                        const iMonth = new Date(i.mes).toISOString().substring(0, 7);
+                        return iMonth === month;
+                    });
+                    if (informe) {
+                        existingInformes[pub.id] = informe;
+                    }
+                }
+            } catch (e) {
+                // No informes for this publicador
+            }
+        }
+
+        hideLoading();
+
+        // Initialize bulk data
+        bulkInformesData = publicadores.map(pub => {
+            const existing = existingInformes[pub.id];
+            return {
+                id_publicador: pub.id,
+                nombre: `${pub.apellidos}, ${pub.nombre}`,
+                mes: month + '-01',
+                predico_en_el_mes: existing ? existing.predico_en_el_mes : 0,
+                horas: existing ? existing.horas : 0,
+                cursos_biblicos: existing ? existing.cursos_biblicos : 0,
+                id_tipo_publicador: existing ? existing.id_tipo_publicador : pub.id_tipo_publicador || 1
+            };
+        });
+
+        renderBulkEditorTable();
+
+    } catch (error) {
+        hideLoading();
+        showToast('Error al cargar datos', 'error');
+        console.error(error);
+    }
+}
+
+function renderBulkEditorTable() {
+    const container = document.getElementById('bulkEditorContainer');
+
+    if (bulkInformesData.length === 0) {
+        container.innerHTML = '<p class="text-muted">No hay datos para mostrar</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+            <table class="table">
+                <thead style="position: sticky; top: 0; background: var(--bg-header); z-index: 10;">
+                    <tr>
+                        <th style="min-width: 200px;">Publicador</th>
+                        <th style="width: 100px;">¿Predicó?</th>
+                        <th style="width: 100px;">Horas</th>
+                        <th style="width: 100px;">Cursos</th>
+                        <th style="width: 180px;">Tipo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${bulkInformesData.map((informe, index) => `
+                        <tr>
+                            <td><strong>${informe.nombre}</strong></td>
+                            <td>
+                                <input type="checkbox" 
+                                    id="predico_${index}" 
+                                    ${informe.predico_en_el_mes ? 'checked' : ''}
+                                    onchange="window.updateBulkInforme(${index}, 'predico_en_el_mes', this.checked ? 1 : 0)"
+                                    style="width: 20px; height: 20px; cursor: pointer;">
+                            </td>
+                            <td>
+                                <input type="number" 
+                                    class="form-input" 
+                                    value="${informe.horas}" 
+                                    min="0"
+                                    onchange="window.updateBulkInforme(${index}, 'horas', parseInt(this.value) || 0)"
+                                    style="padding: 0.5rem;">
+                            </td>
+                            <td>
+                                <input type="number" 
+                                    class="form-input" 
+                                    value="${informe.cursos_biblicos}" 
+                                    min="0"
+                                    onchange="window.updateBulkInforme(${index}, 'cursos_biblicos', parseInt(this.value) || 0)"
+                                    style="padding: 0.5rem;">
+                            </td>
+                            <td>
+                                <select class="form-select" 
+                                    onchange="window.updateBulkInforme(${index}, 'id_tipo_publicador', parseInt(this.value))"
+                                    style="padding: 0.5rem;">
+                                    <option value="1" ${informe.id_tipo_publicador === 1 ? 'selected' : ''}>Publicador</option>
+                                    <option value="2" ${informe.id_tipo_publicador === 2 ? 'selected' : ''}>Precursor Regular</option>
+                                    <option value="3" ${informe.id_tipo_publicador === 3 ? 'selected' : ''}>Precursor Auxiliar</option>
+                                </select>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        <div class="flex justify-end gap-sm mt-lg">
+            <button class="btn btn-secondary" onclick="window.cancelBulkEdit()">Cancelar</button>
+            <button class="btn btn-primary" onclick="window.saveBulkInformes()">
+                💾 Guardar Todos (${bulkInformesData.length} informes)
+            </button>
+        </div>
+    `;
+}
+
+window.updateBulkInforme = (index, field, value) => {
+    if (bulkInformesData[index]) {
+        bulkInformesData[index][field] = value;
+    }
+};
+
+window.cancelBulkEdit = () => {
+    bulkInformesData = [];
+    document.getElementById('bulkEditorContainer').innerHTML = '';
+    document.getElementById('bulkMonth').value = '';
+    document.getElementById('bulkGroup').value = '';
+};
+
+window.saveBulkInformes = async () => {
+    if (bulkInformesData.length === 0) {
+        showToast('No hay datos para guardar', 'warning');
+        return;
+    }
+
+    try {
+        showLoading();
+
+        // Prepare data - remove nombre field and ensure proper format
+        const dataToSend = bulkInformesData.map(informe => ({
+            id_publicador: informe.id_publicador,
+            mes: informe.mes,
+            predico_en_el_mes: informe.predico_en_el_mes,
+            horas: informe.horas,
+            cursos_biblicos: informe.cursos_biblicos,
+            id_tipo_publicador: informe.id_tipo_publicador
+        }));
+
+        const result = await apiRequest('/informe/bulk', {
+            method: 'POST',
+            body: JSON.stringify(dataToSend)
+        });
+
+        hideLoading();
+
+        if (result && result.success) {
+            showToast(`✅ ${bulkInformesData.length} informes guardados exitosamente`, 'success');
+            window.cancelBulkEdit();
+        }
+    } catch (error) {
+        hideLoading();
+        showToast('Error al guardar informes', 'error');
+        console.error(error);
+    }
 };
