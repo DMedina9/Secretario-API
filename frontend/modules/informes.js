@@ -14,14 +14,14 @@ let selectedGroup = '';
 
 export async function renderInformes(container) {
     const mesData = await apiRequest('/secretario/mes-informe');
-    const currentMonth = (mesData && mesData.data) ? new Date(mesData.data) : new Date();
-    currentYear = currentMonth.getFullYear();
-    if (currentMonth.getMonth() > 8) {
+    const currentMonth = (mesData && mesData.data) ? dayjs(mesData.data) : dayjs();
+    currentYear = currentMonth.year();
+    if (currentMonth.month() >= 8) {
         currentYear++;
     }
 
     // Set default month to current month
-    const defaultMonth = currentMonth.toISOString().substring(0, 7);
+    const defaultMonth = currentMonth.format('YYYY-MM');
 
     container.innerHTML = `
         <div class="page-header">
@@ -152,10 +152,10 @@ async function renderPublicadores() {
     }
 }
 
-async function loadInformes(anio = '', idPublicador = '', dir = 'DESC') {
+async function loadInformes(anio = '', idPublicador = '') {
     try {
         showLoading();
-        const endpoint = `/informe/${anio}/${idPublicador}/${dir}`;
+        const endpoint = `/informe/${idPublicador}/${anio}`;
         const data = await apiRequest(endpoint);
         hideLoading();
 
@@ -199,7 +199,7 @@ function renderInformesTable(informes) {
                 <tbody>
                     ${informes.map(i => `
                         <tr>
-                            <td>${i.mes ? new Date(i.mes).toLocaleDateString('es-ES', { year: 'numeric', month: 'long' }) : ''}</td>
+                            <td>${i.mes ? dayjs(i.mes).format('YYYY-MM') : ''}</td>
                             <td>${i.publicador || ''}</td>
                             <td>${i.tipo_publicador || ''}</td>
                             <td>${i.predico_en_el_mes ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-error">No</span>'}</td>
@@ -234,8 +234,8 @@ function showInformeForm(informe = null) {
 
     let mesValue = '';
     if (informe && informe.mes) {
-        const d = new Date(informe.mes);
-        mesValue = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+        const d = dayjs(informe.mes);
+        mesValue = `${d.year()}-${String(d.month() + 1).padStart(2, '0')}-01`;
     }
 
     modal.innerHTML = `
@@ -408,7 +408,7 @@ async function loadBulkEditor() {
 
         // Load publicadores from selected group
         const pubData = await apiRequest('/publicador/all');
-        const publicadores = pubData.data.filter(p => p.grupo === group);
+        const publicadores = pubData.data.filter(p => p.grupo == group);
 
         if (publicadores.length === 0) {
             hideLoading();
@@ -417,18 +417,21 @@ async function loadBulkEditor() {
         }
 
         // Load existing informes for this month
-        const monthDate = new Date(month + '-01');
-        const year = monthDate.getFullYear();
+        const monthDate = dayjs(month + '-01');
+        let year = monthDate.year();
+        if (monthDate.month() >= 8) {
+            year++;
+        }
         const existingInformes = {};
 
         // Load informes for each publicador
         for (const pub of publicadores) {
             try {
-                const informeData = await apiRequest(`/informe/${year}/${pub.id}/DESC`);
+                const informeData = await apiRequest(`/informe/${pub.id}/${year}/${month.substring(5, 7)}`);
                 if (informeData && informeData.data) {
                     const informe = informeData.data.find(i => {
-                        const iMonth = new Date(i.mes).toISOString().substring(0, 7);
-                        return iMonth === month;
+                        const iMonth = dayjs(i.mes).format('YYYY-MM');
+                        return iMonth == month;
                     });
                     if (informe) {
                         existingInformes[pub.id] = informe;
@@ -442,7 +445,7 @@ async function loadBulkEditor() {
         hideLoading();
 
         // Initialize bulk data
-        bulkInformesData = publicadores.map(pub => {
+        bulkInformesData = publicadores.sort((a, b) => (parseInt(a.id_tipo_publicador % 2) - parseInt(b.id_tipo_publicador % 2)) * 100 + `${a.apellidos}, ${a.nombre}`.localeCompare(`${b.apellidos}, ${b.nombre}`)).map(pub => {
             const existing = existingInformes[pub.id];
             return {
                 id_publicador: pub.id,
@@ -451,7 +454,8 @@ async function loadBulkEditor() {
                 predico_en_el_mes: existing ? existing.predico_en_el_mes : 0,
                 horas: existing ? existing.horas : 0,
                 cursos_biblicos: existing ? existing.cursos_biblicos : 0,
-                id_tipo_publicador: existing ? existing.id_tipo_publicador : pub.id_tipo_publicador || 1
+                id_tipo_publicador: existing ? existing.id_tipo_publicador : pub.id_tipo_publicador || 1,
+                notas: existing ? existing.notas : ''
             };
         });
 
@@ -475,35 +479,30 @@ function renderBulkEditorTable() {
     container.innerHTML = `
         <div class="table-container" style="max-height: 600px; overflow-y: auto;">
             <table class="table">
-                <thead style="position: sticky; top: 0; background: var(--bg-header); z-index: 10;">
+                <thead style="position: sticky; top: 0; background: var(--bg-primary); z-index: 10;">
                     <tr>
-                        <th style="min-width: 200px;">Publicador</th>
-                        <th style="width: 100px;">¿Predicó?</th>
+                        <th style="min-width: 150px;">Publicador</th>
+                        <th style="width: 100px;">Participación en el ministerio</th>
+                        <th style="width: 100px;">Cursos bíblicos</th>
+                        <th style="width: 100px;">Precursor auxiliar</th>
                         <th style="width: 100px;">Horas</th>
-                        <th style="width: 100px;">Cursos</th>
-                        <th style="width: 180px;">Tipo</th>
+                        <th style="min-width: 150px;">Notas</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${bulkInformesData.map((informe, index) => `
+                        ${index == 0 && informe.id_tipo_publicador == 2 ? `<tr><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Precursores regulares</th></tr>` : ''}
+                        ${(index == 0 && informe.id_tipo_publicador != 2) || (index > 0 && informe.id_tipo_publicador != 2 && bulkInformesData[index - 1].id_tipo_publicador == 2) ? `<tr><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Publicadores</th></tr>` : ''}
                         <tr>
                             <td><strong>${informe.nombre}</strong></td>
-                            <td>
+                            <td style="text-align: center;">
                                 <input type="checkbox" 
                                     id="predico_${index}" 
                                     ${informe.predico_en_el_mes ? 'checked' : ''}
                                     onchange="window.updateBulkInforme(${index}, 'predico_en_el_mes', this.checked ? 1 : 0)"
                                     style="width: 20px; height: 20px; cursor: pointer;">
                             </td>
-                            <td>
-                                <input type="number" 
-                                    class="form-input" 
-                                    value="${informe.horas}" 
-                                    min="0"
-                                    onchange="window.updateBulkInforme(${index}, 'horas', parseInt(this.value) || 0)"
-                                    style="padding: 0.5rem;">
-                            </td>
-                            <td>
+                            <td style="text-align: center;">
                                 <input type="number" 
                                     class="form-input" 
                                     value="${informe.cursos_biblicos}" 
@@ -511,14 +510,28 @@ function renderBulkEditorTable() {
                                     onchange="window.updateBulkInforme(${index}, 'cursos_biblicos', parseInt(this.value) || 0)"
                                     style="padding: 0.5rem;">
                             </td>
-                            <td>
-                                <select class="form-select" 
-                                    onchange="window.updateBulkInforme(${index}, 'id_tipo_publicador', parseInt(this.value))"
+                            <td style="text-align: center;">
+                                <input type="checkbox" 
+                                    id="id_tipo_publicador_${index}" 
+                                    ${informe.id_tipo_publicador == 2 ? 'disabled' : ''}
+                                    ${informe.id_tipo_publicador == 3 ? 'checked' : ''}
+                                    onchange="window.updateBulkInforme(${index}, 'id_tipo_publicador', this.checked ? 3 : 1)"
+                                    style="width: 20px; height: 20px; cursor: pointer;">
+                            </td>
+                            <td style="text-align: center;">
+                                <input type="number" 
+                                    class="form-input" 
+                                    value="${informe.horas}" 
+                                    min="0"
+                                    onchange="window.updateBulkInforme(${index}, 'horas', parseInt(this.value) || 0)"
                                     style="padding: 0.5rem;">
-                                    <option value="1" ${informe.id_tipo_publicador === 1 ? 'selected' : ''}>Publicador</option>
-                                    <option value="2" ${informe.id_tipo_publicador === 2 ? 'selected' : ''}>Precursor Regular</option>
-                                    <option value="3" ${informe.id_tipo_publicador === 3 ? 'selected' : ''}>Precursor Auxiliar</option>
-                                </select>
+                            </td>
+                            <td style="text-align: center;">
+                                <input type="text" 
+                                    class="form-input" 
+                                    value="${informe.notas || ''}" 
+                                    onchange="window.updateBulkInforme(${index}, 'notas', this.value)"
+                                    style="padding: 0.5rem;">
                             </td>
                         </tr>
                     `).join('')}
@@ -563,7 +576,8 @@ window.saveBulkInformes = async () => {
             predico_en_el_mes: informe.predico_en_el_mes,
             horas: informe.horas,
             cursos_biblicos: informe.cursos_biblicos,
-            id_tipo_publicador: informe.id_tipo_publicador
+            id_tipo_publicador: informe.id_tipo_publicador,
+            notas: informe.notas
         }));
 
         const result = await apiRequest('/informe/bulk', {

@@ -5,11 +5,10 @@ import { QueryTypes } from 'sequelize'
 // =====================================================================================
 const getInformes = async (req, res) => {
     try {
-        const anio_servicio = req.params.anio_servicio;
         const id_publicador = req.params.id_publicador;
-        const dir = req.params.dir;
-        const rows = await sequelize.query(
-            `
+        const anio_servicio = req.params.anio_servicio;
+        const mes = req.params.mes;
+        const rows = await sequelize.query(`
             SELECT i.*,
                 p.nombre || ' ' || p.apellidos AS publicador,
                 tp.descripcion AS tipo_publicador,
@@ -37,7 +36,8 @@ const getInformes = async (req, res) => {
             WHERE 1 = 1
             ${anio_servicio ? `AND (CASE WHEN CAST(STRFTIME('%m', i.mes) AS INTEGER) > 8 THEN 1 ELSE 0 END + CAST(STRFTIME('%Y', i.mes) AS INTEGER)) = ${anio_servicio}` : ''}
             ${id_publicador ? `AND p.id = ${id_publicador}` : ''}
-            ORDER BY i.mes ${dir ?? 'DESC'}, p.apellidos, p.nombre
+            ${mes ? `AND CAST(STRFTIME('%m', i.mes) AS INTEGER) = ${mes}` : ''}
+            ORDER BY i.mes DESC, p.apellidos, p.nombre
             `,
             { type: QueryTypes.SELECT }
         )
