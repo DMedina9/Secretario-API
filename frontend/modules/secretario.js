@@ -42,8 +42,8 @@ export async function renderSecretario(container) {
             </div>
             <div class="card-body">
                 <div class="form-group">
-                    <label class="form-label">Mes (YYYY-MM-DD)</label>
-                    <input type="date" class="form-input" id="s1Month" style="max-width: 300px;">
+                    <label class="form-label">Mes</label>
+                    <input type="month" class="form-input" id="s1Month" style="max-width: 300px;">
                 </div>
                 <button class="btn btn-primary" id="loadS1Btn">Generar Reporte S-1</button>
                 
@@ -153,10 +153,7 @@ async function loadS1Report() {
     try {
         showLoading();
 
-        const data = await apiRequest('/secretario/s1', {
-            method: 'POST',
-            body: JSON.stringify({ month })
-        });
+        const data = await apiRequest(`/secretario/s1/${month}-01`);
 
         hideLoading();
 
@@ -212,10 +209,7 @@ async function loadS3Report() {
     try {
         showLoading();
 
-        const data = await apiRequest('/secretario/s3', {
-            method: 'POST',
-            body: JSON.stringify({ anio: parseInt(year), type })
-        });
+        const data = await apiRequest(`/secretario/s3/${year}/${type}`);
 
         hideLoading();
 

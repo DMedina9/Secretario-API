@@ -21,7 +21,6 @@ export const API_BASE_URL = 'https://secretario-api.onrender.com';
 export async function apiRequest(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     const headers = {
-        'Content-Type': 'application/json',
         ...options.headers
     };
 
@@ -29,6 +28,14 @@ export async function apiRequest(endpoint, options = {}) {
     const token = getToken();
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // ❗ Solo JSON si NO es FormData
+    if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        if (options.body) {
+            options.body = JSON.stringify(options.body);
+        }
     }
 
     try {

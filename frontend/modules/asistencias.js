@@ -17,6 +17,8 @@ export async function renderAsistencias(container) {
         ${hasPermission('admin') ? `
             <div class="flex justify-between items-center mb-lg">
                 <button class="btn btn-primary" id="addAsistenciaBtn">+ Registrar Asistencia</button>
+                <input type="file" id="file" accept=".xlsx, .xls">
+                <button class="btn btn-primary" id="importAsistenciaBtn">+ Importar Asistencia</button>
             </div>
         ` : ''}
         
@@ -41,6 +43,11 @@ export async function renderAsistencias(container) {
         addBtn.addEventListener('click', () => showAsistenciaForm());
     }
 
+    const importBtn = document.getElementById('importAsistenciaBtn');
+    if (importBtn) {
+        importBtn.addEventListener('click', () => importAsistencia());
+    }
+
     await loadAsistencias();
 }
 
@@ -48,6 +55,32 @@ async function loadAsistencias() {
     try {
         showLoading();
         const data = await apiRequest('/asistencias/all');
+        hideLoading();
+
+        if (data && data.data) {
+            currentAsistencias = data.data;
+            renderAsistenciasTable(data.data);
+        } else {
+            document.getElementById('asistenciasTableContainer').innerHTML =
+                '<p class="text-center text-muted">No se encontraron registros de asistencia</p>';
+        }
+    } catch (error) {
+        hideLoading();
+        document.getElementById('asistenciasTableContainer').innerHTML =
+            '<div class="alert alert-error">Error al cargar asistencias</div>';
+    }
+}
+
+async function importAsistencia() {
+    try {
+        showLoading();
+        const formData = new FormData();
+        formData.append('file', document.getElementById('file').files[0]);
+
+        const data = await apiRequest('/asistencias/import', {
+            method: 'POST',
+            body: formData
+        });
         hideLoading();
 
         if (data && data.data) {

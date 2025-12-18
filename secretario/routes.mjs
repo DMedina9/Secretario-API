@@ -5,9 +5,9 @@ import * as SecretarioController from './controller.mjs';
 const router = express.Router();
 
 // Get S1 report
-router.post('/s1', check, async (req, res) => {
+router.get('/s1/:month', check, async (req, res) => {
     try {
-        const { month } = req.body;
+        const { month } = req.params;
         const result = await SecretarioController.getS1(month);
         res.json(result);
     } catch (error) {
@@ -16,9 +16,9 @@ router.post('/s1', check, async (req, res) => {
 });
 
 // Get S3 report
-router.post('/s3', check, async (req, res) => {
+router.get('/s3/:anio/:type', check, async (req, res) => {
     try {
-        const { anio, type } = req.body;
+        const { anio, type } = req.params;
         const result = await SecretarioController.getS3([anio, type]);
         res.json(result);
     } catch (error) {
