@@ -2,7 +2,7 @@
 // SECRETARIO MODULE
 // ============================================
 
-import { apiRequest, showToast, showLoading, hideLoading } from '../app.js';
+import { apiRequest, showToast, showLoading, hideLoading, getAnioServicio, getMesInforme } from '../app.js';
 
 export async function renderSecretario(container) {
     container.innerHTML = `
@@ -43,7 +43,7 @@ export async function renderSecretario(container) {
             <div class="card-body">
                 <div class="form-group">
                     <label class="form-label">Mes</label>
-                    <input type="month" class="form-input" id="s1Month" style="max-width: 300px;">
+                    <input type="month" class="form-input" id="s1Month" style="max-width: 300px;" value="${getMesInforme().format('YYYY-MM')}">
                 </div>
                 <button class="btn btn-primary" id="loadS1Btn">Generar Reporte S-1</button>
                 
@@ -60,7 +60,7 @@ export async function renderSecretario(container) {
                 <div class="grid grid-cols-2" style="max-width: 600px;">
                     <div class="form-group">
                         <label class="form-label">Año de Servicio</label>
-                        <input type="number" class="form-input" id="s3Year" min="2020" max="2030" placeholder="2024">
+                        <input type="number" class="form-input" id="s3Year" min="2020" max="2030" placeholder="${getAnioServicio()}" value="${getAnioServicio()}">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Tipo</label>
@@ -91,9 +91,8 @@ async function loadDatosBasicos() {
 
     try {
         // Load privilegios
-        const privilegiosData = await apiRequest('/secretario/privilegios');
-        const tiposData = await apiRequest('/secretario/tipos-publicador');
-        const mesData = await apiRequest('/secretario/mes-informe');
+        const privilegiosData = await apiRequest('/publicador/privilegios');
+        const tiposData = await apiRequest('/publicador/tipos-publicador');
 
         let privilegiosHTML = '<p class="text-muted">No hay privilegios</p>';
         if (privilegiosData && privilegiosData.data) {
@@ -124,24 +123,16 @@ async function loadDatosBasicos() {
             </div>
         `;
 
-        if (mesData && mesData.data) {
-            const fecha = new Date(mesData.data);
-            mesContainer.innerHTML = `
-                <div class="stat-value">${fecha.toLocaleDateString('es-MX', { year: 'numeric', month: 'long' })}</div>
-            `;
-        } else {
-            mesContainer.innerHTML = `
-                <p class="text-muted">No hay mes de informe registrado</p>
-            `;
-        }
-
+        mesContainer.innerHTML = `
+            <div class="stat-value">${getMesInforme().format('MMMM YYYY')}</div>
+        `;
     } catch (error) {
         container.innerHTML = '<div class="alert alert-error">Error al cargar datos básicos</div>';
     }
 }
 
 async function loadS1Report() {
-    const month = document.getElementById('s1Month').value;
+    const month = document.getElementById('s1Month').value || getMesInforme().format('YYYY-MM');
 
     if (!month) {
         showToast('Por favor selecciona un mes', 'warning');
@@ -196,7 +187,7 @@ async function loadS1Report() {
 }
 
 async function loadS3Report() {
-    const year = document.getElementById('s3Year').value;
+    const year = document.getElementById('s3Year').value || getAnioServicio();
     const type = document.getElementById('s3Type').value;
 
     if (!year) {

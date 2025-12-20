@@ -45,30 +45,6 @@ export const getMesInforme = async () => {
 }
 
 // =====================================================================================
-// OBTENER PRIVILEGIOS
-// =====================================================================================
-export const getPrivilegios = async () => {
-    try {
-        const rows = await Privilegio.findAll({ order: [['id', 'ASC']] })
-        return { success: true, data: rows }
-    } catch (error) {
-        return { success: false, error: error.message }
-    }
-}
-
-// =====================================================================================
-// OBTENER TIPOS PUBLICADOR
-// =====================================================================================
-export const getTiposPublicador = async () => {
-    try {
-        const rows = await TipoPublicador.findAll({ order: [['id', 'ASC']] })
-        return { success: true, data: rows }
-    } catch (error) {
-        return { success: false, error: error.message }
-    }
-}
-
-// =====================================================================================
 // S3 (RAW Query Compleja con CTE)
 // =====================================================================================
 export const getS3 = async ([anio, type]) => {

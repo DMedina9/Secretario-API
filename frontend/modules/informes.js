@@ -2,26 +2,18 @@
 // INFORMES MODULE
 // ============================================
 
-import { apiRequest, showToast, showLoading, hideLoading, showConfirm } from '../app.js';
+import { apiRequest, showToast, showLoading, hideLoading, showConfirm, getMesInforme, getAnioServicio } from '../app.js';
 import { hasPermission } from './auth.js';
 
 let currentInformes = [];
 let currentPublicadores = [];
-let currentYear = new Date().getFullYear();
 let bulkInformesData = [];
 let selectedMonth = '';
 let selectedGroup = '';
 
 export async function renderInformes(container) {
-    const mesData = await apiRequest('/secretario/mes-informe');
-    const currentMonth = (mesData && mesData.data) ? dayjs(mesData.data) : dayjs();
-    currentYear = currentMonth.year();
-    if (currentMonth.month() >= 8) {
-        currentYear++;
-    }
-
     // Set default month to current month
-    const defaultMonth = currentMonth.format('YYYY-MM');
+    const defaultMonth = getMesInforme().format('YYYY-MM');
 
     container.innerHTML = `
         <div class="page-header">
@@ -64,7 +56,7 @@ export async function renderInformes(container) {
                 <div class="grid grid-cols-3">
                     <div class="form-group">
                         <label class="form-label">Año de Servicio</label>
-                        <input type="number" class="form-input" id="filterAnio" placeholder="${currentYear}" min="2020" max="2050">
+                        <input type="number" class="form-input" id="filterAnio" placeholder="${getAnioServicio()}" min="2020" max="2050">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Publicador</label>
@@ -81,6 +73,7 @@ export async function renderInformes(container) {
         ${hasPermission('admin') ? `
             <div class="flex justify-between items-center mb-lg">
                 <button class="btn btn-primary" id="addInformeBtn">+ Agregar Informe</button>
+                <button class="btn btn-primary" id="importInformeBtn">Importar Informes</button>
             </div>
         ` : ''}
         
@@ -114,10 +107,15 @@ export async function renderInformes(container) {
     if (addBtn) {
         addBtn.addEventListener('click', () => showInformeForm());
     }
+
+    const importBtn = document.getElementById('importInformeBtn');
+    if (importBtn) {
+        importBtn.addEventListener('click', () => importInformes());
+    }
 }
 
 async function applyFilters() {
-    const anio = document.getElementById('filterAnio').value || currentYear;
+    const anio = document.getElementById('filterAnio').value || getAnioServicio();
     const idPublicador = document.getElementById('filterPublicador').value || '';
     //const dir = document.getElementById('filterDir').value || 'DESC';
 
@@ -171,6 +169,48 @@ async function loadInformes(anio = '', idPublicador = '') {
         document.getElementById('informesTableContainer').innerHTML =
             '<div class="alert alert-error">Error al cargar informes</div>';
     }
+}
+
+async function importInformes() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls';
+    fileInput.click();
+    fileInput.addEventListener('change', async () => {
+        if (!fileInput.files.length) {
+            showToast('Por favor, selecciona un archivo', 'warning');
+            return;
+        }
+        try {
+            showLoading();
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const data = await apiRequest('/informe/import', {
+                method: 'POST',
+                body: formData
+            });
+            hideLoading();
+            console.log(data);
+            if (data && data.data) {
+                currentInformes = data.data;
+                renderInformesTable(data.data);
+                const month = document.getElementById('bulkMonth').value;
+                const group = document.getElementById('bulkGroup').value;
+
+                if (month && group) {
+                    loadBulkEditor();
+                }
+            } else {
+                document.getElementById('informesTableContainer').innerHTML =
+                    '<p class="text-center text-muted">No se encontraron informes</p>';
+            }
+        } catch (error) {
+            hideLoading();
+            document.getElementById('informesTableContainer').innerHTML =
+                '<div class="alert alert-error">Error al cargar informes</div>';
+        }
+    });
 }
 
 function renderInformesTable(informes) {
@@ -320,12 +360,12 @@ async function saveInforme(data, id = null) {
         if (id) {
             result = await apiRequest(`/informe/${id}`, {
                 method: 'PUT',
-                body: JSON.stringify(data)
+                body: data
             });
         } else {
             result = await apiRequest('/informe/add', {
                 method: 'POST',
-                body: JSON.stringify(data)
+                body: data
             });
         }
 
@@ -407,8 +447,8 @@ async function loadBulkEditor() {
         showLoading();
 
         // Load publicadores from selected group
-        const pubData = await apiRequest('/publicador/all');
-        const publicadores = pubData.data.filter(p => p.grupo == group);
+        const pubData = await apiRequest(`/publicador/grupo/${group}`);
+        const publicadores = pubData.data;
 
         if (publicadores.length === 0) {
             hideLoading();
@@ -582,7 +622,7 @@ window.saveBulkInformes = async () => {
 
         const result = await apiRequest('/informe/bulk', {
             method: 'POST',
-            body: JSON.stringify(dataToSend)
+            body: dataToSend
         });
 
         hideLoading();

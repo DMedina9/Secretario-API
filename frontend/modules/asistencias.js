@@ -17,8 +17,7 @@ export async function renderAsistencias(container) {
         ${hasPermission('admin') ? `
             <div class="flex justify-between items-center mb-lg">
                 <button class="btn btn-primary" id="addAsistenciaBtn">+ Registrar Asistencia</button>
-                <input type="file" id="file" accept=".xlsx, .xls">
-                <button class="btn btn-primary" id="importAsistenciaBtn">+ Importar Asistencia</button>
+                <button class="btn btn-primary" id="importAsistenciaBtn">+ Importar Asistencias</button>
             </div>
         ` : ''}
         
@@ -72,29 +71,39 @@ async function loadAsistencias() {
 }
 
 async function importAsistencia() {
-    try {
-        showLoading();
-        const formData = new FormData();
-        formData.append('file', document.getElementById('file').files[0]);
-
-        const data = await apiRequest('/asistencias/import', {
-            method: 'POST',
-            body: formData
-        });
-        hideLoading();
-
-        if (data && data.data) {
-            currentAsistencias = data.data;
-            renderAsistenciasTable(data.data);
-        } else {
-            document.getElementById('asistenciasTableContainer').innerHTML =
-                '<p class="text-center text-muted">No se encontraron registros de asistencia</p>';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls';
+    fileInput.click();
+    fileInput.addEventListener('change', async () => {
+        if (!fileInput.files.length) {
+            showToast('Por favor, selecciona un archivo', 'warning');
+            return;
         }
-    } catch (error) {
-        hideLoading();
-        document.getElementById('asistenciasTableContainer').innerHTML =
-            '<div class="alert alert-error">Error al cargar asistencias</div>';
-    }
+        try {
+            showLoading();
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            const data = await apiRequest('/asistencias/import', {
+                method: 'POST',
+                body: formData
+            });
+            hideLoading();
+
+            if (data && data.data) {
+                currentAsistencias = data.data;
+                renderAsistenciasTable(data.data);
+            } else {
+                document.getElementById('asistenciasTableContainer').innerHTML =
+                    '<p class="text-center text-muted">No se encontraron registros de asistencia</p>';
+            }
+        } catch (error) {
+            hideLoading();
+            document.getElementById('asistenciasTableContainer').innerHTML =
+                '<div class="alert alert-error">Error al cargar asistencias</div>';
+        }
+    });
 }
 
 function renderAsistenciasTable(asistencias) {
@@ -214,12 +223,12 @@ async function saveAsistencia(data, id = null) {
         if (id) {
             result = await apiRequest(`/asistencias/${id}`, {
                 method: 'PUT',
-                body: JSON.stringify(data)
+                body: data
             });
         } else {
             result = await apiRequest('/asistencias/add', {
                 method: 'POST',
-                body: JSON.stringify(data)
+                body: data
             });
         }
 

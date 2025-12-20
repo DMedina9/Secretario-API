@@ -33,7 +33,7 @@ export async function login(username, password) {
     try {
         const data = await apiRequest('/login', {
             method: 'POST',
-            body: JSON.stringify({ username, password })
+            body: { username, password }
         });
 
         if (data && data.token) {

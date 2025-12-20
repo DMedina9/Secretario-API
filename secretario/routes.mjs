@@ -26,28 +26,8 @@ router.get('/s3/:anio/:type', check, async (req, res) => {
     }
 });
 
-// Get privilegios
-router.get('/privilegios', check, async (req, res) => {
-    try {
-        const result = await SecretarioController.getPrivilegios();
-        res.json(result);
-    } catch (error) {
-        res.json({ success: false, error: error.message });
-    }
-});
-
-// Get tipos de publicador
-router.get('/tipos-publicador', check, async (req, res) => {
-    try {
-        const result = await SecretarioController.getTiposPublicador();
-        res.json(result);
-    } catch (error) {
-        res.json({ success: false, error: error.message });
-    }
-});
-
 // Get mes informe
-router.get('/mes-informe', check, async (req, res) => {
+router.get('/mes-informe', async (req, res) => {
     try {
         const result = await SecretarioController.getMesInforme();
         res.json({ success: true, data: result });

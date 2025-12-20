@@ -30,12 +30,13 @@ export async function apiRequest(endpoint, options = {}) {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // ❗ Solo JSON si NO es FormData
-    if (!(options.body instanceof FormData)) {
+    if (
+        options.body &&
+        !(options.body instanceof FormData) &&
+        typeof options.body !== 'string'
+    ) {
         headers['Content-Type'] = 'application/json';
-        if (options.body) {
-            options.body = JSON.stringify(options.body);
-        }
+        options.body = JSON.stringify(options.body);
     }
 
     try {
@@ -43,9 +44,7 @@ export async function apiRequest(endpoint, options = {}) {
             ...options,
             headers
         });
-
         const data = await response.json();
-
         // Handle 401 Unauthorized
         if (response.status === 401) {
             logout();
@@ -187,6 +186,23 @@ export function showConfirm(message, onConfirm) {
         overlay.remove();
     });
 }
+
+// ============================================
+// AÑO SERVICIO
+// ============================================
+let mesInforme, anioServicio;
+const initAnioServicio = async () => {
+    if (mesInforme && anioServicio)
+        return;
+    let mesData = await apiRequest('/secretario/mes-informe');
+    mesInforme = (mesData && mesData.data) ? dayjs(mesData.data) : dayjs();
+    anioServicio = mesInforme.year();
+    if (mesInforme.month() >= 8)
+        anioServicio++;
+}
+initAnioServicio();
+export const getAnioServicio = () => anioServicio;
+export const getMesInforme = () => mesInforme;
 
 // ============================================
 // INITIALIZATION

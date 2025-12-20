@@ -1,5 +1,6 @@
-import { Informes, sequelize } from '../common/models/Secretario.mjs';
+import { Publicadores, Informes, sequelize } from '../common/models/Secretario.mjs';
 import { QueryTypes } from 'sequelize'
+import xlsx from 'xlsx'
 // =====================================================================================
 // OBTENER INFORMES (RAW) - consulta compleja
 // =====================================================================================
@@ -48,6 +49,62 @@ const getInformes = async (req, res) => {
     }
 }
 
+const importInformes = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Archivo no recibido' });
+        }
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer', cellDates: true });
+        const sheet = workbook.Sheets['Informes'];
+        if (!sheet) {
+            return res.json({
+                success: false,
+                message: 'No se encontró la hoja "Informes"'
+            });
+        }
+
+        const jsonInformes = xlsx.utils.sheet_to_json(sheet, {
+            defval: null
+        });
+        const publicadores = await Publicadores.findAll()
+        // Importar informes
+        for (let p of jsonInformes) {
+            let publicador = publicadores.find(
+                (pub) => (pub.apellidos ? pub.apellidos + ', ' : '') + pub.nombre == p.Nombre
+            )
+            if (!publicador) continue
+            if (p.Nombre === 'Total') continue
+            const id_tipo_publicador = p['Tipo Publicador'] === 'Publicador'
+                ? 1
+                : p['Tipo Publicador'] === 'Precursor regular'
+                    ? 2
+                    : 3;
+            const mes = p.Mes instanceof Date ? p.Mes.toISOString().substring(0, 10) : null;
+            const mes_enviado = p['Mes enviado'] instanceof Date
+                ? p['Mes enviado'].toISOString().substring(0, 10)
+                : null;
+            const predico_en_el_mes = p['Predicó en el mes'] ? 1 : 0;
+            const cursos_biblicos = p['Cursos bíblicos'] || null;
+            const horas = p.Horas || null;
+            const notas = p.Notas || null;
+            const horas_SS = p['Horas S. S. (PR)'] || null;
+            Informes.upsert({
+                id_publicador: publicador.id,
+                mes,
+                mes_enviado,
+                predico_en_el_mes,
+                cursos_biblicos,
+                id_tipo_publicador,
+                horas,
+                notas,
+                horas_SS
+            })
+        }
+        res.json({ success: true, message: 'Informes importados correctamente', data: jsonInformes });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
 // =====================================================================================
 // AGREGAR INFORME
 // =====================================================================================
@@ -123,6 +180,7 @@ const upsertInformesBulk = async (req, res) => {
 export default {
     getInformes,
     addInforme,
+    importInformes,
     updateInforme,
     deleteInforme,
     upsertInformesBulk

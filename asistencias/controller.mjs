@@ -90,12 +90,12 @@ const uploadAsistencias = async (req, res) => {
 const importAsistencia = async (req, res) => {
     try {
         if (!req.file) {
-            return res.json({ success: false, message: 'Archivo no recibido' });
+            return res.status(400).json({ success: false, message: 'Archivo no recibido' });
         }
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer', cellDates: true });
         const sheet = workbook.Sheets['Asistencias'];
         if (!sheet) {
-            return res.json({
+            return res.status(400).json({
                 success: false,
                 message: 'No se encontró la hoja "Asistencias"'
             });
