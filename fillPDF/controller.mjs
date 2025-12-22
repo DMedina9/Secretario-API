@@ -3,6 +3,7 @@ import { Op, QueryTypes } from 'sequelize'
 import * as fs from 'node:fs';
 import { PDFDocument } from 'pdf-lib';
 import AdmZip from 'adm-zip';
+import * as path from 'node:path';
 
 // Import required utilities
 import { fileURLToPath } from 'url';
@@ -96,8 +97,13 @@ const dataFields = {
 };
 
 // Ruta del archivo PDF
-const rutaPDF = __dirname + '\\..\\resources\\PDF\\S-21_S.pdf';
-
+const rutaPDF = path.resolve(
+    __dirname,
+    '..',
+    'resources',
+    'PDF',
+    'S-21_S.pdf'
+)
 async function getS21Totales(anio, id_tipo_publicador = null, zip = null) {
     if (!zip && !id_tipo_publicador)
         zip = new AdmZip();
@@ -329,7 +335,13 @@ const getS88Data = async (anio, type) => {
 
 // Generar y exportar el PDF rellenado
 async function getS88(anio) {
-    const rutaPDF = __dirname + '\\..\\resources\\PDF\\S-88_S.pdf';
+    const rutaPDF = path.resolve(
+        __dirname,
+        '..',
+        'resources',
+        'PDF',
+        'S-88_S.pdf'
+    )
     const pdfDoc = await PDFDocument.load(fs.readFileSync(rutaPDF));
     //pdfDoc.registerFontkit(fontkit);
     const form = pdfDoc.getForm()
@@ -342,7 +354,7 @@ async function getS88(anio) {
                 type = "ES";
                 break;
             case 2:
-                year = anio;
+                year = anio * 1;
                 type = "ES";
                 break;
             case 3:
@@ -350,7 +362,7 @@ async function getS88(anio) {
                 type = "FS"
                 break;
             case 4:
-                year = anio;
+                year = anio * 1;
                 type = "FS"
                 break;
         }

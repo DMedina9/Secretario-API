@@ -19,7 +19,7 @@ router.get('/s1/:month', check, async (req, res) => {
 router.get('/s3/:anio/:type', check, async (req, res) => {
     try {
         const { anio, type } = req.params;
-        const result = await SecretarioController.getS3([anio, type]);
+        const result = await SecretarioController.getS3(anio * 1, type);
         res.json(result);
     } catch (error) {
         res.json({ success: false, error: error.message });

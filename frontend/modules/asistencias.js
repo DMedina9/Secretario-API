@@ -119,7 +119,6 @@ function renderAsistenciasTable(asistencias) {
             <table class="table">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Fecha</th>
                         <th>Asistentes</th>
                         <th>Día</th>
@@ -135,7 +134,6 @@ function renderAsistenciasTable(asistencias) {
 
         return `
                         <tr>
-                            <td>${a.id}</td>
                             <td>${dayjs(fecha).format('YYYY-MM-DD')}</td>
                             <td><strong>${a.asistentes || ''}</strong></td>
                             <td><span class="badge ${esFinde ? 'badge-info' : 'badge-success'}">${diaSemana}</span></td>

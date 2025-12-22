@@ -122,7 +122,6 @@ function renderPublicadoresTable(publicadores) {
             <table class="table">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Nombre</th>
                         <th>Apellidos</th>
                         <th>Tipo</th>
@@ -133,7 +132,6 @@ function renderPublicadoresTable(publicadores) {
                 <tbody>
                     ${publicadores.map(p => `
                         <tr>
-                            <td>${p.id}</td>
                             <td>${p.nombre || ''}</td>
                             <td>${p.apellidos || ''}</td>
                             <td><span class="badge badge-primary">${p.tipo_publicador || 'N/A'}</span></td>

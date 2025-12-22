@@ -47,7 +47,7 @@ export const getMesInforme = async () => {
 // =====================================================================================
 // S3 (RAW Query Compleja con CTE)
 // =====================================================================================
-export const getS3 = async ([anio, type]) => {
+export const getS3 = async (anio, type) => {
     if (!anio || isNaN(anio) || anio < 2020) {
         return { success: false, error: 'Año inválido' }
     }

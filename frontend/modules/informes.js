@@ -20,55 +20,60 @@ export async function renderInformes(container) {
             <h1 class="page-title">Informes de Predicación</h1>
             <p class="page-description">Gestión de informes mensuales de predicación</p>
         </div>
-        
+        <div class="tab">
+            <a class="tablinks active" tab-name="grupo">Por Grupo</a>
+            <a class="tablinks" tab-name="publicador">Por Publicador</a>
+        </div>
+        <div id="grupo" class="tabcontent" style="display: block;">
         ${hasPermission('admin') ? `
-        <div class="card mb-lg">
-            <div class="card-header">
-                <h3 class="card-title">✏️ Editor Masivo de Informes</h3>
-                <p class="card-subtitle">Edita múltiples informes simultáneamente por grupo</p>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-3 gap-lg mb-lg">
-                    <div class="form-group">
-                        <label class="form-label">Mes</label>
-                        <input type="month" class="form-input" id="bulkMonth" value="${defaultMonth}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Grupo</label>
-                        <select class="form-select" id="bulkGroup">
-                            <option value="">Seleccionar grupo</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="display: flex; align-items: flex-end;">
-                        <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%;">Cargar Publicadores</button>
-                    </div>
+            <div class="card mb-lg">
+                <div class="card-header">
+                    <h3 class="card-title">✏️ Editor Masivo de Informes</h3>
+                    <p class="card-subtitle">Edita múltiples informes simultáneamente por grupo</p>
                 </div>
-                <div id="bulkEditorContainer"></div>
+                <div class="card-body">
+                    <div class="grid grid-cols-3 gap-lg mb-lg">
+                        <div class="form-group">
+                            <label class="form-label">Mes</label>
+                            <input type="month" class="form-input" id="bulkMonth" value="${defaultMonth}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Grupo</label>
+                            <select class="form-select" id="bulkGroup">
+                                <option value="">Seleccionar grupo</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: flex-end;">
+                            <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%;">Cargar Publicadores</button>
+                        </div>
+                    </div>
+                    <div id="bulkEditorContainer"></div>
+                </div>
             </div>
-        </div>
         ` : ''}
-        
-        <div class="card mb-lg">
-            <div class="card-header">
-                <h3 class="card-title">Filtros</h3>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-3">
-                    <div class="form-group">
-                        <label class="form-label">Año de Servicio</label>
-                        <input type="number" class="form-input" id="filterAnio" placeholder="${getAnioServicio()}" min="2020" max="2050">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Publicador</label>
-                        <select class="form-select" id="filterPublicador"></select>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-sm mt-md">
-                    <button class="btn btn-secondary" id="clearFiltersBtn">Limpiar</button>
-                    <button class="btn btn-primary" id="applyFiltersBtn">Aplicar Filtros</button>
-                </div>
-            </div>
         </div>
+        <div id="publicador" class="tabcontent">
+            <div class="card mb-lg">
+                <div class="card-header">
+                    <h3 class="card-title">Filtros</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-3">
+                        <div class="form-group">
+                            <label class="form-label">Año de Servicio</label>
+                            <input type="number" class="form-input" id="filterAnio" placeholder="${getAnioServicio()}" min="2020" max="2050">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Publicador</label>
+                            <select class="form-select" id="filterPublicador"></select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-sm mt-md">
+                        <button class="btn btn-secondary" id="clearFiltersBtn">Limpiar</button>
+                        <button class="btn btn-primary" id="applyFiltersBtn">Aplicar Filtros</button>
+                    </div>
+                </div>
+            </div>
         
         ${hasPermission('admin') ? `
             <div class="flex justify-between items-center mb-lg">
@@ -77,13 +82,14 @@ export async function renderInformes(container) {
             </div>
         ` : ''}
         
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Lista de Informes</h3>
-            </div>
-            <div class="card-body">
-                <div id="informesTableContainer">
-                    <p class="text-center text-muted">Aplica filtros para ver los informes</p>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Lista de Informes</h3>
+                </div>
+                <div class="card-body">
+                    <div id="informesTableContainer">
+                        <p class="text-center text-muted">Aplica filtros para ver los informes</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -112,6 +118,25 @@ export async function renderInformes(container) {
     if (importBtn) {
         importBtn.addEventListener('click', () => importInformes());
     }
+    document.querySelectorAll('.tablinks').forEach(tab => {
+        tab.addEventListener('click', function (event) {
+            openTab(event, this.getAttribute('tab-name'));
+        });
+    });
+}
+
+function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
 }
 
 async function applyFilters() {
@@ -191,7 +216,6 @@ async function importInformes() {
                 body: formData
             });
             hideLoading();
-            console.log(data);
             if (data && data.data) {
                 currentInformes = data.data;
                 renderInformesTable(data.data);
@@ -423,8 +447,7 @@ async function loadGroups() {
             grupos.sort();
 
             const select = document.getElementById('bulkGroup');
-            select.innerHTML = '<option value="">Seleccionar grupo</option>' +
-                grupos.map(g => `<option value="${g}">${g}</option>`).join('');
+            select.innerHTML = grupos.map(g => `<option value="${g}">${g}</option>`).join('');
         }
     } catch (error) {
         console.error('Error loading groups:', error);

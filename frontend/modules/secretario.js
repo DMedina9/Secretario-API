@@ -65,8 +65,8 @@ export async function renderSecretario(container) {
                     <div class="form-group">
                         <label class="form-label">Tipo</label>
                         <select class="form-select" id="s3Type">
-                            <option value="ES">Entre Semana (ES)</option>
-                            <option value="FS">Fin de Semana (FS)</option>
+                            <option value="ES">Entre Semana</option>
+                            <option value="FS">Fin de Semana</option>
                         </select>
                     </div>
                 </div>
