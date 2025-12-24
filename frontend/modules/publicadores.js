@@ -117,58 +117,124 @@ function renderPublicadoresTable(publicadores) {
         return;
     }
 
+    const isAdmin = hasPermission('admin');
+
     const html = `
-        <div class="table-container">
+        <div class="table-container" style="max-height: 80vh; overflow-y: auto;">
             <table class="table">
-                <thead>
+                <thead style="position: sticky; top: 0; background: var(--bg-primary); z-index: 10;">
                     <tr>
                         <th>Nombre</th>
                         <th>Apellidos</th>
                         <th>F. Nac.</th>
-                        <th>F. Bautismo</th>
+                        <th>F. Baut.</th>
                         <th>Grupo</th>
                         <th>Sup</th>
                         <th>Sexo</th>
                         <th>Tipo</th>
-                        <th>Privilegio</th>
-                        <th>Ungido</th>
+                        <th>Priv.</th>
+                        <th>Ung.</th>
                         <th>Calle</th>
                         <th>Núm</th>
                         <th>Colonia</th>
                         <th>Tel. Fijo</th>
                         <th>Tel. Móvil</th>
-                        <th>Contacto Emerg.</th>
-                        <th>Tel. Emerg.</th>
-                        <th>Email Emerg.</th>
-                        ${hasPermission('admin') ? '<th>Acciones</th>' : ''}
+                        <th>Contacto E.</th>
+                        <th>Tel. E.</th>
+                        <th>Email E.</th>
+                        ${isAdmin ? '<th>Acciones</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
-                    ${publicadores.map(p => `
-                        <tr>
-                            <td data-label="Nombre">${p.nombre || ''}</td>
-                            <td data-label="Apellidos">${p.apellidos || ''}</td>
-                            <td data-label="F. Nac.">${p.fecha_nacimiento || ''}</td>
-                            <td data-label="F. Bautismo">${p.fecha_bautismo || ''}</td>
-                            <td data-label="Grupo">${p.grupo || ''}</td>
-                            <td data-label="Sup">${p.sup_grupo === 1 ? 'Sup' : p.sup_grupo === 2 ? 'Aux' : ''}</td>
-                            <td data-label="Sexo">${p.sexo === 'H' ? '<span class="badge badge-success">Hombre</span>' : p.sexo === 'M' ? '<span class="badge badge-warning">Mujer</span>' : ''}</td>
-                            <td data-label="Tipo"><span class="badge badge-primary">${p.tipo_publicador || ''}</span></td>
-                            <td data-label="Privilegio">${p.privilegio || ''}</td>
-                            <td data-label="Ungido">${p.ungido || ''}</td>
-                            <td data-label="Calle">${p.calle || ''}</td>
-                            <td data-label="Núm">${p.num || ''}</td>
-                            <td data-label="Colonia">${p.colonia || ''}</td>
-                            <td data-label="Tel. Fijo">${p.telefono_fijo || ''}</td>
-                            <td data-label="Tel. Móvil">${p.telefono_movil || ''}</td>
-                            <td data-label="Contacto Emerg.">${p.contacto_emergencia || ''}</td>
-                            <td data-label="Tel. Emerg.">${p.tel_contacto_emergencia || ''}</td>
-                            <td data-label="Email Emerg.">${p.correo_contacto_emergencia || ''}</td>
-                            ${hasPermission('admin') ? `
+                    ${publicadores.map((p, index) => `
+                        <tr id="pub-row-${p.id}">
+                            <td data-label="Nombre">
+                                ${isAdmin ? `<input type="text" class="form-input" value="${p.nombre || ''}" onchange="window.updatePublicador(${index}, 'nombre', this.value)" style="padding: 0.3rem;">` : (p.nombre || '')}
+                            </td>
+                            <td data-label="Apellidos">
+                                ${isAdmin ? `<input type="text" class="form-input" value="${p.apellidos || ''}" onchange="window.updatePublicador(${index}, 'apellidos', this.value)" style="padding: 0.3rem;">` : (p.apellidos || '')}
+                            </td>
+                            <td data-label="F. Nac.">
+                                ${isAdmin ? `<input type="date" class="form-input" value="${p.fecha_nacimiento || ''}" onchange="window.updatePublicador(${index}, 'fecha_nacimiento', this.value)" style="padding: 0.3rem;">` : (p.fecha_nacimiento || '')}
+                            </td>
+                            <td data-label="F. Baut.">
+                                ${isAdmin ? `<input type="date" class="form-input" value="${p.fecha_bautismo || ''}" onchange="window.updatePublicador(${index}, 'fecha_bautismo', this.value)" style="padding: 0.3rem;">` : (p.fecha_bautismo || '')}
+                            </td>
+                            <td data-label="Grupo">
+                                ${isAdmin ? `<input type="number" class="form-input" value="${p.grupo || ''}" onchange="window.updatePublicador(${index}, 'grupo', this.value)" style="padding: 0.3rem; width: 60px;">` : (p.grupo || '')}
+                            </td>
+                            <td data-label="Sup">
+                                ${isAdmin ? `
+                                    <select class="form-select" onchange="window.updatePublicador(${index}, 'sup_grupo', this.value)" style="padding: 0.3rem;">
+                                        <option value="">-</option>
+                                        <option value="1" ${p.sup_grupo == 1 ? 'selected' : ''}>Sup</option>
+                                        <option value="2" ${p.sup_grupo == 2 ? 'selected' : ''}>Aux</option>
+                                    </select>
+                                ` : (p.sup_grupo === 1 ? 'Sup' : p.sup_grupo === 2 ? 'Aux' : '')}
+                            </td>
+                            <td data-label="Sexo">
+                                ${isAdmin ? `
+                                    <select class="form-select" onchange="window.updatePublicador(${index}, 'sexo', this.value)" style="padding: 0.3rem;">
+                                        <option value="H" ${p.sexo == 'H' ? 'selected' : ''}>H</option>
+                                        <option value="M" ${p.sexo == 'M' ? 'selected' : ''}>M</option>
+                                    </select>
+                                ` : (p.sexo === 'H' ? '<span class="badge badge-success">Hombre</span>' : p.sexo === 'M' ? '<span class="badge badge-warning">Mujer</span>' : '')}
+                            </td>
+                            <td data-label="Tipo">
+                                ${isAdmin ? `
+                                    <select class="form-select" onchange="window.updatePublicador(${index}, 'id_tipo_publicador', this.value)" style="padding: 0.3rem;">
+                                        <option value="1" ${p.id_tipo_publicador == 1 ? 'selected' : ''}>Pub</option>
+                                        <option value="2" ${p.id_tipo_publicador == 2 ? 'selected' : ''}>PR</option>
+                                        <option value="3" ${p.id_tipo_publicador == 3 ? 'selected' : ''}>PA</option>
+                                    </select>
+                                ` : `<span class="badge badge-primary">${p.tipo_publicador || ''}</span>`}
+                            </td>
+                            <td data-label="Priv.">
+                                ${isAdmin ? `
+                                    <select class="form-select" onchange="window.updatePublicador(${index}, 'id_privilegio', this.value)" style="padding: 0.3rem;">
+                                        <option value="">-</option>
+                                        <option value="1" ${p.id_privilegio == 1 ? 'selected' : ''}>Anc</option>
+                                        <option value="2" ${p.id_privilegio == 2 ? 'selected' : ''}>SM</option>
+                                    </select>
+                                ` : (p.privilegio || '')}
+                            </td>
+                            <td data-label="Ung.">
+                                ${isAdmin ? `
+                                    <label class="switch">
+                                        <input type="checkbox" ${p.ungido ? 'checked' : ''} onchange="window.updatePublicador(${index}, 'ungido', this.checked ? 1 : 0)">
+                                        <span class="slider round"></span>
+                                    </label>
+                                ` : (p.ungido || '')}
+                            </td>
+                            <td data-label="Calle">
+                                ${isAdmin ? `<input type="text" class="form-input" value="${p.calle || ''}" onchange="window.updatePublicador(${index}, 'calle', this.value)" style="padding: 0.3rem;">` : (p.calle || '')}
+                            </td>
+                            <td data-label="Núm">
+                                ${isAdmin ? `<input type="text" class="form-input" value="${p.num || ''}" onchange="window.updatePublicador(${index}, 'num', this.value)" style="padding: 0.3rem; width: 60px;">` : (p.num || '')}
+                            </td>
+                            <td data-label="Colonia">
+                                ${isAdmin ? `<input type="text" class="form-input" value="${p.colonia || ''}" onchange="window.updatePublicador(${index}, 'colonia', this.value)" style="padding: 0.3rem;">` : (p.colonia || '')}
+                            </td>
+                            <td data-label="Tel. Fijo">
+                                ${isAdmin ? `<input type="tel" class="form-input" value="${p.telefono_fijo || ''}" onchange="window.updatePublicador(${index}, 'telefono_fijo', this.value)" style="padding: 0.3rem;">` : (p.telefono_fijo || '')}
+                            </td>
+                            <td data-label="Tel. Móvil">
+                                ${isAdmin ? `<input type="tel" class="form-input" value="${p.telefono_movil || ''}" onchange="window.updatePublicador(${index}, 'telefono_movil', this.value)" style="padding: 0.3rem;">` : (p.telefono_movil || '')}
+                            </td>
+                            <td data-label="Contacto E.">
+                                ${isAdmin ? `<input type="text" class="form-input" value="${p.contacto_emergencia || ''}" onchange="window.updatePublicador(${index}, 'contacto_emergencia', this.value)" style="padding: 0.3rem;">` : (p.contacto_emergencia || '')}
+                            </td>
+                            <td data-label="Tel. E.">
+                                ${isAdmin ? `<input type="tel" class="form-input" value="${p.tel_contacto_emergencia || ''}" onchange="window.updatePublicador(${index}, 'tel_contacto_emergencia', this.value)" style="padding: 0.3rem;">` : (p.tel_contacto_emergencia || '')}
+                            </td>
+                            <td data-label="Email E.">
+                                ${isAdmin ? `<input type="email" class="form-input" value="${p.correo_contacto_emergencia || ''}" onchange="window.updatePublicador(${index}, 'correo_contacto_emergencia', this.value)" style="padding: 0.3rem;">` : (p.correo_contacto_emergencia || '')}
+                            </td>
+                            ${isAdmin ? `
                                 <td data-label="Acciones">
                                     <div class="flex gap-sm">
-                                        <button class="btn btn-sm btn-secondary" onclick="window.editPublicador(${p.id})">Editar</button>
-                                        <button class="btn btn-sm btn-danger" onclick="window.deletePublicador(${p.id})">Eliminar</button>
+                                        <button class="btn btn-sm btn-success" onclick="window.savePublicadorInline(${index})" title="Guardar cambios">💾</button>
+                                        <button class="btn btn-sm btn-danger" onclick="window.deletePublicador(${p.id})" title="Eliminar">🗑️</button>
                                     </div>
                                </td>
                             ` : ''}
@@ -177,10 +243,99 @@ function renderPublicadoresTable(publicadores) {
                 </tbody>
             </table>
         </div>
+        ${isAdmin ? `
+            <div class="flex justify-end gap-sm mt-lg">
+                <button class="btn btn-primary" onclick="window.saveAllPublicadores()">
+                    💾 Guardar Todos (${publicadores.length} registros)
+                </button>
+            </div>
+        ` : ''}
     `;
 
     container.innerHTML = html;
 }
+
+// Update publicador field in memory
+window.updatePublicador = (index, field, value) => {
+    if (currentPublicadores[index]) {
+        // Convert to appropriate type
+        if (field === 'id_tipo_publicador' || field === 'id_privilegio' || field === 'ungido' || field === 'grupo') {
+            currentPublicadores[index][field] = value ? parseInt(value) : null;
+        } else {
+            currentPublicadores[index][field] = value;
+        }
+    }
+};
+
+// Save individual publicador
+window.savePublicadorInline = async (index) => {
+    const publicador = currentPublicadores[index];
+    if (!publicador) return;
+
+    try {
+        showLoading();
+        const result = await apiRequest(`/publicador/${publicador.id}`, {
+            method: 'PUT',
+            body: publicador
+        });
+        hideLoading();
+
+        if (result && result.success) {
+            showToast('✅ Publicador actualizado', 'success');
+            // Add visual feedback
+            const row = document.getElementById(`pub-row-${publicador.id}`);
+            if (row) {
+                row.style.background = 'rgba(34, 197, 94, 0.2)';
+                setTimeout(() => {
+                    row.style.background = '';
+                }, 1000);
+            }
+        }
+    } catch (error) {
+        hideLoading();
+        showToast('Error al guardar', 'error');
+    }
+};
+
+// Save all publicadores
+window.saveAllPublicadores = async () => {
+    if (currentPublicadores.length === 0) {
+        showToast('No hay datos para guardar', 'warning');
+        return;
+    }
+
+    try {
+        showLoading();
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const pub of currentPublicadores) {
+            try {
+                await apiRequest(`/publicador/${pub.id}`, {
+                    method: 'PUT',
+                    body: pub
+                });
+                successCount++;
+            } catch (error) {
+                errorCount++;
+                console.error(`Error saving publicador ${pub.id}:`, error);
+            }
+        }
+
+        hideLoading();
+
+        if (errorCount === 0) {
+            showToast(`✅ ${successCount} publicadores guardados exitosamente`, 'success');
+        } else {
+            showToast(`⚠️ ${successCount} guardados, ${errorCount} con errores`, 'warning');
+        }
+
+        await loadPublicadores();
+    } catch (error) {
+        hideLoading();
+        showToast('Error al guardar publicadores', 'error');
+    }
+};
 
 function showPublicadorForm(publicador = null) {
     const modal = document.getElementById('publicadorFormModal');
