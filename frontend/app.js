@@ -217,7 +217,31 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const page = link.dataset.page;
             navigateTo(page);
+
+            // Close mobile menu after clicking a link
+            const navMenu = document.getElementById('navMenu');
+            const navToggle = document.getElementById('navbarToggle');
+            navMenu.classList.remove('active');
+            navToggle.classList.remove('active');
         });
+    });
+
+    // Setup hamburger menu toggle
+    const navbarToggle = document.getElementById('navbarToggle');
+    const navMenu = document.getElementById('navMenu');
+
+    navbarToggle.addEventListener('click', () => {
+        navMenu.classList.toggle('active');
+        navbarToggle.classList.toggle('active');
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        const isClickInside = navbarToggle.contains(e.target) || navMenu.contains(e.target);
+        if (!isClickInside && navMenu.classList.contains('active')) {
+            navMenu.classList.remove('active');
+            navbarToggle.classList.remove('active');
+        }
     });
 
     // Setup auth modal

@@ -263,19 +263,19 @@ function renderInformesTable(informes) {
                 <tbody>
                     ${informes.map(i => `
                         <tr>
-                            <td>${i.mes ? dayjs(i.mes).format('YYYY-MM') : ''}</td>
-                            <td>${i.publicador || ''}</td>
-                            <td>${i.tipo_publicador || ''}</td>
-                            <td>${i.predico_en_el_mes ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-error">No</span>'}</td>
-                            <td>${i.horas || 0}</td>
-                            <td>${i.cursos_biblicos || 0}</td>
-                            <td>
+                            <td data-label="Mes">${i.mes ? dayjs(i.mes).format('YYYY-MM') : ''}</td>
+                            <td data-label="Publicador">${i.publicador || ''}</td>
+                            <td data-label="Tipo">${i.tipo_publicador || ''}</td>
+                            <td data-label="Predicó">${i.predico_en_el_mes ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-error">No</span>'}</td>
+                            <td data-label="Horas">${i.horas || 0}</td>
+                            <td data-label="Cursos">${i.cursos_biblicos || 0}</td>
+                            <td data-label="Estatus">
                                 ${i.Estatus === 'Activo'
             ? '<span class="badge badge-success">Activo</span>'
             : '<span class="badge badge-warning">Inactivo</span>'}
                             </td>
                             ${hasPermission('admin') ? `
-                                <td>
+                                <td data-label="Acciones">
                                     <div class="flex gap-sm">
                                         <button class="btn btn-sm btn-secondary" onclick="window.editInforme(${i.id})">Editar</button>
                                         <button class="btn btn-sm btn-danger" onclick="window.deleteInforme(${i.id})">Eliminar</button>
@@ -299,7 +299,7 @@ function showInformeForm(informe = null) {
     let mesValue = '';
     if (informe && informe.mes) {
         const d = dayjs(informe.mes);
-        mesValue = `${d.year()}-${String(d.month() + 1).padStart(2, '0')}-01`;
+        mesValue = `${d.year()}-${String(d.month() + 1).padStart(2, '0')}`;
     }
 
     modal.innerHTML = `
@@ -313,7 +313,7 @@ function showInformeForm(informe = null) {
                     <form id="informeForm">
                         <div class="form-group">
                             <label class="form-label">Mes</label>
-                            <input type="date" class="form-input" name="mes" value="${mesValue}" required>
+                            <input type="month" class="form-input" name="mes" value="${mesValue}" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Publicador</label>
@@ -323,7 +323,7 @@ function showInformeForm(informe = null) {
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">ID Tipo Publicador</label>
+                            <label class="form-label">Tipo de publicador</label>
                             <select class="form-select" name="id_tipo_publicador" required>
                                 <option value="1" ${informe?.id_tipo_publicador == 1 ? 'selected' : ''}>Publicador</option>
                                 <option value="2" ${informe?.id_tipo_publicador == 2 ? 'selected' : ''}>Precursor Regular</option>
@@ -343,7 +343,7 @@ function showInformeForm(informe = null) {
                                 <input type="number" class="form-input" name="horas" min="0" value="${informe?.horas || 0}">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Cursos Bíblicos</label>
+                                <label class="form-label">Cursos bíblicos</label>
                                 <input type="number" class="form-input" name="cursos_biblicos" min="0" value="${informe?.cursos_biblicos || 0}">
                             </div>
                         </div>
@@ -366,6 +366,7 @@ function showInformeForm(informe = null) {
         const data = Object.fromEntries(formData.entries());
 
         // Convert to proper types
+        data.mes = dayjs(data.mes).format('YYYY-MM-01');
         data.id_publicador = parseInt(data.id_publicador);
         data.id_tipo_publicador = parseInt(data.id_tipo_publicador);
         data.predico_en_el_mes = parseInt(data.predico_en_el_mes);
@@ -554,18 +555,20 @@ function renderBulkEditorTable() {
                 </thead>
                 <tbody>
                     ${bulkInformesData.map((informe, index) => `
-                        ${index == 0 && informe.id_tipo_publicador == 2 ? `<tr><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Precursores regulares</th></tr>` : ''}
-                        ${(index == 0 && informe.id_tipo_publicador != 2) || (index > 0 && informe.id_tipo_publicador != 2 && bulkInformesData[index - 1].id_tipo_publicador == 2) ? `<tr><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Publicadores</th></tr>` : ''}
+                        ${index == 0 && informe.id_tipo_publicador == 2 ? `<tr class="header"><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Precursores regulares</th></tr>` : ''}
+                        ${(index == 0 && informe.id_tipo_publicador != 2) || (index > 0 && informe.id_tipo_publicador != 2 && bulkInformesData[index - 1].id_tipo_publicador == 2) ? `<tr class="header"><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Publicadores</th></tr>` : ''}
                         <tr>
-                            <td><strong>${informe.nombre}</strong></td>
-                            <td style="text-align: center;">
-                                <input type="checkbox" 
-                                    id="predico_${index}" 
-                                    ${informe.predico_en_el_mes ? 'checked' : ''}
-                                    onchange="window.updateBulkInforme(${index}, 'predico_en_el_mes', this.checked ? 1 : 0)"
-                                    style="width: 20px; height: 20px; cursor: pointer;">
+                            <td data-label="Publicador"><strong>${informe.nombre}</strong></td>
+                            <td data-label="Participación en el ministerio" style="text-align: center;">
+                                <label class="switch">
+                                    <input type="checkbox"
+                                        id="predico_${index}" 
+                                        ${informe.predico_en_el_mes ? 'checked' : ''}
+                                        onchange="window.updateBulkInforme(${index}, 'predico_en_el_mes', this.checked ? 1 : 0)"/>
+                                    <span class="slider round"></span>
+                                </label>
                             </td>
-                            <td style="text-align: center;">
+                            <td data-label="Cursos bíblicos" style="text-align: center;">
                                 <input type="number" 
                                     class="form-input" 
                                     value="${informe.cursos_biblicos}" 
@@ -573,15 +576,17 @@ function renderBulkEditorTable() {
                                     onchange="window.updateBulkInforme(${index}, 'cursos_biblicos', parseInt(this.value) || 0)"
                                     style="padding: 0.5rem;">
                             </td>
-                            <td style="text-align: center;">
-                                <input type="checkbox" 
-                                    id="id_tipo_publicador_${index}" 
-                                    ${informe.id_tipo_publicador == 2 ? 'disabled' : ''}
-                                    ${informe.id_tipo_publicador == 3 ? 'checked' : ''}
-                                    onchange="window.updateBulkInforme(${index}, 'id_tipo_publicador', this.checked ? 3 : 1)"
-                                    style="width: 20px; height: 20px; cursor: pointer;">
+                            <td data-label="Precursor auxiliar" style="text-align: center;">
+                                <label class="switch">
+                                    <input type="checkbox"
+                                        id="id_tipo_publicador_${index}" 
+                                        ${informe.id_tipo_publicador == 2 ? 'disabled' : ''}
+                                        ${informe.id_tipo_publicador == 3 ? 'checked' : ''}
+                                        onchange="window.updateBulkInforme(${index}, 'id_tipo_publicador', this.checked ? 3 : 1)"/>
+                                    <span class="slider round"></span>
+                                </label>
                             </td>
-                            <td style="text-align: center;">
+                            <td data-label="Horas" style="text-align: center;">
                                 <input type="number" 
                                     class="form-input" 
                                     value="${informe.horas}" 
@@ -589,7 +594,7 @@ function renderBulkEditorTable() {
                                     onchange="window.updateBulkInforme(${index}, 'horas', parseInt(this.value) || 0)"
                                     style="padding: 0.5rem;">
                             </td>
-                            <td style="text-align: center;">
+                            <td data-label="Notas" style="text-align: center;">
                                 <input type="text" 
                                     class="form-input" 
                                     value="${informe.notas || ''}" 

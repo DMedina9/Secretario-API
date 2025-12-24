@@ -241,6 +241,94 @@ a:hover {
     color: var(--color-primary-light);
 }
 
+/* Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: #2196F3;
+}
+
+input:checked+.slider:before {
+    transform: translateX(26px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Hamburger Menu Button (Hidden on Desktop) */
+.navbar-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1000;
+}
+
+.navbar-toggle span {
+    width: 100%;
+    height: 3px;
+    background: var(--text-primary);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.navbar-toggle.active span:nth-child(1) {
+    transform: translateY(10.5px) rotate(45deg);
+}
+
+.navbar-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.navbar-toggle.active span:nth-child(3) {
+    transform: translateY(-10.5px) rotate(-45deg);
+}
+
 .navbar-actions {
     display: flex;
     gap: var(--space-sm);
@@ -428,6 +516,10 @@ a:hover {
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
+.form-input[type="number"] {
+    text-align: end;
+}
+
 .form-select option {
     color: dimgray;
 }
@@ -486,6 +578,61 @@ a:hover {
 .table tbody tr:hover {
     background: rgba(255, 255, 255, 0.03);
 }
+
+/* Mobile-friendly table cards */
+@media (max-width: 768px) {
+
+    /* Hide table headers on mobile */
+    .table thead {
+        display: none;
+    }
+
+    /* Transform table rows into cards */
+    .table,
+    .table tbody,
+    .table tr,
+    .table td {
+        display: block;
+        width: 100%;
+    }
+
+    .table tr:not(.header) {
+        margin-bottom: var(--space-md);
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: var(--border-radius-md);
+        padding: var(--space-md);
+    }
+
+    .table td {
+        padding: var(--space-sm) 0;
+        min-height: var(--space-2xl);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+    }
+
+
+    /* Add labels before each cell using data-label attribute */
+    .table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 45%;
+        padding-right: var(--space-sm);
+        font-weight: 600;
+        color: var(--text-primary);
+        text-align: left;
+    }
+
+    /* Style action buttons in mobile */
+    .table td .flex {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+}
+
 
 /* === MODALS === */
 .modal-overlay {
@@ -681,16 +828,24 @@ a:hover {
 }
 
 /* === UTILITIES === */
+.items-center {
+    align-items: center;
+}
+
 .flex {
     display: flex;
 }
 
-.flex-col {
-    flex-direction: column;
+@media (max-width: 768px) {
+    .flex {
+        flex-direction: column;
+        align-items: normal;
+        gap: var(--space-sm);
+    }
 }
 
-.items-center {
-    align-items: center;
+.flex-col {
+    flex-direction: column;
 }
 
 .justify-center {
@@ -822,20 +977,56 @@ a:hover {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+    .navbar-content {
+        flex-wrap: wrap;
+        position: relative;
+    }
+
+    /* Show hamburger button on mobile */
+    .navbar-toggle {
+        display: flex;
+        order: 2;
+    }
+
+    .navbar-brand {
+        order: 1;
+        flex: 1;
+    }
+
     .navbar-menu {
         display: none;
         position: absolute;
         top: 100%;
         left: 0;
         right: 0;
-        background: rgba(20, 24, 35, 0.95);
+        background: rgba(20, 24, 35, 0.98);
         backdrop-filter: blur(20px);
         padding: var(--space-md);
         flex-direction: column;
+        box-shadow: var(--shadow-lg);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 999;
+        order: 4;
+        width: 100%;
+        animation: slideDown 0.3s ease-out;
     }
 
     .navbar-menu.active {
         display: flex;
+    }
+
+    .navbar-menu li {
+        width: 100%;
+    }
+
+    .navbar-menu a {
+        display: block;
+        padding: var(--space-md);
+        width: 100%;
+    }
+
+    .navbar-actions {
+        order: 3;
     }
 
     .grid-cols-2,
@@ -855,6 +1046,35 @@ a:hover {
     h2 {
         font-size: var(--font-size-2xl);
     }
+
+    .page-header {
+        margin-bottom: var(--space-xl);
+    }
+
+    .user-info span {
+        display: none;
+    }
+
+    .table-container {
+        font-size: var(--font-size-sm);
+    }
+
+    .table th {
+        padding: var(--space-sm);
+        display: block;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
@@ -862,6 +1082,16 @@ a:hover {
     .grid-cols-3,
     .grid-cols-4 {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .navbar-menu {
+        flex-wrap: nowrap;
+        gap: var(--space-xs);
+    }
+
+    .navbar-menu a {
+        padding: var(--space-xs) var(--space-sm);
+        font-size: var(--font-size-sm);
     }
 }
 
@@ -955,6 +1185,7 @@ a:hover {
     color: var(--text-secondary);
     transition: all var(--transition-base);
     font-weight: 500;
+    cursor: pointer;
 }
 
 /* Change background color of buttons on hover */

@@ -124,25 +124,53 @@ function renderPublicadoresTable(publicadores) {
                     <tr>
                         <th>Nombre</th>
                         <th>Apellidos</th>
+                        <th>F. Nac.</th>
+                        <th>F. Bautismo</th>
+                        <th>Grupo</th>
+                        <th>Sup</th>
+                        <th>Sexo</th>
                         <th>Tipo</th>
                         <th>Privilegio</th>
+                        <th>Ungido</th>
+                        <th>Calle</th>
+                        <th>Núm</th>
+                        <th>Colonia</th>
+                        <th>Tel. Fijo</th>
+                        <th>Tel. Móvil</th>
+                        <th>Contacto Emerg.</th>
+                        <th>Tel. Emerg.</th>
+                        <th>Email Emerg.</th>
                         ${hasPermission('admin') ? '<th>Acciones</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>
                     ${publicadores.map(p => `
                         <tr>
-                            <td>${p.nombre || ''}</td>
-                            <td>${p.apellidos || ''}</td>
-                            <td><span class="badge badge-primary">${p.tipo_publicador || 'N/A'}</span></td>
-                            <td>${p.privilegio || 'N/A'}</td>
+                            <td data-label="Nombre">${p.nombre || ''}</td>
+                            <td data-label="Apellidos">${p.apellidos || ''}</td>
+                            <td data-label="F. Nac.">${p.fecha_nacimiento || ''}</td>
+                            <td data-label="F. Bautismo">${p.fecha_bautismo || ''}</td>
+                            <td data-label="Grupo">${p.grupo || ''}</td>
+                            <td data-label="Sup">${p.sup_grupo === 1 ? 'Sup' : p.sup_grupo === 2 ? 'Aux' : ''}</td>
+                            <td data-label="Sexo">${p.sexo === 'H' ? '<span class="badge badge-success">Hombre</span>' : p.sexo === 'M' ? '<span class="badge badge-warning">Mujer</span>' : ''}</td>
+                            <td data-label="Tipo"><span class="badge badge-primary">${p.tipo_publicador || ''}</span></td>
+                            <td data-label="Privilegio">${p.privilegio || ''}</td>
+                            <td data-label="Ungido">${p.ungido || ''}</td>
+                            <td data-label="Calle">${p.calle || ''}</td>
+                            <td data-label="Núm">${p.num || ''}</td>
+                            <td data-label="Colonia">${p.colonia || ''}</td>
+                            <td data-label="Tel. Fijo">${p.telefono_fijo || ''}</td>
+                            <td data-label="Tel. Móvil">${p.telefono_movil || ''}</td>
+                            <td data-label="Contacto Emerg.">${p.contacto_emergencia || ''}</td>
+                            <td data-label="Tel. Emerg.">${p.tel_contacto_emergencia || ''}</td>
+                            <td data-label="Email Emerg.">${p.correo_contacto_emergencia || ''}</td>
                             ${hasPermission('admin') ? `
-                                <td>
+                                <td data-label="Acciones">
                                     <div class="flex gap-sm">
                                         <button class="btn btn-sm btn-secondary" onclick="window.editPublicador(${p.id})">Editar</button>
                                         <button class="btn btn-sm btn-danger" onclick="window.deletePublicador(${p.id})">Eliminar</button>
                                     </div>
-                                </td>
+                               </td>
                             ` : ''}
                         </tr>
                     `).join('')}
@@ -176,6 +204,33 @@ function showPublicadorForm(publicador = null) {
                             <input type="text" class="form-input" name="apellidos" value="${publicador?.apellidos || ''}" required>
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Fecha de Nacimiento</label>
+                            <input type="date" class="form-input" name="fecha_nacimiento" value="${publicador?.fecha_nacimiento || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha de Bautismo</label>
+                            <input type="date" class="form-input" name="fecha_bautismo" value="${publicador?.fecha_bautismo || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Grupo</label>
+                            <input type="number" class="form-input" name="grupo" value="${publicador?.grupo || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sup Grupo</label>
+                            <select class="form-select" name="sup_grupo" required>
+                                <option value="">Seleccione</option>
+                                <option value="1" ${publicador?.sup_grupo == 1 ? 'selected' : ''}>Sup</option>
+                                <option value="2" ${publicador?.sup_grupo == 2 ? 'selected' : ''}>Aux</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sexo</label>
+                            <select class="form-select" name="sexo" required>
+                                <option value="H" ${publicador?.sexo == 'H' ? 'selected' : ''}>Masculino</option>
+                                <option value="M" ${publicador?.sexo == 'M' ? 'selected' : ''}>Femenino</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Tipo de Publicador</label>
                             <select class="form-select" name="id_tipo_publicador" required>
                                 <option value="1" ${publicador?.id_tipo_publicador == 1 ? 'selected' : ''}>Publicador</option>
@@ -190,6 +245,45 @@ function showPublicadorForm(publicador = null) {
                                 <option value="1" ${publicador?.id_privilegio == 1 ? 'selected' : ''}>Anciano</option>
                                 <option value="2" ${publicador?.id_privilegio == 2 ? 'selected' : ''}>Siervo Ministerial</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ungido</label>
+                            <label class="switch">
+                                <input type="checkbox" name="ungido" ${publicador?.ungido ? 'checked' : ''}>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Calle</label>
+                            <input type="text" class="form-input" name="calle" value="${publicador?.calle || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Num</label>
+                            <input type="text" class="form-input" name="num" value="${publicador?.num || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Colonia</label>
+                            <input type="text" class="form-input" name="colonia" value="${publicador?.colonia || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefono Fijo</label>
+                            <input type="tel" class="form-input" name="telefono_fijo" value="${publicador?.telefono_fijo || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefono Movil</label>
+                            <input type="tel" class="form-input" name="telefono_movil" value="${publicador?.telefono_movil || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contacto Emergencia</label>
+                            <input type="text" class="form-input" name="contacto_emergencia" value="${publicador?.contacto_emergencia || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tel Contacto Emergencia</label>
+                            <input type="tel" class="form-input" name="tel_contacto_emergencia" value="${publicador?.tel_contacto_emergencia || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Correo Contacto Emergencia</label>
+                            <input type="email" class="form-input" name="correo_contacto_emergencia" value="${publicador?.correo_contacto_emergencia || ''}">
                         </div>
                         <div class="flex justify-end gap-sm mt-lg">
                             <button type="button" class="btn btn-secondary" id="cancelFormBtn">Cancelar</button>
