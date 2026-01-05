@@ -55,7 +55,7 @@ const getPublicadores = async (req, res) => {
         const rows = await sequelize.query(`
             SELECT
                 p.*,
-                CASE sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' END AS sup_grupo_desc,
+                CASE p.sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' END AS sup_grupo_desc,
                 pr.descripcion AS privilegio,
                 tp.descripcion AS tipo_publicador
             FROM Publicadores p

@@ -75,11 +75,28 @@ export async function renderSecretario(container) {
                 <div id="s3Container" class="mt-lg"></div>
             </div>
         </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Reporte S-10: Análisis de la Congregación</h3>
+                <p class="card-subtitle">Estadísticas anuales de la congregación por año de servicio</p>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-label">Año de Servicio</label>
+                    <input type="number" class="form-input" id="s10Year" min="2020" max="2030" placeholder="${getAnioServicio()}" value="${getAnioServicio()}" style="max-width: 300px;">
+                </div>
+                <button class="btn btn-primary" id="loadS10Btn">Generar Reporte S-10</button>
+                
+                <div id="s10Container" class="mt-lg"></div>
+            </div>
+        </div>
     `;
 
     // Setup button handlers
     document.getElementById('loadS1Btn').addEventListener('click', loadS1Report);
     document.getElementById('loadS3Btn').addEventListener('click', loadS3Report);
+    document.getElementById('loadS10Btn').addEventListener('click', loadS10Report);
 
     // Load basic data
     await loadDatosBasicos();
@@ -261,3 +278,110 @@ async function loadS3Report() {
         container.innerHTML = '<div class="alert alert-error">Error al cargar reporte S-3</div>';
     }
 }
+
+async function loadS10Report() {
+    const year = document.getElementById('s10Year').value || getAnioServicio();
+
+    if (!year) {
+        showToast('Por favor ingresa un año', 'warning');
+        return;
+    }
+
+    const container = document.getElementById('s10Container');
+
+    try {
+        showLoading();
+
+        const data = await apiRequest(`/secretario/s10/${year}`);
+
+        hideLoading();
+
+        if (data && data.success && data.data) {
+            const reportData = data.data;
+
+            let html = `
+                <div class="grid grid-cols-1 gap-lg">
+                    <!-- Meeting Attendance Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Promedio de Asistencia a las Reuniones</h4>
+                        </div>
+                        <div class="card-body flex justify-between">
+                            <div class="flex flex-col">
+                                <span class="mt-md"><strong>Reunión del fin de semana</strong></span>
+                                <span>${reportData.asistencia.fin_de_semana}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="mt-md"><strong>Reunión de entre semana</strong></span>
+                                <span>${reportData.asistencia.entre_semana}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Congregation Totals Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Totales de la Congregación</h4>
+                        </div>
+                        <div class="card-body flex justify-between">
+                            <div class="flex flex-col">
+                                <div class="flex flex-col">
+                                    <span class="mt-md"><strong>Todos los publicadores activos</strong></span>
+                                    <span>${reportData.totales_congregacion.publicadores_activos}</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="mt-md"><strong>Nuevos publicadores inactivos</strong></span>
+                                    <span>${reportData.totales_congregacion.nuevos_inactivos}</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="mt-md"><strong>Publicadores reactivados</strong></span>
+                                    <span>${reportData.totales_congregacion.reactivados}</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col">
+                                <div class="flex flex-col">
+                                    <span class="mt-md"><strong>Publicadores sordos</strong></span>
+                                    <span>${reportData.totales_congregacion.sordos}</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="mt-md"><strong>Publicadores ciegos</strong></span>
+                                    <span>${reportData.totales_congregacion.ciegos}</span>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="mt-md"><strong>Publicadores encarcelados</strong></span>
+                                    <span>${reportData.totales_congregacion.encarcelados}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Territories Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Territorios Abarcados</h4>
+                        </div>
+                        <div class="card-body flex justify-between">
+                            <div class="flex flex-col">
+                                <span class="mt-md"><strong>Número total de territorios</strong></span>
+                                <span>${reportData.territorios.total}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="mt-md"><strong>Territorios no predicados</strong></span>
+                                <span>${reportData.territorios.no_predicados}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="alert alert-error">No se pudieron cargar los datos del reporte S-10</div>';
+        }
+
+    } catch (error) {
+        hideLoading();
+        container.innerHTML = '<div class="alert alert-error">Error al cargar reporte S-10</div>';
+    }
+}
+

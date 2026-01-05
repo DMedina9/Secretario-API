@@ -136,6 +136,9 @@ function renderPublicadoresTable(publicadores) {
                         <th>Tipo</th>
                         <th>Priv.</th>
                         <th>Ung.</th>
+                        <th>Sord.</th>
+                        <th>Ciego</th>
+                        <th>Encarcelado</th>
                         <th>Calle</th>
                         <th>Núm</th>
                         <th>Colonia</th>
@@ -213,6 +216,24 @@ window.editPublicadorInline = (id, index) => {
                 <span class="slider round"></span>
             </label>
         </td>
+        <td data-label="Sord.">
+            <label class="switch">
+                <input type="checkbox" ${p.sordo ? 'checked' : ''} onchange="window.updatePublicador(${index}, 'sordo', this.checked ? 1 : 0)">
+                <span class="slider round"></span>
+            </label>
+        </td>
+        <td data-label="Ciego">
+            <label class="switch">
+                <input type="checkbox" ${p.ciego ? 'checked' : ''} onchange="window.updatePublicador(${index}, 'ciego', this.checked ? 1 : 0)">
+                <span class="slider round"></span>
+            </label>
+        </td>
+        <td data-label="Encarcelado">
+            <label class="switch">
+                <input type="checkbox" ${p.encarcelado ? 'checked' : ''} onchange="window.updatePublicador(${index}, 'encarcelado', this.checked ? 1 : 0)">
+                <span class="slider round"></span>
+            </label>
+        </td>
         <td data-label="Calle">
             <input type="text" class="form-input" value="${p.calle || ''}" onchange="window.updatePublicador(${index}, 'calle', this.value)" style="padding: 0.3rem;">
         </td>
@@ -267,6 +288,9 @@ const renderPublicador = (p, index, isAdmin) => {
         <td data-label="Tipo">${p.tipo_publicador || ''}</td>
         <td data-label="Privilegio">${p.privilegio || ''}</td>
         <td data-label="Ungido">${p.ungido ? '✓' : ''}</td>
+        <td data-label="Sord.">${p.sordo ? '✓' : ''}</td>
+        <td data-label="Ciego">${p.ciego ? '✓' : ''}</td>
+        <td data-label="Encarcelado">${p.encarcelado ? '✓' : ''}</td>
         <td data-label="Calle">${p.calle || ''}</td>
         <td data-label="Núm">${p.num || ''}</td>
         <td data-label="Colonia">${p.colonia || ''}</td>
@@ -287,7 +311,7 @@ const renderPublicador = (p, index, isAdmin) => {
 window.updatePublicador = (index, field, value) => {
     if (currentPublicadores[index]) {
         // Convert to appropriate type
-        if (field === 'id_tipo_publicador' || field === 'id_privilegio' || field === 'ungido' || field === 'grupo') {
+        if (field === 'id_tipo_publicador' || field === 'id_privilegio' || field === 'ungido' || field === 'sordo' || field === 'ciego' || field === 'encarcelado' || field === 'grupo') {
             currentPublicadores[index][field] = value ? parseInt(value) : null;
         } else {
             currentPublicadores[index][field] = value;
@@ -387,6 +411,27 @@ function showPublicadorForm(publicador = null) {
                             <label class="form-label">Ungido</label>
                             <label class="switch">
                                 <input type="checkbox" name="ungido" ${publicador?.ungido ? 'checked' : ''}>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sordo</label>
+                            <label class="switch">
+                                <input type="checkbox" name="sordo" ${publicador?.sordo ? 'checked' : ''}>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ciego</label>
+                            <label class="switch">
+                                <input type="checkbox" name="ciego" ${publicador?.ciego ? 'checked' : ''}>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Encarcelado</label>
+                            <label class="switch">
+                                <input type="checkbox" name="encarcelado" ${publicador?.encarcelado ? 'checked' : ''}>
                                 <span class="slider round"></span>
                             </label>
                         </div>

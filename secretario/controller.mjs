@@ -192,3 +192,169 @@ export const getS1 = async (month) => {
         return { success: false, error: error.message }
     }
 }
+
+// =====================================================================================
+// S10 - Análisis de la congregación (RAW Query)
+// =====================================================================================
+export const getS10 = async (anio) => {
+    if (!anio || isNaN(anio) || anio < 2020) {
+        return { success: false, error: 'Año inválido' }
+    }
+
+    try {
+        // Calculate service year date range (Sept to Aug)
+        const startMonth = `${anio - 1}-09-01`
+        const endMonth = `${anio}-08-01`
+
+        // 1. Average attendance for weekend meetings
+        const asistenciaFS = await sequelize.query(
+            `select round(avg(asistencia), 0) as promedio
+                from (
+                    SELECT
+                        CASE WHEN CAST(STRFTIME('%w', fecha) AS INTEGER) IN (0,6) THEN 'FS' ELSE 'ES' END as type,
+                        CAST(strftime('%m', fecha) AS INTEGER) AS month,
+                        CAST(strftime('%Y', fecha) AS INTEGER) AS year,
+                        avg(asistentes) AS asistencia
+                    FROM Asistencias
+                    where asistentes is not null
+                    GROUP BY strftime('%Y-%m', fecha), CASE WHEN CAST(STRFTIME('%w', fecha) AS INTEGER) IN (0,6) THEN 'FS' ELSE 'ES' END
+                ) a
+                WHERE case when month > 8 then 1 else 0 end + year = ?
+                and type = 'FS';`,
+            { replacements: [anio], type: QueryTypes.SELECT }
+        )
+
+        // 2. Average attendance for midweek meetings
+        const asistenciaES = await sequelize.query(
+            `select round(avg(asistencia), 0) as promedio
+                from (
+                    SELECT
+                        CASE WHEN CAST(STRFTIME('%w', fecha) AS INTEGER) IN (0,6) THEN 'FS' ELSE 'ES' END as type,
+                        CAST(strftime('%m', fecha) AS INTEGER) AS month,
+                        CAST(strftime('%Y', fecha) AS INTEGER) AS year,
+                        avg(asistentes) AS asistencia
+                    FROM Asistencias
+                    where asistentes is not null
+                    GROUP BY strftime('%Y-%m', fecha), CASE WHEN CAST(STRFTIME('%w', fecha) AS INTEGER) IN (0,6) THEN 'FS' ELSE 'ES' END
+                ) a
+                WHERE case when month > 8 then 1 else 0 end + year = ?
+                and type = 'ES';`,
+            { replacements: [anio], type: QueryTypes.SELECT }
+        )
+
+        // 3. Active publishers (reported at least once in the service year)
+        const activosResult = await sequelize.query(
+            `WITH tmp AS (
+                SELECT *,
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-5 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
+                FROM Informes i
+            )
+            SELECT COUNT(DISTINCT id_publicador) AS cantidad
+            FROM tmp
+            WHERE Estatus = 'Activo'
+            AND mes = ?`,
+            { replacements: [endMonth], type: QueryTypes.SELECT }
+        )
+
+        // 4. New inactive publishers (were active in previous year but not in current year)
+        const inactivosResult = await sequelize.query(
+            `WITH tmp AS (
+                SELECT *,
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-5 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
+                FROM Informes i
+            )
+            SELECT COUNT(DISTINCT id_publicador) AS cantidad
+            FROM tmp
+            WHERE EstatusAnterior = 'Activo'
+            AND Estatus = 'Inactivo'
+            AND mes >= ?
+            AND mes <= ?`,
+            { replacements: [startMonth, endMonth], type: QueryTypes.SELECT }
+        )
+
+        // 5. Reactivated publishers (inactive in previous year but active in current year)
+        const reactivadosResult = await sequelize.query(
+            `WITH tmp AS (
+                SELECT *,
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-5 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
+                FROM Informes i
+            )
+            SELECT COUNT(DISTINCT id_publicador) AS cantidad
+            FROM tmp
+            WHERE EstatusAnterior = 'Inactivo'
+            AND Estatus = 'Activo'
+            AND ifnull(notas, '') != 'Nuevo Publicador'
+            AND mes >= ?
+            AND mes <= ?`,
+            { replacements: [startMonth, endMonth], type: QueryTypes.SELECT }
+        )
+
+        // 6. Deaf publishers
+        const sordosResult = await sequelize.query(
+            `SELECT COUNT(1) AS cantidad
+             FROM Publicadores
+             WHERE sordo = 1`,
+            { type: QueryTypes.SELECT }
+        )
+
+        // 7. Blind publishers
+        const ciegosResult = await sequelize.query(
+            `SELECT COUNT(1) AS cantidad
+             FROM Publicadores
+             WHERE ciego = 1`,
+            { type: QueryTypes.SELECT }
+        )
+
+        // 8. Incarcerated publishers
+        const encarceladosResult = await sequelize.query(
+            `SELECT COUNT(1) AS cantidad
+             FROM Publicadores
+             WHERE encarcelado = 1`,
+            { type: QueryTypes.SELECT }
+        )
+
+        // 9. Territory data from Configuracion table
+        const totalTerritorios = await sequelize.query(
+            `SELECT valor
+             FROM Configuraciones
+             WHERE clave = 'total_territorios'`,
+            { type: QueryTypes.SELECT }
+        )
+
+        const territoriosNoPredicados = await sequelize.query(
+            `SELECT valor
+             FROM Configuraciones
+             WHERE clave = 'territorios_no_predicados'`,
+            { type: QueryTypes.SELECT }
+        )
+
+        // Build response object
+        const data = {
+            anio_servicio: anio,
+            asistencia: {
+                fin_de_semana: Math.round((asistenciaFS[0]?.promedio || 0) * 100) / 100,
+                entre_semana: Math.round((asistenciaES[0]?.promedio || 0) * 100) / 100
+            },
+            totales_congregacion: {
+                publicadores_activos: activosResult[0]?.cantidad || 0,
+                nuevos_inactivos: inactivosResult[0]?.cantidad || 0,
+                reactivados: reactivadosResult[0]?.cantidad || 0,
+                sordos: sordosResult[0]?.cantidad || 0,
+                ciegos: ciegosResult[0]?.cantidad || 0,
+                encarcelados: encarceladosResult[0]?.cantidad || 0
+            },
+            territorios: {
+                total: parseInt(totalTerritorios[0]?.valor || 0),
+                no_predicados: parseInt(territoriosNoPredicados[0]?.valor || 0)
+            }
+        }
+
+        return { success: true, data }
+    } catch (error) {
+        return { success: false, error: error.message }
+    }
+}
+

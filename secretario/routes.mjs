@@ -36,6 +36,17 @@ router.get('/mes-informe', async (req, res) => {
     }
 });
 
+// Get S10 report
+router.get('/s10/:anio', check, async (req, res) => {
+    try {
+        const { anio } = req.params;
+        const result = await SecretarioController.getS10(anio * 1);
+        res.json(result);
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // Initialize privilegios
 router.post('/init-privilegios', check, async (req, res) => {
     try {
