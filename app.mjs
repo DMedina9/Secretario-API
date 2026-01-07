@@ -8,6 +8,8 @@ import informeRoutes from './informe/routes.mjs';
 import asistenciasRoutes from './asistencias/routes.mjs';
 import secretarioRoutes from './secretario/routes.mjs';
 import fillPDFRoutes from './fillPDF/routes.mjs';
+import territoriosRoutes from './territorios/routes.mjs';
+import configuracionesRoutes from './configuraciones/routes.mjs';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -31,12 +33,15 @@ app.use('/informe', informeRoutes);
 app.use('/asistencias', asistenciasRoutes);
 app.use('/secretario', secretarioRoutes);
 app.use('/fillPDF', fillPDFRoutes);
+app.use('/territorios', territoriosRoutes);
+app.use('/configuraciones', configuracionesRoutes);
 app.get('/status', (req, res) => {
     res.json({
         status: 'Running',
         timestamp: new Date().toISOString()
     });
 });
+app.use('/web', express.static('frontend'));
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({

@@ -2,7 +2,9 @@
 import { sequelize } from '../common/models/Secretario.mjs'
 import {
     Privilegio,
-    TipoPublicador
+    TipoPublicador,
+    Configuracion,
+    Informes
 } from '../common/models/Secretario.mjs'
 import { Op, QueryTypes } from 'sequelize'
 
@@ -27,14 +29,26 @@ export const insertTipoPublicador = async () => {
 }
 
 // =====================================================================================
+// INSERTAR CONFIGURACIONES
+// =====================================================================================
+export const insertConfiguraciones = async () => {
+    // Insertar configuraciones
+    for (let configuracion of [{ clave: 'mes_informe', valor: '2025-01', tipo: 'month' }, { clave: 'correo_admin', valor: 'daniel.medina.moreno@outlook.com', tipo: 'email' }, { clave: 'total_territorios', valor: '0', tipo: 'number' }, { clave: 'territorios_no_predicados', valor: '0', tipo: 'number' }]) {
+        await Configuracion.findOrCreate({ where: { clave: configuracion.clave }, defaults: configuracion })
+    }
+    return { success: true, message: 'Importado Configuraciones' }
+}
+
+// =====================================================================================
 // OBTENER MES INFORME (RAW)
 // =====================================================================================
 export const getMesInforme = async () => {
     try {
-        const rows = await sequelize.query(
-            `SELECT MAX(mes) AS mes FROM Informes`,
-            { type: QueryTypes.SELECT }
-        )
+        const rows = await Informes.findAll({
+            attributes: ['mes'],
+            order: [['mes', 'DESC']],
+            limit: 1
+        })
         if (!rows[0]?.mes) return null
 
         const [y, m] = rows[0].mes.split('-')

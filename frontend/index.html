@@ -11,8 +11,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- toGeoJSON for KML parsing -->
+    <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+    
+    <!-- Day.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.18/dayjs.min.js" integrity="sha512-FwNWaxyfy2XlEINoSnZh1JQ5TRRtGow0D6XcmAWmYCRgvqOUTnzCxPc9uF35u5ZEpirk1uhlPVA19tflhvnW1g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.18/locale/es-mx.min.js" integrity="sha512-dIk5t6xgFnZTHhp527gfoTLBxLv/PMW4nl8EUDEg/+s8u6/aqpSVifLefkx3drYOKl/RlJ0kXt2LsVmjCFIGwA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
@@ -39,7 +50,9 @@
                 <li><a href="#" data-page="asistencias">Asistencias</a></li>
                 <li><a href="#" data-page="informes">Informes</a></li>
                 <li><a href="#" data-page="secretario">Servicios</a></li>
-                <li><a href="#" data-page="fillpdf">Reportes PDF</a></li>
+                <li><a href="#" data-page="fillpdf">Reportes</a></li>
+                <li><a href="#" data-page="territorios">Territorios</a></li>
+                <li><a href="#" data-page="configuracion">Configuración</a></li>
             </ul>
             
             <div class="navbar-actions">

@@ -51,7 +51,7 @@ export async function renderSecretario(container) {
             </div>
         </div>
         
-        <div class="card">
+        <div class="card mb-xl">
             <div class="card-header">
                 <h3 class="card-title">Reporte S-3: Asistencia Anual</h3>
                 <p class="card-subtitle">Registro de asistencia por semanas del año de servicio</p>
@@ -76,7 +76,7 @@ export async function renderSecretario(container) {
             </div>
         </div>
         
-        <div class="card">
+        <div class="card mb-xl">
             <div class="card-header">
                 <h3 class="card-title">Reporte S-10: Análisis de la Congregación</h3>
                 <p class="card-subtitle">Estadísticas anuales de la congregación por año de servicio</p>

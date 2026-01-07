@@ -1,6 +1,6 @@
 import sequelize from '../database.mjs';
 import { DataTypes } from 'sequelize'
-import { insertPrivilegios, insertTipoPublicador } from '../../secretario/controller.mjs'
+import { insertPrivilegios, insertTipoPublicador, insertConfiguraciones } from '../../secretario/controller.mjs'
 
 // Privilegio
 export const Privilegio = sequelize.define('Privilegios', {
@@ -70,7 +70,8 @@ export const Asistencias = sequelize.define('Asistencias', {
 export const Configuracion = sequelize.define('Configuraciones', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     clave: { type: DataTypes.TEXT, unique: true },
-    valor: DataTypes.TEXT
+    valor: DataTypes.TEXT,
+    tipo: DataTypes.TEXT
 })
 
 // ======================
@@ -94,6 +95,7 @@ export const initDb = async () => {
 
         await sequelize.sync() // crea tablas si no existen
         console.log('Tablas sincronizadas.')
+        await insertConfiguraciones()
         await insertPrivilegios()
         await insertTipoPublicador()
         return sequelize

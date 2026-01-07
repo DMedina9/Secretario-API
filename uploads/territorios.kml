@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><Style id="09184a41-286c-ed11-b821-001dd8c76b0a_2cadddaf-80d5-472d-b6d9-48cd4dd17a5b"><BalloonStyle><text>
+      <h1><b>$[name]</b></h1> <!-- use the cdata to avoid escaping special characters -->
+      <b> Tipo </b> $[Type]
+      <br/>
+      <b> Idioma </b> Español
+      <br/>
+      <b> Última actualización </b> 2 de agosto de 2024
+      <br/>
+      
+        <h2><b> Límites </b></h2>
+        <b> Norte </b> Avenida Benito Juárez
+        <br/>
+        <b> Este </b> Avenida Xochimilco
+        <br/>
+        <b> Sur </b> Avenida Eloy Cavazos
+        <br/>
+        <b> Oeste </b> Avenida Maestro Israel Cavazos Garza
+        <br/>
+      </text></BalloonStyle><IconStyle/><LabelStyle><scale>1.5</scale></LabelStyle><LineStyle><color>efb27550</color><width>5</width></LineStyle><PolyStyle><color>7fb27550</color></PolyStyle></Style><Placemark><name>Jardines de Andalucía-Guadalupe, N.L.</name><styleUrl>#09184a41-286c-ed11-b821-001dd8c76b0a_2cadddaf-80d5-472d-b6d9-48cd4dd17a5b</styleUrl><description/><ExtendedData><Data name="Language"><value><![CDATA[ Español ]]></value>
+</Data><Data name="Type"><value><![CDATA[ Límite ]]></value>
+</Data><Data name="LastUpdated"><value><![CDATA[ 2024-08-02 ]]></value>
+</Data><Data name="BorderNorth"><value><![CDATA[ Avenida Benito Juárez ]]></value>
+</Data><Data name="BorderEast"><value><![CDATA[ Avenida Xochimilco ]]></value>
+</Data><Data name="BorderSouth"><value><![CDATA[ Avenida Eloy Cavazos ]]></value>
+</Data><Data name="BorderWest"><value><![CDATA[ Avenida Maestro Israel Cavazos Garza ]]></value>
+</Data></ExtendedData><Polygon><outerBoundaryIs><LinearRing><coordinates>-100.1884901847623,25.64919060524258,0
+-100.1751916983268,25.645875327923463,0
+-100.1750352323878,25.64851498958766,0
+-100.1740548453947,25.650657014446583,0
+-100.1708356197022,25.66240163671509,0
+-100.1717094537752,25.66292612988321,0
+-100.1712217970863,25.663860943986762,0
+-100.17112069301061,25.664190636324903,0
+-100.1713884369418,25.666235171630635,0
+-100.1736699537013,25.66679732053414,0
+-100.17553619823661,25.664633933859253,0
+-100.17627375253001,25.663643692863513,0
+-100.17874351087521,25.66072295639137,0
+-100.18121269282841,25.657850873844467,0
+-100.1884901847623,25.64919060524258,0
+</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark></Document></kml>

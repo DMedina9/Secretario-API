@@ -1,6 +1,7 @@
-import { Publicadores, Informes, sequelize } from '../common/models/Secretario.mjs';
+import { Publicadores, Informes, sequelize, Configuracion } from '../common/models/Secretario.mjs';
 import { QueryTypes } from 'sequelize'
 import xlsx from 'xlsx'
+import { sendEmail, createBulkReportEmailHTML } from '../common/services/emailService.mjs';
 // =====================================================================================
 // OBTENER INFORMES (RAW) - consulta compleja
 // =====================================================================================
@@ -170,6 +171,47 @@ const upsertInformesBulk = async (req, res) => {
             }
             return { id: record.id, created: created };
         }));
+
+        // =====================================================================================
+        // ENVIAR NOTIFICACIÓN POR CORREO
+        // =====================================================================================
+        try {
+            // Obtener el correo del administrador desde la tabla Configuraciones
+            const configCorreo = await Configuracion.findOne({
+                where: { clave: 'correo_admin' }
+            });
+
+            if (configCorreo && configCorreo.valor) {
+                // Extraer información del primer informe (asumiendo que todos son del mismo mes y grupo)
+                const primerInforme = informesData[0];
+                const mes = primerInforme.mes;
+
+                // Obtener el grupo del publicador
+                const publicador = await Publicadores.findByPk(primerInforme.id_publicador);
+                const grupo = publicador ? publicador.grupo : 'N/A';
+
+                // Obtener el nombre del usuario autenticado
+                const usuario = req.user?.username || req.user?.email || 'Usuario desconocido';
+
+                // Crear el contenido HTML del correo
+                const htmlContent = createBulkReportEmailHTML(usuario, mes, grupo);
+
+                // Enviar el correo
+                await sendEmail(
+                    configCorreo.valor,
+                    '📊 Notificación de Editor Masivo de Informes',
+                    htmlContent
+                );
+
+                console.log('Notificación por correo enviada exitosamente');
+            } else {
+                console.warn('No se encontró configuración de correo_admin, se omite el envío de correo');
+            }
+        } catch (emailError) {
+            // Si falla el envío del correo, registrar el error pero no interrumpir la respuesta
+            console.error('Error al enviar notificación por correo:', emailError.message);
+            // No retornamos error aquí para que la inserción de informes sea exitosa independientemente del correo
+        }
 
         res.json({ success: true, results });
     } catch (error) {
