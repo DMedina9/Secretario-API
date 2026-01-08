@@ -148,29 +148,40 @@ const deleteInforme = async (req, res) => {
 // ACTUALIZAR/AGREGAR INFORMES EN MASA
 // =====================================================================================
 const upsertInformesBulk = async (req, res) => {
+    // Iniciar una transacción para evitar bloqueos de SQLite
+    const transaction = await sequelize.transaction();
+
     try {
         const informesData = req.body; // Espera un array de objetos informe
         if (!Array.isArray(informesData) || informesData.length === 0) {
+            await transaction.rollback();
             return res.status(400).json({ success: false, error: 'El cuerpo de la solicitud debe ser un array no vacío de objetos informe.' });
         }
 
-        const results = await Promise.all(informesData.map(async (informe) => {
+        // Procesar informes secuencialmente dentro de la transacción
+        const results = [];
+        for (const informe of informesData) {
             const { id_publicador, mes, ...updateFields } = informe;
             if (!id_publicador || !mes) {
+                await transaction.rollback();
                 throw new Error('Cada informe debe tener id_publicador y mes.');
             }
 
             const [record, created] = await Informes.findOrCreate({
                 where: { id_publicador, mes },
                 defaults: informe,
+                transaction // Usar la transacción
             });
 
             if (!created) {
                 // Si el registro ya existía, actualízalo
-                await record.update(updateFields);
+                await record.update(updateFields, { transaction });
             }
-            return { id: record.id, created: created };
-        }));
+            results.push({ id: record.id, created: created });
+        }
+
+        // Confirmar la transacción antes de enviar el correo
+        await transaction.commit();
 
         // =====================================================================================
         // ENVIAR NOTIFICACIÓN POR CORREO
@@ -215,6 +226,10 @@ const upsertInformesBulk = async (req, res) => {
 
         res.json({ success: true, results });
     } catch (error) {
+        // Si hay un error, hacer rollback de la transacción si aún está activa
+        if (!transaction.finished) {
+            await transaction.rollback();
+        }
         res.status(500).json({ success: false, error: error.message });
     }
 };
