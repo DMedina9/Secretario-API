@@ -7,14 +7,29 @@ dotenv.config();
  * Crea y configura el transporte SMTP para envío de correos
  */
 const createTransporter = () => {
+    const port = parseInt(process.env.SMTP_PORT || '587');
     return nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: false, // true para puerto 465, false para otros puertos
+        port: port,
+        secure: port === 465, // true para puerto 465 (SSL), false para 587 (TLS)
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
         },
+        // Configuraciones adicionales para mejorar conectividad
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
+        debug: true,
+        logger: true,
+        // Forzar IPv4 para evitar problemas con IPv6
+        family: 4,
+        // Requerir TLS para puerto 587
+        requireTLS: port === 587,
+        tls: {
+            // No rechazar certificados no autorizados (solo para desarrollo)
+            rejectUnauthorized: process.env.NODE_ENV === 'production'
+        }
     });
 };
 
@@ -32,7 +47,20 @@ export const sendEmail = async (to, subject, html) => {
             throw new Error('Las credenciales SMTP no están configuradas en las variables de entorno');
         }
 
-        const transporter = createTransporter();
+        const transporter = createTransporter({
+            service: process.env.SMTP_SERVICE || 'gmail',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 10000,
+            requireTLS: true,
+            tls: {
+                rejectUnauthorized: process.env.NODE_ENV === 'production'
+            }
+        });
 
         const mailOptions = {
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
