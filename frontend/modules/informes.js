@@ -514,6 +514,7 @@ async function loadBulkEditor() {
             return {
                 id_publicador: pub.id,
                 nombre: `${pub.apellidos}, ${pub.nombre}`,
+                telefono: pub.telefono_movil,
                 mes: month + '-01',
                 predico_en_el_mes: existing ? existing.predico_en_el_mes : 0,
                 horas: existing ? existing.horas : 0,
@@ -534,7 +535,7 @@ async function loadBulkEditor() {
 
 function renderBulkEditorTable() {
     const container = document.getElementById('bulkEditorContainer');
-
+    const nombreMes = dayjs(selectedMonth + "-01").format('MMMM YYYY');
     if (bulkInformesData.length === 0) {
         container.innerHTML = '<p class="text-muted">No hay datos para mostrar</p>';
         return;
@@ -546,6 +547,7 @@ function renderBulkEditorTable() {
                 <thead style="position: sticky; top: 0; background: var(--bg-primary); z-index: 10;">
                     <tr>
                         <th style="min-width: 150px;">Publicador</th>
+                        <th style="width: 100px;">Enviar WhatsApp</th>
                         <th style="width: 100px;">Participación en el ministerio</th>
                         <th style="width: 100px;">Cursos bíblicos</th>
                         <th style="width: 100px;">Precursor auxiliar</th>
@@ -559,12 +561,15 @@ function renderBulkEditorTable() {
                         ${(index == 0 && informe.id_tipo_publicador != 2) || (index > 0 && informe.id_tipo_publicador != 2 && bulkInformesData[index - 1].id_tipo_publicador == 2) ? `<tr class="header"><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Publicadores</th></tr>` : ''}
                         <tr>
                             <td data-label="Publicador"><strong>${informe.nombre}</strong></td>
+                            <td data-label="Enviar WhatsApp" style="text-align: center;">
+                                <a id="whatsapp_${index}" style="display: ${informe.predico_en_el_mes ? 'none' : 'block'};" href="https://wa.me/${informe.telefono}?text=Hola%2C%20buen%20d%C3%ADa!%20Me%20puede%20mandar%20su%20informe%20de%20${nombreMes}%2C%20por%20favor%3F%20Saludos!" target="_blank">${informe.telefono}</a>
+                            </td>
                             <td data-label="Participación en el ministerio" style="text-align: center;">
                                 <label class="switch">
                                     <input type="checkbox"
                                         id="predico_${index}" 
                                         ${informe.predico_en_el_mes ? 'checked' : ''}
-                                        onchange="window.updateBulkInforme(${index}, 'predico_en_el_mes', this.checked ? 1 : 0)"/>
+                                        onchange="window.updateBulkInforme(${index}, 'predico_en_el_mes', this.checked ? 1 : 0); document.getElementById('whatsapp_${index}').style.display = this.checked ? 'none' : 'block'"/>
                                     <span class="slider round"></span>
                                 </label>
                             </td>
