@@ -1208,3 +1208,116 @@ input:checked+.slider:before {
     border: 1px solid var(--color-primary);
     border-top: none;
 }
+
+/* Calendar Styles */
+.calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm);
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.calendar-month-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: capitalize;
+    text-align: center;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.calendar-header-cell {
+    background-color: rgba(255, 255, 255, 0.03);
+    padding: var(--space-sm);
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.calendar-day-cell {
+    background-color: rgba(255, 255, 255, 0.03);
+    min-height: 100px;
+    padding: var(--space-xs);
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid transparent;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-day-cell:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.calendar-day-cell.empty {
+    background-color: var(--bg-secondary);
+    cursor: default;
+}
+
+.calendar-day-cell.today {
+    background-color: rgba(37, 99, 235, 0.15);
+    font-weight: bold;
+    border: 1px solid var(--color-primary);
+}
+
+.calendar-day-cell.selected {
+    border-color: var(--color-primary);
+}
+
+.calendar-date-number {
+    align-self: flex-end;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.calendar-day-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+.attendance-badge {
+    background-color: var(--color-success);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.attendance-badge.weekend {
+    background-color: var(--color-info);
+}
+
+.day-notes-indicator {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    max-width: 100%;
+}

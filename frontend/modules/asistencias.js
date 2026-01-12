@@ -6,6 +6,7 @@ import { apiRequest, showToast, showLoading, hideLoading, showConfirm } from '..
 import { hasPermission } from './auth.js';
 
 let currentAsistencias = [];
+let currentMonth = dayjs(); // State for the calendar view
 
 export async function renderAsistencias(container) {
     container.innerHTML = `
@@ -14,19 +15,19 @@ export async function renderAsistencias(container) {
             <p class="page-description">Registro de asistencia a las reuniones</p>
         </div>
         
-        ${hasPermission('admin') ? `
-            <div class="flex justify-between items-center mb-lg">
-                <button class="btn btn-primary" id="addAsistenciaBtn">+ Registrar Asistencia</button>
-                <button class="btn btn-primary" id="importAsistenciaBtn">+ Importar Asistencias</button>
-            </div>
-        ` : ''}
-        
+        <div class="calendar-controls">
+            <button class="btn btn-sm btn-secondary" id="prevMonthBtn">&lt; Anterior</button>
+            <span class="calendar-month-title" id="currentMonthDisplay"></span>
+            <button class="btn btn-sm btn-secondary" id="nextMonthBtn">Siguiente &gt;</button>
+        </div>
+
         <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Registro de Asistencias</h3>
-            </div>
             <div class="card-body">
-                <div id="asistenciasTableContainer">
+                <div id="calendarContainer" class="calendar-grid">
+                    <!-- Calendar will be populated here -->
+                </div>
+                <div id="asistenciasTableContainer" class="hidden">
+                    <!-- Loading or fallback -->
                     <div class="flex justify-center">
                         <div class="spinner"></div>
                     </div>
@@ -37,15 +38,15 @@ export async function renderAsistencias(container) {
         <div id="asistenciaFormModal"></div>
     `;
 
-    const addBtn = document.getElementById('addAsistenciaBtn');
-    if (addBtn) {
-        addBtn.addEventListener('click', () => showAsistenciaForm());
-    }
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        currentMonth = currentMonth.subtract(1, 'month');
+        loadAsistencias();
+    });
 
-    const importBtn = document.getElementById('importAsistenciaBtn');
-    if (importBtn) {
-        importBtn.addEventListener('click', () => importAsistencia());
-    }
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        currentMonth = currentMonth.add(1, 'month');
+        loadAsistencias();
+    });
 
     await loadAsistencias();
 }
@@ -53,124 +54,124 @@ export async function renderAsistencias(container) {
 async function loadAsistencias() {
     try {
         showLoading();
+        updateMonthDisplay();
+
+        // Fetch ALL records for simplicity, then filter client-side for the displayed month
+        // Ideally the backend should support filtering by date range, but we work with what we have.
+        // If /asistencias/all returns everything, filtering here is fine for now unless data is huge.
         const data = await apiRequest('/asistencias/all');
         hideLoading();
 
         if (data && data.data) {
             currentAsistencias = data.data;
-            renderAsistenciasTable(data.data);
+            renderCalendar();
         } else {
-            document.getElementById('asistenciasTableContainer').innerHTML =
-                '<p class="text-center text-muted">No se encontraron registros de asistencia</p>';
+            // If no data, still render the empty calendar
+            currentAsistencias = [];
+            renderCalendar();
         }
     } catch (error) {
         hideLoading();
-        document.getElementById('asistenciasTableContainer').innerHTML =
+        document.getElementById('calendarContainer').innerHTML =
             '<div class="alert alert-error">Error al cargar asistencias</div>';
     }
 }
 
-async function importAsistencia() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx, .xls';
-    fileInput.click();
-    fileInput.addEventListener('change', async () => {
-        if (!fileInput.files.length) {
-            showToast('Por favor, selecciona un archivo', 'warning');
-            return;
-        }
-        try {
-            showLoading();
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            const data = await apiRequest('/asistencias/import', {
-                method: 'POST',
-                body: formData
-            });
-            hideLoading();
-
-            if (data && data.data) {
-                currentAsistencias = data.data;
-                renderAsistenciasTable(data.data);
-            } else {
-                document.getElementById('asistenciasTableContainer').innerHTML =
-                    '<p class="text-center text-muted">No se encontraron registros de asistencia</p>';
-            }
-        } catch (error) {
-            hideLoading();
-            document.getElementById('asistenciasTableContainer').innerHTML =
-                '<div class="alert alert-error">Error al cargar asistencias</div>';
-        }
-    });
+function updateMonthDisplay() {
+    const display = document.getElementById('currentMonthDisplay');
+    if (display) {
+        // Capitalize first letter
+        const text = currentMonth.format('MMMM YYYY');
+        display.textContent = text.charAt(0).toUpperCase() + text.slice(1);
+    }
 }
 
-function renderAsistenciasTable(asistencias) {
-    const container = document.getElementById('asistenciasTableContainer');
+function renderCalendar() {
+    const container = document.getElementById('calendarContainer');
+    container.innerHTML = '';
 
-    if (asistencias.length === 0) {
-        container.innerHTML = '<p class="text-center text-muted">No hay registros de asistencia</p>';
-        return;
+    // headers
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    days.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-header-cell';
+        header.textContent = day;
+        container.appendChild(header);
+    });
+
+    const startOfMonth = currentMonth.startOf('month');
+    const endOfMonth = currentMonth.endOf('month');
+    const startDay = startOfMonth.day(); // 0 (Sunday) to 6 (Saturday)
+    const daysInMonth = currentMonth.daysInMonth();
+
+    // Fill empty slots before start of month
+    for (let i = 0; i < startDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day-cell empty';
+        container.appendChild(empty);
     }
 
-    const html = `
-        <div class="table-container">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Asistentes</th>
-                        <th>Día</th>
-                        <th>Notas</th>
-                        ${hasPermission('admin') ? '<th>Acciones</th>' : ''}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${asistencias.map(a => {
-        const fecha = dayjs(a.fecha).toDate();
-        const diaSemana = fecha.toLocaleDateString('es-MX', { weekday: 'long' });
-        const esFinde = fecha.getDay() === 0 || fecha.getDay() === 6;
+    // Fill days
+    for (let i = 1; i <= daysInMonth; i++) {
+        const date = currentMonth.date(i);
+        const dateStr = date.format('YYYY-MM-DD');
+        const asistencia = currentAsistencias.find(a => dayjs(a.fecha).format('YYYY-MM-DD') === dateStr);
+        const isToday = date.isSame(dayjs(), 'day');
 
-        return `
-                        <tr>
-                            <td>${dayjs(fecha).format('YYYY-MM-DD')}</td>
-                            <td><strong>${a.asistentes || ''}</strong></td>
-                            <td><span class="badge ${esFinde ? 'badge-info' : 'badge-success'}">${diaSemana}</span></td>
-                            <td>${a.notas || ''}</td>
-                            ${hasPermission('admin') ? `
-                                <td>
-                                    <div class="flex gap-sm">
-                                        <button class="btn btn-sm btn-secondary" onclick="window.editAsistencia(${a.id})">Editar</button>
-                                        <button class="btn btn-sm btn-danger" onclick="window.deleteAsistencia(${a.id})">Eliminar</button>
-                                    </div>
-                                </td>
-                            ` : ''}
-                        </tr>
-                    `}).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
+        const cell = document.createElement('div');
+        cell.className = `calendar-day-cell ${isToday ? 'today' : ''}`;
 
-    container.innerHTML = html;
+        // Add existing attendance content if any
+        let contentHtml = `<span class="calendar-date-number">${i}</span>`;
+        if (asistencia) {
+            const diaSemana = date.day();
+            const esFinde = diaSemana === 0 || diaSemana === 6; // Sun or Sat
+            contentHtml += `
+                <div class="calendar-day-content">
+                    <span class="attendance-badge ${esFinde ? 'weekend' : ''}">${asistencia.asistentes}</span>
+                    ${asistencia.notas ? `<span class="day-notes-indicator" title="${asistencia.notas}">📝</span>` : ''}
+                </div>
+             `;
+        }
+
+        cell.innerHTML = contentHtml;
+        cell.addEventListener('click', () => {
+            // Pass date object or existing record
+            if (asistencia) {
+                if (hasPermission('admin')) {
+                    showAsistenciaForm(asistencia);
+                } else {
+                    showToast('No tienes permisos para editar.', 'info');
+                }
+            } else {
+                if (hasPermission('admin')) {
+                    // Create new for this date
+                    showAsistenciaForm({ fecha: dateStr });
+                } else {
+                    showToast('No tienes permisos para registrar.', 'info');
+                }
+            }
+        });
+
+        container.appendChild(cell);
+    }
 }
 
 function showAsistenciaForm(asistencia = null) {
     const modal = document.getElementById('asistenciaFormModal');
-    const isEdit = asistencia !== null;
+    const isEdit = asistencia && asistencia.id;
 
-    // Format date for input (YYYY-MM-DD)
-    let fechaValue = dayjs().format('YYYY-MM-DD');
-    if (asistencia && asistencia.fecha) {
-        fechaValue = dayjs(asistencia.fecha).format('YYYY-MM-DD');
-    }
+    // Use passed date or today
+    let fechaValue = asistencia && asistencia.fecha ? asistencia.fecha : dayjs().format('YYYY-MM-DD');
+
+    // Determine title
+    const title = isEdit ? 'Editar Asistencia' : 'Registrar Asistencia';
 
     modal.innerHTML = `
         <div class="modal-overlay active">
             <div class="modal">
                 <div class="modal-header">
-                    <h3 class="modal-title">${isEdit ? 'Editar' : 'Registrar'} Asistencia</h3>
+                    <h3 class="modal-title">${title}</h3>
                     <button class="modal-close" id="closeFormModal">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -181,16 +182,27 @@ function showAsistenciaForm(asistencia = null) {
                         </div>
                         <div class="form-group">
                             <label class="form-label">Número de Asistentes</label>
-                            <input type="number" class="form-input" name="asistentes" min="0" value="${asistencia?.asistentes || ''}" required>
+                            <input type="number" class="form-input" name="asistentes" min="0" value="${asistencia?.asistentes || ''}" required autofocus>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Notas</label>
                             <textarea class="form-input" name="notas" rows="3">${asistencia?.notas || ''}</textarea>
                         </div>
+                        
+                        ${isEdit ? `
+                        <div class="flex justify-between items-center mt-lg border-t pt-md" style="border-color: rgba(255,255,255,0.1)">
+                             <button type="button" class="btn btn-sm btn-danger" id="deleteAsistenciaBtn">Eliminar Registro</button>
+                             <div class="flex gap-sm">
+                                <button type="button" class="btn btn-secondary" id="cancelFormBtn">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Actualizar</button>
+                             </div>
+                        </div>
+                        ` : `
                         <div class="flex justify-end gap-sm mt-lg">
                             <button type="button" class="btn btn-secondary" id="cancelFormBtn">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">${isEdit ? 'Actualizar' : 'Guardar'}</button>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
                         </div>
+                        `}
                     </form>
                 </div>
             </div>
@@ -199,6 +211,15 @@ function showAsistenciaForm(asistencia = null) {
 
     document.getElementById('closeFormModal').addEventListener('click', () => modal.innerHTML = '');
     document.getElementById('cancelFormBtn').addEventListener('click', () => modal.innerHTML = '');
+
+    if (isEdit) {
+        document.getElementById('deleteAsistenciaBtn').addEventListener('click', () => {
+            showConfirm('¿Estás seguro de que deseas eliminar este registro?', () => {
+                deleteAsistenciaById(asistencia.id);
+                document.getElementById('asistenciaFormModal').innerHTML = ''; // Close modal
+            });
+        });
+    }
 
     document.getElementById('asistenciaForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -209,7 +230,7 @@ function showAsistenciaForm(asistencia = null) {
         data.asistentes = parseInt(data.asistentes);
         data.fecha = dayjs(data.fecha).format('YYYY-MM-DD');
 
-        await saveAsistencia(data, asistencia?.id);
+        await saveAsistencia(data, isEdit ? asistencia.id : null);
     });
 }
 
@@ -258,16 +279,3 @@ async function deleteAsistenciaById(id) {
         hideLoading();
     }
 }
-
-window.editAsistencia = (id) => {
-    const asistencia = currentAsistencias.find(a => a.id === id);
-    if (asistencia) {
-        showAsistenciaForm(asistencia);
-    }
-};
-
-window.deleteAsistencia = (id) => {
-    showConfirm('¿Estás seguro de que deseas eliminar este registro?', () => {
-        deleteAsistenciaById(id);
-    });
-};
