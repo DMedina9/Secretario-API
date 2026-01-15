@@ -1,8 +1,8 @@
 // ============================================
 // CONFIGURACIÓN MODULE
 // ============================================
-
-import { apiRequest, showToast, showLoading, hideLoading, showConfirm } from '../app.js';
+import { getToken } from './auth.js';
+import { API_BASE_URL, apiRequest, showToast, showLoading, hideLoading, showConfirm } from '../app.js';
 
 let configuraciones = [];
 let users = [];
@@ -37,6 +37,53 @@ export async function renderConfiguracion(container) {
                         </table>
                     </div>
                     <button class="btn btn-primary mt-md" id="saveConfigBtn">Guardar Configuraciones</button>
+                </div>
+            </div>
+
+            <!-- Data Management Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Gestión de Datos</h3>
+                    <p class="card-subtitle">Importar y Exportar información del sistema</p>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-3 gap-lg mt-md">
+                        <div>
+                            <h4>Tablas</h4>
+                            <div class="flex gap-sm items-center">
+                                <div class="radio-group">
+                                    <label for="publicadores" class="radio-input">
+                                        <input id="publicadores" type="radio" name="dataTable" value="publicadores" checked>
+                                        Publicadores
+                                    </label>
+                                    <label for="informes" class="radio-input">
+                                        <input id="informes" type="radio" name="dataTable" value="informes">
+                                        Informes
+                                    </label>
+                                    <label for="asistencias" class="radio-input">
+                                        <input id="asistencias" type="radio" name="dataTable" value="asistencias">
+                                        Asistencias
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>Importar</h4>
+                            <p class="text-muted text-sm">Carga masiva desde Excel (.xlsx)</p>
+                            <div class="flex gap-sm items-center">
+                                <button class="btn btn-secondary" onclick="window.importData()">Importar</button>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>Exportar</h4>
+                            <p class="text-muted text-sm">Descargar datos actuales</p>
+                            <div class="flex gap-sm">
+                                <button class="btn btn-secondary btn-sm" onclick="window.exportData('xlsx')">Excel</button>
+                                <button class="btn btn-secondary btn-sm" onclick="window.exportData('json')">JSON</button>
+                                <button class="btn btn-secondary btn-sm" onclick="window.exportData('xml')">XML</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -129,7 +176,6 @@ export async function renderConfiguracion(container) {
 async function loadConfigurations() {
     try {
         const result = await apiRequest('/configuraciones/');
-        console.log(result);
         if (result && result.success && result.data) {
             configuraciones = result.data;
             renderConfigTable();
@@ -348,4 +394,110 @@ window.deleteUser = function (userId) {
             showToast('Error al eliminar usuario', 'error');
         }
     });
+};
+
+// ==========================================
+// DATA MANAGEMENT FUNCTIONS
+// ==========================================
+
+window.importData = async function () {
+    const section = document.querySelector('input[name="dataTable"]:checked').value;
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls';
+    fileInput.click();
+    fileInput.addEventListener('change', async () => {
+        if (!fileInput.files.length) {
+            showToast('Por favor, selecciona un archivo', 'warning');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            showLoading();
+            // Adjust endpoint based on section
+            const endpoint = `/${section}/import`;
+
+            const data = await apiRequest(endpoint, {
+                method: 'POST',
+                body: formData
+            });
+
+            hideLoading();
+
+            if (data && (data.success || data.message)) { // Some endpoints return message directly or in success
+                showToast('Importación completada con éxito', 'success');
+                fileInput.value = ''; // Clear input
+            } else {
+                showToast('Error en la importación', 'error');
+            }
+        } catch (error) {
+            hideLoading();
+            showToast('Error al importar: ' + error.message, 'error');
+        }
+    });
+};
+
+async function downloadFile(endpoint, filename = 'reporte.pdf') {
+    try {
+        showLoading();
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+        hideLoading();
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            showToast(errorData.error || 'Error al generar el archivo', 'error');
+            return;
+        }
+        // Get filename from Content-Disposition header if available
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+            if (filenameMatch) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        // Get the blob
+        const blob = await response.blob();
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('Archivo generado y descargado exitosamente', 'success');
+
+    } catch (error) {
+        hideLoading();
+        console.error('Error downloading file:', error);
+        showToast('Error al descargar el archivo: ' + error.message, 'error');
+    }
+}
+
+window.exportData = async function (format) {
+    try {
+        const section = document.querySelector('input[name="dataTable"]:checked').value;
+        let filename = `${section}_export.${format === 'excel' ? 'xlsx' : format}`;
+        await downloadFile(`/${section}/export?format=${format}`, filename);
+        return;
+    } catch (error) {
+        console.error('Error exporting data:', error);
+        showToast('Error al exportar datos: ' + error.message, 'error');
+    }
 };

@@ -2,6 +2,7 @@ import { Publicadores, Informes, sequelize, Configuracion } from '../common/mode
 import { QueryTypes } from 'sequelize'
 import xlsx from 'xlsx'
 import { sendEmail, createBulkReportEmailHTML } from '../common/services/emailService.mjs';
+import { handleExport } from '../common/utils/ExportHelper.mjs';
 // =====================================================================================
 // OBTENER INFORMES (RAW) - consulta compleja
 // =====================================================================================
@@ -49,6 +50,34 @@ const getInformes = async (req, res) => {
         res.json({ success: false, error: error.message })
     }
 }
+
+
+const exportInformes = async (req, res) => {
+    try {
+        const { format = 'xlsx' } = req.query;
+        const rows = await sequelize.query(`
+            SELECT 
+                p.nombre || ' ' || p.apellidos AS Nombre,
+                i.mes AS Mes,
+                i.mes_enviado AS 'Mes enviado',
+                CASE WHEN i.predico_en_el_mes = 1 THEN 'Sí' ELSE 'No' END AS 'Predicó en el mes',
+                i.cursos_biblicos AS 'Cursos bíblicos',
+                tp.descripcion AS 'Tipo Publicador',
+                i.horas AS Horas,
+                i.notas AS Notas,
+                i.horas_SS AS 'Horas S. S. (PR)'
+            FROM Informes i
+            LEFT JOIN Publicadores p ON i.id_publicador = p.id
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = i.id_tipo_publicador
+            ORDER BY i.mes DESC, p.apellidos, p.nombre
+        `, { type: QueryTypes.SELECT });
+
+        handleExport(res, rows, format, 'Informes');
+    } catch (error) {
+        console.error('Export Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 const importInformes = async (req, res) => {
     try {
@@ -240,5 +269,6 @@ export default {
     importInformes,
     updateInforme,
     deleteInforme,
-    upsertInformesBulk
+    upsertInformesBulk,
+    exportInformes
 };

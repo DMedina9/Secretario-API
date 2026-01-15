@@ -1,6 +1,26 @@
 import { Asistencias, sequelize } from '../common/models/Secretario.mjs'
 import { QueryTypes } from 'sequelize'
 import xlsx from 'xlsx'
+import { handleExport } from '../common/utils/ExportHelper.mjs';
+
+const exportAsistencias = async (req, res) => {
+    try {
+        const { format = 'xlsx' } = req.query;
+        const rows = await sequelize.query(`
+            SELECT 
+                fecha as Fecha,
+                asistentes as Asistentes,
+                notas as Notas
+            FROM Asistencias
+            ORDER BY fecha DESC
+        `, { type: QueryTypes.SELECT });
+
+        handleExport(res, rows, format, 'Asistencias');
+    } catch (error) {
+        console.error('Export Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 const getAsistencia = async (req, res) => {
     const asistencia = await Asistencias.findByPk(req.params.id);
@@ -135,5 +155,6 @@ export default {
     updateAsistencia,
     deleteAsistencia,
     uploadAsistencias,
-    importAsistencia
+    importAsistencia,
+    exportAsistencias
 };

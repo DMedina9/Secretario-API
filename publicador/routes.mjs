@@ -10,6 +10,7 @@ router.get('/all', check, has('admin'), PublicadorController.getPublicadores);
 router.post('/add', check, has('admin'), PublicadorController.addPublicador);
 router.put('/:id', check, has('admin'), PublicadorController.updatePublicador);
 router.delete('/:id', check, has('admin'), PublicadorController.deletePublicador);
+router.get('/export', check, has('admin'), PublicadorController.exportPublicadores);
 router.get('/grupo/:grupo', check, has('admin'), PublicadorController.getPublicadoresByGrupo);
 router.post('/import', check, has('admin'), upload.single('file'), PublicadorController.importPublicadores);
 

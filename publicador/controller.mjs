@@ -1,6 +1,7 @@
 import { Publicadores, Informes, Privilegio, TipoPublicador, sequelize } from '../common/models/Secretario.mjs';
 import { QueryTypes } from 'sequelize'
 import xlsx from 'xlsx'
+import { handleExport } from '../common/utils/ExportHelper.mjs';
 
 // =====================================================================================
 // OBTENER PRIVILEGIOS
@@ -70,6 +71,42 @@ const getPublicadores = async (req, res) => {
     }
 }
 
+const exportPublicadores = async (req, res) => {
+    try {
+        const { format = 'xlsx' } = req.query;
+        const rows = await sequelize.query(`
+            SELECT
+                p.nombre as Nombre,
+                p.apellidos as Apellidos,
+                p.fecha_nacimiento as 'Fecha de nacimiento',
+                p.fecha_bautismo as 'Fecha de bautismo',
+                p.grupo as Grupo,
+                CASE p.sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' ELSE '' END AS 'Sup. Grupo',
+                p.sexo as Sexo,
+                pr.descripcion as Privilegio,
+                tp.descripcion as 'Tipo Publicador',
+                CASE WHEN p.ungido = 1 THEN 'Sí' ELSE 'No' END as Ungido,
+                p.calle as Calle,
+                p.num as 'Núm',
+                p.colonia as Colonia,
+                p.telefono_fijo as 'Teléfono fijo',
+                p.telefono_movil as 'Teléfono móvil',
+                p.contacto_emergencia as 'Contacto de emergencia',
+                p.tel_contacto_emergencia as 'Tel. Contacto de emergencia',
+                p.correo_contacto_emergencia as 'Correo Contacto de emergencia'
+            FROM Publicadores p
+            LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador
+            ORDER BY grupo, apellidos, nombre
+        `, { type: QueryTypes.SELECT });
+
+        handleExport(res, rows, format, 'Publicadores');
+    } catch (error) {
+        console.error('Export Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 const importPublicadores = async (req, res) => {
     try {
         if (!req.file) {
@@ -121,7 +158,7 @@ const importPublicadores = async (req, res) => {
                 telefono_fijo: p['Teléfono fijo'],
                 telefono_movil: p['Teléfono móvil'],
                 contacto_emergencia: p['Contacto de emergencia'],
-                telefono_contacto_emergencia: p['Tel. Contacto de emergencia'],
+                tel_contacto_emergencia: p['Tel. Contacto de emergencia'],
                 correo_contacto_emergencia: p['Correo Contacto de emergencia']
             });
         }
@@ -178,6 +215,7 @@ export default {
     getAllPublicadores,
     getPublicadoresByGrupo,
     getPublicadores,
+    exportPublicadores,
     importPublicadores,
     addPublicador,
     updatePublicador,

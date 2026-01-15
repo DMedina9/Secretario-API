@@ -1,6 +1,10 @@
+import crypto from 'crypto';
 import sequelize from '../common/database.mjs';
 import defineUser from '../common/models/User.mjs';
 const User = defineUser(sequelize);
+
+const encryptPassword = (password) =>
+    crypto.createHash('sha256').update(password).digest('hex');
 
 const getUser = async (req, res) => {
     const user = await User.findByPk(req.user.userId);
@@ -23,7 +27,7 @@ const createUser = async (req, res) => {
         }
 
         // Hash password (simple hash - in production use bcrypt)
-        const hashedPassword = Buffer.from(password).toString('base64');
+        const hashedPassword = encryptPassword(password);
 
         const user = await User.create({
             username,
@@ -58,7 +62,7 @@ const updateUser = async (req, res) => {
         if (role) user.role = role;
         if (password) {
             // Hash new password
-            user.password = Buffer.from(password).toString('base64');
+            user.password = encryptPassword(password);
         }
 
         await user.save();

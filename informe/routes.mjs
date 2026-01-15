@@ -11,6 +11,7 @@ router.post('/import', check, has('admin'), upload.single('file'), InformeContro
 router.put('/:id', check, has('admin'), InformeController.updateInforme);
 router.delete('/:id', check, has('admin'), InformeController.deleteInforme);
 router.post('/bulk', check, has('admin'), InformeController.upsertInformesBulk);
+router.get('/export', check, has('admin'), InformeController.exportInformes);
 router.get('/:id_publicador/:anio_servicio', check, InformeController.getInformes);
 router.get('/:id_publicador/:anio_servicio/:mes', check, InformeController.getInformes);
 
