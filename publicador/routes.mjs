@@ -6,13 +6,13 @@ import { upload } from '../common/middlewares/upload.mjs';
 
 const router = express.Router();
 
-router.get('/all', check, has('admin'), PublicadorController.getPublicadores);
-router.post('/add', check, has('admin'), PublicadorController.addPublicador);
-router.put('/:id', check, has('admin'), PublicadorController.updatePublicador);
-router.delete('/:id', check, has('admin'), PublicadorController.deletePublicador);
-router.get('/export', check, has('admin'), PublicadorController.exportPublicadores);
-router.get('/grupo/:grupo', check, has('admin'), PublicadorController.getPublicadoresByGrupo);
-router.post('/import', check, has('admin'), upload.single('file'), PublicadorController.importPublicadores);
+router.get('/all', check, has('user'), PublicadorController.getPublicadores);
+router.post('/add', check, has('user'), PublicadorController.addPublicador);
+router.put('/:id', check, has('user'), PublicadorController.updatePublicador);
+router.delete('/:id', check, has('user'), PublicadorController.deletePublicador);
+router.get('/export', check, has('user'), PublicadorController.exportPublicadores);
+router.get('/grupo/:grupo', check, has('user'), PublicadorController.getPublicadoresByGrupo);
+router.post('/import', check, has('user'), upload.single('file'), PublicadorController.importPublicadores);
 
 // Get privilegios
 router.get('/privilegios', check, async (req, res) => {
