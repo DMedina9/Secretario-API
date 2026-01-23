@@ -252,13 +252,13 @@ async function loadS3Report() {
                                 <tbody>
                                     ${rows.map(row => `
                                         <tr>
-                                            <td>${row.month}</td>
-                                            <td>${row.year}</td>
-                                            <td>${row.semana_1 || '-'}</td>
-                                            <td>${row.semana_2 || '-'}</td>
-                                            <td>${row.semana_3 || '-'}</td>
-                                            <td>${row.semana_4 || '-'}</td>
-                                            <td>${row.semana_5 || '-'}</td>
+                                            <td data-label="Mes">${row.month}</td>
+                                            <td data-label="Año">${row.year}</td>
+                                            <td data-label="Semana 1">${row.semana_1 || '-'}</td>
+                                            <td data-label="Semana 2">${row.semana_2 || '-'}</td>
+                                            <td data-label="Semana 3">${row.semana_3 || '-'}</td>
+                                            <td data-label="Semana 4">${row.semana_4 || '-'}</td>
+                                            <td data-label="Semana 5">${row.semana_5 || '-'}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>

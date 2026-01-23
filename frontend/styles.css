@@ -1354,6 +1354,34 @@ input:checked+.slider:before {
     }
 }
 
+@media (max-width: 768px) {
+    .container {
+        padding: var(--space-xs);
+    }
+
+    .card {
+        padding: var(--space-xs);
+        font-size: var(--font-size-xs);
+        border-radius: var(--border-radius-sm);
+    }
+
+    .calendar-header-cell {
+        font-size: var(--font-size-xs);
+    }
+
+    .calendar-controls {
+        padding: var(--space-xs);
+    }
+
+    .radio-group {
+        font-size: var(--font-size-xs);
+    }
+
+    .flex.gap-sm.items-center {
+        align-items: center;
+    }
+}
+
 .radio-input {
     background-color: transparent;
     border: none;

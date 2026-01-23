@@ -52,9 +52,6 @@ export async function renderFillPDF(container) {
                     <button class="btn btn-secondary" id="downloadFromViewerBtn" style="display: none;">
                         <span>📥</span> Descargar
                     </button>
-                    <button class="btn btn-secondary" id="downloadAllFromViewerBtn">
-                        <span>🔄</span> Descargar todos
-                    </button>
                 </div>
                 
                 <!-- PDF Container -->
@@ -79,22 +76,18 @@ export async function renderFillPDF(container) {
     document.getElementById('prevPageBtn').addEventListener('click', () => changePage(-1));
     document.getElementById('nextPageBtn').addEventListener('click', () => changePage(1));
     document.getElementById('downloadFromViewerBtn').addEventListener('click', downloadCurrentPDF);
-    document.getElementById('downloadAllFromViewerBtn').addEventListener('click', downloadAllPDFs);
 
     document.getElementById('viewerTipo').addEventListener('change', () => {
         const tipo = document.getElementById('viewerTipo').value;
         if (tipo === 'S21I') {
             document.getElementById('viewerPublicadorContainer').style.display = 'block';
             document.getElementById('viewerTipoPublicadorContainer').style.display = 'none';
-            document.getElementById('downloadAllFromViewerBtn').style.display = 'block';
         } else if (tipo === 'S21T') {
             document.getElementById('viewerPublicadorContainer').style.display = 'none';
             document.getElementById('viewerTipoPublicadorContainer').style.display = 'block';
-            document.getElementById('downloadAllFromViewerBtn').style.display = 'block';
         } else {
             document.getElementById('viewerPublicadorContainer').style.display = 'none';
             document.getElementById('viewerTipoPublicadorContainer').style.display = 'none';
-            document.getElementById('downloadAllFromViewerBtn').style.display = 'none';
         }
     });
     // Load data for selects
@@ -143,86 +136,6 @@ async function loadPublicadores() {
     } catch (error) {
         console.error('Error loading publicadores:', error);
         select.innerHTML = '<option value="">Error al cargar publicadores</option>';
-    }
-}
-
-// ============================================
-// PDF DOWNLOAD HELPER
-// ============================================
-
-async function downloadFile(endpoint, params, filename = 'reporte.pdf') {
-    try {
-        showLoading();
-
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
-            body: JSON.stringify(params)
-        });
-        hideLoading();
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            showToast(errorData.error || 'Error al generar el PDF', 'error');
-            return;
-        }
-        // Get filename from Content-Disposition header if available
-        const contentDisposition = response.headers.get('Content-Disposition');
-        if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-            if (filenameMatch) {
-                filename = filenameMatch[1];
-            }
-        }
-
-        // Get the blob
-        const blob = await response.blob();
-
-        // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-
-        // Cleanup
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        showToast('Archivo generado y descargado exitosamente', 'success');
-
-    } catch (error) {
-        hideLoading();
-        console.error('Error downloading PDF:', error);
-        showToast('Error al descargar el PDF: ' + error.message, 'error');
-    }
-}
-
-// ============================================
-// GENERATE FUNCTIONS
-// ============================================
-
-async function downloadAllPDFs() {
-    const tipo = document.getElementById('viewerTipo').value;
-    const year = document.getElementById('viewerYear').value || getAnioServicio();
-
-    if (!year) {
-        showToast('Por favor ingresa un año', 'warning');
-        return;
-    }
-
-    if (tipo === 'S21I') {
-        await downloadFile('/fillpdf/get-s21', {
-            anio: parseInt(year)
-        }, `S21_${year}_Por_Publicador.zip`);
-    } else if (tipo === 'S21T') {
-        await downloadFile('/fillpdf/get-s21-totales', {
-            anio: parseInt(year)
-        }, `S21_${year}_Por_Tipo_de_Publicador.zip`);
     }
 }
 
@@ -314,7 +227,7 @@ async function viewPDF() {
         if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
             if (filenameMatch) {
-                currentFileName = filenameMatch[1];
+                currentFileName = filenameMatch[1].trim().replace(/"/g, '');
             }
         }
 

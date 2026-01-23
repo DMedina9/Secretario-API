@@ -85,7 +85,7 @@ router.get('/get-s88/:anio', check, async (req, res) => {
             // Configurar la respuesta HTTP para la descarga
             res.set({
                 'Content-Type': 'application/zip',
-                'Content-Disposition': 'attachment; filename="' + result.fileName + '"',
+                'Content-Disposition': 'attachment; filename="' + result.fileName.replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/Á/g, 'A').replace(/É/g, 'E').replace(/Í/g, 'I').replace(/Ó/g, 'O').replace(/Ú/g, 'U') + '"',
                 'Content-Length': zipBytes.length
             });
 
@@ -97,7 +97,7 @@ router.get('/get-s88/:anio', check, async (req, res) => {
             // Configurar la respuesta HTTP para la descarga
             res.set({
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': 'attachment; filename="' + result.fileName + '"',
+                'Content-Disposition': 'attachment; filename="' + result.fileName.replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/Á/g, 'A').replace(/É/g, 'E').replace(/Í/g, 'I').replace(/Ó/g, 'O').replace(/Ú/g, 'U') + '"',
                 'Content-Length': pdfBytes.length
             });
 

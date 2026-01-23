@@ -2,7 +2,7 @@
 // CONFIGURACIÓN MODULE
 // ============================================
 import { getToken } from './auth.js';
-import { API_BASE_URL, apiRequest, showToast, showLoading, hideLoading, showConfirm } from '../app.js';
+import { API_BASE_URL, apiRequest, showToast, showLoading, hideLoading, showConfirm, getAnioServicio } from '../app.js';
 
 let configuraciones = [];
 let users = [];
@@ -53,11 +53,11 @@ export async function renderConfiguracion(container) {
                             <div class="flex gap-sm items-center">
                                 <div class="radio-group">
                                     <label for="publicadores" class="radio-input">
-                                        <input id="publicadores" type="radio" name="dataTable" value="publicadores" checked>
+                                        <input id="publicadores" type="radio" name="dataTable" value="publicador" checked>
                                         Publicadores
                                     </label>
                                     <label for="informes" class="radio-input">
-                                        <input id="informes" type="radio" name="dataTable" value="informes">
+                                        <input id="informes" type="radio" name="dataTable" value="informe">
                                         Informes
                                     </label>
                                     <label for="asistencias" class="radio-input">
@@ -70,7 +70,7 @@ export async function renderConfiguracion(container) {
                         <div>
                             <h4>Importar</h4>
                             <p class="text-muted text-sm">Carga masiva desde Excel (.xlsx)</p>
-                            <div class="flex gap-sm items-center">
+                            <div class="flex gap-sm">
                                 <button class="btn btn-secondary" onclick="window.importData()">Importar</button>
                             </div>
                         </div>
@@ -78,15 +78,25 @@ export async function renderConfiguracion(container) {
                             <h4>Exportar</h4>
                             <p class="text-muted text-sm">Descargar datos actuales</p>
                             <div class="flex gap-sm">
-                                <button class="btn btn-secondary btn-sm" onclick="window.exportData('xlsx')">Excel</button>
-                                <button class="btn btn-secondary btn-sm" onclick="window.exportData('json')">JSON</button>
-                                <button class="btn btn-secondary btn-sm" onclick="window.exportData('xml')">XML</button>
+                                <button class="btn btn-secondary" onclick="window.exportData('xlsx')">Excel</button>
+                                <button class="btn btn-secondary" onclick="window.exportData('json')">JSON</button>
+                                <button class="btn btn-secondary" onclick="window.exportData('xml')">XML</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Descargar S-21</h3>
+                    <p class="card-subtitle">Descargar todos los informes S-21</p>
+                </div>
+                <div class="card-body">
+                    <div class="flex gap-sm">
+                        <button class="btn btn-secondary" id="downloadAllS21Btn">Descargar todos los S-21</button>
+                    </div>
+                </div>
+            </div>
             <!-- Users Card -->
             <div class="card">
                 <div class="card-header">
@@ -167,6 +177,7 @@ export async function renderConfiguracion(container) {
     document.getElementById('createUserBtn').addEventListener('click', showCreateUserForm);
     document.getElementById('cancelUserBtn').addEventListener('click', hideUserForm);
     document.getElementById('saveUserBtn').addEventListener('click', saveUser);
+    document.getElementById('downloadAllS21Btn').addEventListener('click', downloadAllS21);
 
     // Load data
     await loadConfigurations();
@@ -196,8 +207,8 @@ function renderConfigTable() {
 
     tbody.innerHTML = configuraciones.map(config => `
         <tr>
-            <td><strong>${config.clave}</strong></td>
-            <td>
+            <td data-label="Clave"><strong>${config.clave.replace(/_/g, ' ')}</strong></td>
+            <td data-label="Valor">
                 <input id="${config.clave}" type="${config.tipo || 'text'}"
                        class="form-input" 
                        data-key="${config.clave}" 
@@ -238,6 +249,23 @@ async function saveConfigurations() {
     }
 }
 
+// ============================================
+// GENERATE FUNCTIONS
+// ============================================
+
+async function downloadAllS21() {
+    const year = getAnioServicio();
+
+    if (!year) {
+        showToast('No se ha seleccionado un año', 'warning');
+        return;
+    }
+
+    await downloadFile('/fillpdf/get-s21', {
+        anio: parseInt(year)
+    }, `S21_${year}_Por_Publicador.zip`);
+}
+
 async function loadUsers() {
     try {
         const result = await apiRequest('/user/all');
@@ -262,13 +290,13 @@ function renderUsersTable() {
 
     tbody.innerHTML = users.map(user => `
         <tr>
-            <td>${user.id}</td>
-            <td>${user.username}</td>
-            <td>${user.email}</td>
-            <td>${user.firstName}</td>
-            <td>${user.lastName}</td>
-            <td><span class="badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'}">${user.role}</span></td>
-            <td>
+            <td data-label="ID">${user.id}</td>
+            <td data-label="Usuario">${user.username}</td>
+            <td data-label="Email">${user.email}</td>
+            <td data-label="Nombre">${user.firstName}</td>
+            <td data-label="Apellido">${user.lastName}</td>
+            <td data-label="Rol"><span class="badge ${user.role === 'admin' ? 'badge-primary' : 'badge-secondary'}">${user.role}</span></td>
+            <td data-label="Acciones">
                 <button class="btn btn-sm btn-secondary" onclick="window.editUser(${user.id})">Editar</button>
                 <button class="btn btn-sm btn-danger" onclick="window.deleteUser(${user.id})">Eliminar</button>
             </td>
@@ -440,21 +468,26 @@ window.importData = async function () {
     });
 };
 
-async function downloadFile(endpoint, filename = 'reporte.pdf') {
+async function downloadFile(endpoint, params, filename = 'reporte.pdf') {
     try {
         showLoading();
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const options = {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${getToken()}`
             }
-        });
+        };
+        if (params) {
+            options.method = 'POST';
+            options.body = JSON.stringify(params);
+        }
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
         hideLoading();
 
         if (!response.ok) {
             const errorData = await response.json();
-            showToast(errorData.error || 'Error al generar el archivo', 'error');
+            showToast(errorData.error || 'Error al descargar el archivo', 'error');
             return;
         }
         // Get filename from Content-Disposition header if available
@@ -462,7 +495,7 @@ async function downloadFile(endpoint, filename = 'reporte.pdf') {
         if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
             if (filenameMatch) {
-                filename = filenameMatch[1];
+                filename = filenameMatch[1].trim().replace(/"/g, '');
             }
         }
 
@@ -490,11 +523,14 @@ async function downloadFile(endpoint, filename = 'reporte.pdf') {
     }
 }
 
+// ============================================
+// EXPORT DATA
+// ============================================
 window.exportData = async function (format) {
     try {
         const section = document.querySelector('input[name="dataTable"]:checked').value;
         let filename = `${section}_export.${format === 'excel' ? 'xlsx' : format}`;
-        await downloadFile(`/${section}/export?format=${format}`, filename);
+        await downloadFile(`/${section}/export?format=${format}`, null, filename);
         return;
     } catch (error) {
         console.error('Error exporting data:', error);

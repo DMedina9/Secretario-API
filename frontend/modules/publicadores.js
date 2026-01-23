@@ -17,7 +17,6 @@ export async function renderPublicadores(container) {
         ${hasPermission('admin') ? `
             <div class="flex justify-between items-center mb-lg">
                 <button class="btn btn-primary" id="addPublicadorBtn">+ Agregar Publicador</button>
-                <button class="btn btn-primary" id="importPublicadorBtn">Importar Publicadores</button>
             </div>
         ` : ''}
         
@@ -43,12 +42,6 @@ export async function renderPublicadores(container) {
         addBtn.addEventListener('click', () => showPublicadorForm());
     }
 
-    // Setup import button
-    const importBtn = document.getElementById('importPublicadorBtn');
-    if (importBtn) {
-        importBtn.addEventListener('click', () => importPublicadores());
-    }
-
     // Load publicadores
     await loadPublicadores();
 }
@@ -72,44 +65,6 @@ async function loadPublicadores() {
             '<div class="alert alert-error">Error al cargar publicadores</div>';
     }
 }
-
-async function importPublicadores() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx, .xls';
-    fileInput.click();
-    fileInput.addEventListener('change', async () => {
-        if (!fileInput.files.length) {
-            showToast('Por favor, selecciona un archivo', 'warning');
-            return;
-        }
-        try {
-            showLoading();
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            const data = await apiRequest('/publicador/import', {
-                method: 'POST',
-                body: formData
-            });
-            hideLoading();
-
-            if (data && data.data) {
-                currentPublicadores = data.data;
-                renderPublicadoresTable(data.data);
-            } else {
-                document.getElementById('publicadoresTableContainer').innerHTML =
-                    '<p class="text-center text-muted">No se encontraron registros de publicadores</p>';
-            }
-        } catch (error) {
-            hideLoading();
-            document.getElementById('publicadoresTableContainer').innerHTML =
-                '<div class="alert alert-error">Error al cargar publicadores</div>';
-        }
-    });
-}
-
-let editingPublicadorId = null; // Track which publicador is being edited
 
 function renderPublicadoresTable(publicadores) {
     const container = document.getElementById('publicadoresTableContainer');
@@ -161,6 +116,8 @@ function renderPublicadoresTable(publicadores) {
 
     container.innerHTML = html;
 }
+
+let editingPublicadorId = null; // Track which publicador is being edited
 
 // Enter edit mode for a specific publicador
 window.editPublicadorInline = (id, index) => {

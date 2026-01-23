@@ -78,7 +78,6 @@ export async function renderInformes(container) {
         ${hasPermission('admin') ? `
             <div class="flex justify-between items-center mb-lg">
                 <button class="btn btn-primary" id="addInformeBtn">+ Agregar Informe</button>
-                <button class="btn btn-primary" id="importInformeBtn">Importar Informes</button>
             </div>
         ` : ''}
         
@@ -114,10 +113,6 @@ export async function renderInformes(container) {
         addBtn.addEventListener('click', () => showInformeForm());
     }
 
-    const importBtn = document.getElementById('importInformeBtn');
-    if (importBtn) {
-        importBtn.addEventListener('click', () => importInformes());
-    }
     document.querySelectorAll('.tablinks').forEach(tab => {
         tab.addEventListener('click', function (event) {
             openTab(event, this.getAttribute('tab-name'));
@@ -194,47 +189,6 @@ async function loadInformes(anio = '', idPublicador = '') {
         document.getElementById('informesTableContainer').innerHTML =
             '<div class="alert alert-error">Error al cargar informes</div>';
     }
-}
-
-async function importInformes() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx, .xls';
-    fileInput.click();
-    fileInput.addEventListener('change', async () => {
-        if (!fileInput.files.length) {
-            showToast('Por favor, selecciona un archivo', 'warning');
-            return;
-        }
-        try {
-            showLoading();
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            const data = await apiRequest('/informe/import', {
-                method: 'POST',
-                body: formData
-            });
-            hideLoading();
-            if (data && data.data) {
-                currentInformes = data.data;
-                renderInformesTable(data.data);
-                const month = document.getElementById('bulkMonth').value;
-                const group = document.getElementById('bulkGroup').value;
-
-                if (month && group) {
-                    loadBulkEditor();
-                }
-            } else {
-                document.getElementById('informesTableContainer').innerHTML =
-                    '<p class="text-center text-muted">No se encontraron informes</p>';
-            }
-        } catch (error) {
-            hideLoading();
-            document.getElementById('informesTableContainer').innerHTML =
-                '<div class="alert alert-error">Error al cargar informes</div>';
-        }
-    });
 }
 
 function renderInformesTable(informes) {
