@@ -21,8 +21,13 @@ export async function renderPublicadores(container) {
         ` : ''}
         
         <div class="card">
-            <div class="card-header">
+            <div class="card-header flex justify-between items-center" style="flex-wrap: wrap; gap: 1rem;">
                 <h3 class="card-title">Lista de Publicadores</h3>
+                <div class="search-container" style="flex-grow: 1; max-width: 400px; position: relative;">
+                    <input type="text" id="searchPublicador" class="form-input" placeholder="Buscar publicador..." list="publicador-suggestions" style="width: 100%; padding-right: 2.5rem;">
+                    <button id="clearSearchBtn" class="btn-icon" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-secondary); display: none;">&times;</button>
+                    <datalist id="publicador-suggestions"></datalist>
+                </div>
             </div>
             <div class="card-body">
                 <div id="publicadoresTableContainer">
@@ -42,6 +47,27 @@ export async function renderPublicadores(container) {
         addBtn.addEventListener('click', () => showPublicadorForm());
     }
 
+    // Setup search filter
+    const searchInput = document.getElementById('searchPublicador');
+    const clearBtn = document.getElementById('clearSearchBtn');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            filterPublicadores(term);
+            if (clearBtn) clearBtn.style.display = term ? 'block' : 'none';
+        });
+
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                filterPublicadores('');
+                clearBtn.style.display = 'none';
+                searchInput.focus();
+            });
+        }
+    }
+
     // Load publicadores
     await loadPublicadores();
 }
@@ -54,6 +80,7 @@ async function loadPublicadores() {
 
         if (data && data.data) {
             currentPublicadores = data.data;
+            populateDatalist(data.data);
             renderPublicadoresTable(data.data);
         } else {
             document.getElementById('publicadoresTableContainer').innerHTML =
@@ -64,6 +91,34 @@ async function loadPublicadores() {
         document.getElementById('publicadoresTableContainer').innerHTML =
             '<div class="alert alert-error">Error al cargar publicadores</div>';
     }
+}
+
+function populateDatalist(publicadores) {
+    const datalist = document.getElementById('publicador-suggestions');
+    if (!datalist) return;
+
+    // Clear existing options
+    datalist.innerHTML = '';
+
+    publicadores.forEach(p => {
+        const option = document.createElement('option');
+        option.value = `${p.nombre} ${p.apellidos}`;
+        datalist.appendChild(option);
+    });
+}
+
+function filterPublicadores(term) {
+    if (!term) {
+        renderPublicadoresTable(currentPublicadores);
+        return;
+    }
+
+    const filtered = currentPublicadores.filter(p => {
+        const fullName = `${p.nombre} ${p.apellidos}`.toLowerCase();
+        return fullName.includes(term);
+    });
+
+    renderPublicadoresTable(filtered);
 }
 
 function renderPublicadoresTable(publicadores) {
