@@ -5,6 +5,8 @@
 import { getToken } from './auth.js';
 import { API_BASE_URL, apiRequest, showToast, showLoading, hideLoading, getAnioServicio } from '../app.js';
 
+let publicadoresList = [];
+
 export async function renderFillPDF(container) {
     container.innerHTML = `
         <div class="page-header">
@@ -33,9 +35,8 @@ export async function renderFillPDF(container) {
                     </div>
                     <div class="form-group" id="viewerPublicadorContainer">
                         <label class="form-label">Publicador</label>
-                        <select class="form-select" id="viewerPublicador">
-                            <option value="">Cargando...</option>
-                        </select>
+                        <input class="form-input" list="viewerPublicadorList" id="viewerPublicador" placeholder="Escribe para buscar..." autocomplete="off">
+                        <datalist id="viewerPublicadorList"></datalist>
                     </div>
                     <div class="form-group" id="viewerTipoPublicadorContainer" style="display: none;">
                         <label class="form-label">Tipo de Publicador</label>
@@ -69,6 +70,19 @@ export async function renderFillPDF(container) {
                 </div>
             </div>
         </div>
+        
+        <!-- General Report Card -->
+        <div class="card mt-lg" style="margin-top: var(--space-lg);">
+            <div class="card-header">
+                <h3 class="card-title">📊 Reporte General</h3>
+                <p class="card-subtitle">Descarga el reporte completo en Excel con datos del sistema</p>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-success" id="downloadGeneralReportBtn" style="background-color: #28a745; border-color: #28a745;">
+                    <span>📑</span> Descargar Reporte Completo (.xlsx)
+                </button>
+            </div>
+        </div>
     `;
 
     // Setup button handlers
@@ -76,6 +90,7 @@ export async function renderFillPDF(container) {
     document.getElementById('prevPageBtn').addEventListener('click', () => changePage(-1));
     document.getElementById('nextPageBtn').addEventListener('click', () => changePage(1));
     document.getElementById('downloadFromViewerBtn').addEventListener('click', downloadCurrentPDF);
+    document.getElementById('downloadGeneralReportBtn').addEventListener('click', downloadGeneralReport);
 
     document.getElementById('viewerTipo').addEventListener('change', () => {
         const tipo = document.getElementById('viewerTipo').value;
@@ -123,19 +138,21 @@ async function loadTiposPublicador() {
 }
 
 async function loadPublicadores() {
-    const select = document.getElementById('viewerPublicador');
+    const datalist = document.getElementById('viewerPublicadorList');
+    // Also clear input just in case
+    document.getElementById('viewerPublicador').value = '';
 
     try {
         const data = await apiRequest('/publicador/all');
 
         if (data && data.success && data.data) {
-            select.innerHTML = data.data.map(pub => `<option value="${pub.id}">${pub.nombre} ${pub.apellidos}</option>`).join('');
+            publicadoresList = data.data; // Store for later lookup
+            datalist.innerHTML = data.data.map(pub => `<option value="${pub.nombre} ${pub.apellidos}">`).join('');
         } else {
-            select.innerHTML = '<option value="">Error al cargar publicadores</option>';
+            console.error('Error loading publicadores: data format incorrect');
         }
     } catch (error) {
         console.error('Error loading publicadores:', error);
-        select.innerHTML = '<option value="">Error al cargar publicadores</option>';
     }
 }
 
@@ -157,18 +174,29 @@ if (typeof pdfjsLib !== 'undefined') {
 async function viewPDF() {
     const tipo = document.getElementById('viewerTipo').value;
     const year = document.getElementById('viewerYear').value || getAnioServicio();
-    const publicadorId = document.getElementById('viewerPublicador').value;
-    const publicadorName = document.getElementById('viewerPublicador').options[document.getElementById('viewerPublicador').selectedIndex].text;
+    const publicadorName = document.getElementById('viewerPublicador').value;
+
+    // Find ID from name
+    let publicadorId = null;
+    if (publicadorName) {
+        const foundPub = publicadoresList.find(p => `${p.nombre} ${p.apellidos}` === publicadorName);
+        if (foundPub) {
+            publicadorId = foundPub.id;
+        }
+    }
+
     const tipoPublicadorId = document.getElementById('viewerTipoPublicador').value;
-    const tipoPublicadorName = document.getElementById('viewerTipoPublicador').options[document.getElementById('viewerTipoPublicador').selectedIndex].text;
+    const tipoPublicadorName = document.getElementById('viewerTipoPublicador').options[document.getElementById('viewerTipoPublicador').selectedIndex]?.text || '';
 
     if (!year) {
         showToast('Por favor ingresa un año', 'warning');
         return;
     }
-    if (tipo === 'S21I' && !publicadorId) {
-        showToast('Por favor selecciona un publicador', 'warning');
-        return;
+    if (tipo === 'S21I') {
+        if (!publicadorId) {
+            showToast('Por favor selecciona un publicador válido de la lista', 'warning');
+            return;
+        }
     } else if (tipo === 'S21T' && !tipoPublicadorId) {
         showToast('Por favor selecciona un tipo de publicador', 'warning');
         return;
@@ -328,4 +356,46 @@ function downloadCurrentPDF() {
     document.body.removeChild(a);
 
     showToast('PDF descargado', 'success');
+}
+
+async function downloadGeneralReport() {
+    try {
+        showLoading();
+        const response = await fetch(`${API_BASE_URL}/secretario/export/template`, {
+            headers: {
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || 'Error al descargar el reporte');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        // Get filename from header if possible
+        let filename = `Reporte_General_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?(.+)"?/);
+            if (match) filename = match[1].replace(/"/g, '');
+        }
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('Reporte descargado exitosamente', 'success');
+    } catch (error) {
+        console.error('Error downloading report:', error);
+        showToast(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
 }

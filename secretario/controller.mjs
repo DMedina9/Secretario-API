@@ -7,6 +7,13 @@ import {
     Informes
 } from '../common/models/Secretario.mjs'
 import { Op, QueryTypes } from 'sequelize'
+import XlsxPopulate from 'xlsx-populate'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { Publicadores, Asistencias } from '../common/models/Secretario.mjs'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // =====================================================================================
 // INSERTAR PRIVILEGIOS
@@ -372,3 +379,101 @@ export const getS10 = async (anio) => {
     }
 }
 
+
+// =====================================================================================
+// EXPORTAR PLANTILLA REPORTE
+// =====================================================================================
+export const exportarPlantilla = async () => {
+    try {
+        const templatePath = path.join(__dirname, '../resources/plantillas/Reporte.xlsx')
+
+        // 1. Leer la plantilla con XlsxPopulate
+        const workbook = await XlsxPopulate.fromFileAsync(templatePath);
+
+        // 2. Obtener Datos
+        // Publicadores
+        const publicadores = await sequelize.query(`
+            SELECT
+                p.nombre AS Nombre,
+                tp.descripcion AS 'Tipo Publicador',
+                pr.descripcion AS Privilegio,
+                p.fecha_nacimiento AS 'Fecha de nacimiento',
+                p.fecha_bautismo AS 'Fecha de bautismo',
+                p.grupo AS Grupo,
+                CASE p.sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' ELSE '' END AS 'Sup. Grupo',
+                p.sexo AS Sexo,
+                CASE WHEN p.ungido = 1 THEN 'Sí' ELSE '' END AS Ungido,
+                p.calle AS Calle,
+                p.num AS 'Núm',
+                p.colonia AS Colonia,
+                p.telefono_fijo AS 'Teléfono fijo',
+                p.telefono_movil AS 'Teléfono móvil',
+                p.contacto_emergencia AS 'Contacto de emergencia',
+                p.tel_contacto_emergencia AS 'Tel. Contacto de emergencia',
+                p.correo_contacto_emergencia AS 'Correo Contacto de emergencia'
+            FROM Publicadores p
+            LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador
+            ORDER BY grupo, apellidos, nombre
+        `, { type: QueryTypes.SELECT })
+
+        // Informes
+        const informes = await sequelize.query(`
+            SELECT
+                p.nombre AS Nombre,
+                tp.descripcion AS 'Tipo Publicador',
+                i.mes AS Mes,
+                i.mes_enviado AS 'Mes enviado',
+                i.predico_en_el_mes AS 'Predicó en el mes',
+                i.cursos_biblicos AS 'Cursos bíblicos',
+                i.horas AS Horas,
+                i.notas AS Notas,
+                i.horas_SS AS 'Horas S. S. (PR)'
+            FROM Informes i
+            LEFT JOIN Publicadores p ON p.id = i.id_publicador
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = i.id_tipo_publicador
+            ORDER BY i.mes DESC, p.apellidos, p.nombre
+        `, { type: QueryTypes.SELECT })
+
+        // Asistencias
+        const asistencias = await sequelize.query(`
+            SELECT
+                fecha AS Fecha,
+                asistentes AS Asistentes,
+                notas AS Notas
+            FROM Asistencias
+            ORDER BY fecha DESC
+        `, { type: QueryTypes.SELECT })
+
+        // 3. Escribir en las hojas correspondientes
+        const writeToSheet = (sheetName, data) => {
+            const sheet = workbook.sheet(sheetName);
+            if (!sheet) return;
+
+            // Iniciar en fila 2
+            let rowNumber = 2;
+
+            data.forEach(item => {
+                const values = Object.values(item);
+                // XlsxPopulate usa indices 1-based
+                values.forEach((val, index) => {
+                    sheet.cell(rowNumber, index + 1).value(val);
+                });
+                rowNumber++;
+            });
+        }
+
+        writeToSheet('Publicadores', publicadores)
+        writeToSheet('Informes', informes)
+        writeToSheet('Asistencias', asistencias)
+
+        // 4. Generar buffer
+        const buffer = await workbook.outputAsync();
+
+        return { success: true, data: buffer }
+
+    } catch (error) {
+        console.error('Error exportando plantilla:', error)
+        return { success: false, error: 'Error exportando plantilla: ' + error.message }
+    }
+}

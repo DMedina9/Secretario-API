@@ -66,5 +66,21 @@ router.post('/init-tipos', check, async (req, res) => {
         res.json({ success: false, error: error.message });
     }
 });
+// Export Template
+router.get('/export/template', check, async (req, res) => {
+    try {
+        const result = await SecretarioController.exportarPlantilla();
+        if (result.success) {
+            const filename = `Reporte_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.send(result.data);
+        } else {
+            res.status(500).json(result);
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 export default router;

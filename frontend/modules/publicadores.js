@@ -6,6 +6,7 @@ import { apiRequest, showToast, showLoading, hideLoading, showConfirm } from '..
 import { hasPermission } from './auth.js';
 
 let currentPublicadores = [];
+let filteredPublicadores = [];
 
 export async function renderPublicadores(container) {
     container.innerHTML = `
@@ -80,6 +81,7 @@ async function loadPublicadores() {
 
         if (data && data.data) {
             currentPublicadores = data.data;
+            filteredPublicadores = data.data;
             populateDatalist(data.data);
             renderPublicadoresTable(data.data);
         } else {
@@ -113,12 +115,12 @@ function filterPublicadores(term) {
         return;
     }
 
-    const filtered = currentPublicadores.filter(p => {
+    filteredPublicadores = currentPublicadores.filter(p => {
         const fullName = `${p.nombre} ${p.apellidos}`.toLowerCase();
         return fullName.includes(term);
     });
 
-    renderPublicadoresTable(filtered);
+    renderPublicadoresTable(filteredPublicadores);
 }
 
 function renderPublicadoresTable(publicadores) {
@@ -177,7 +179,7 @@ let editingPublicadorId = null; // Track which publicador is being edited
 // Enter edit mode for a specific publicador
 window.editPublicadorInline = (id, index) => {
     editingPublicadorId = id;
-    const p = currentPublicadores[index];
+    const p = filteredPublicadores[index];
 
     document.getElementById('pub-row-' + p.id).innerHTML = `
         <td data-label="Nombre">
@@ -280,7 +282,7 @@ window.editPublicadorInline = (id, index) => {
 }
 // Cancel editing and return to read mode
 window.cancelEditPublicador = (index) => {
-    const p = currentPublicadores[index];
+    const p = filteredPublicadores[index];
     document.getElementById('pub-row-' + p.id).innerHTML = renderPublicador(p, index);
     editingPublicadorId = null;
 };
@@ -321,19 +323,19 @@ const renderPublicador = (p, index, isAdmin) => {
 };
 // Update publicador field in memory
 window.updatePublicador = (index, field, value) => {
-    if (currentPublicadores[index]) {
+    if (filteredPublicadores[index]) {
         // Convert to appropriate type
         if (field === 'id_tipo_publicador' || field === 'id_privilegio' || field === 'ungido' || field === 'sordo' || field === 'ciego' || field === 'encarcelado' || field === 'grupo') {
-            currentPublicadores[index][field] = value ? parseInt(value) : null;
+            filteredPublicadores[index][field] = value ? parseInt(value) : null;
         } else {
-            currentPublicadores[index][field] = value;
+            filteredPublicadores[index][field] = value;
         }
     }
 };
 
 // Save individual publicador
 window.savePublicadorInline = async (index) => {
-    const publicador = currentPublicadores[index];
+    const publicador = filteredPublicadores[index];
     if (!publicador) return;
 
     try {
@@ -559,7 +561,7 @@ async function deletePublicadorById(id) {
 
 // Global functions for button onclick handlers
 window.editPublicador = (id) => {
-    const publicador = currentPublicadores.find(p => p.id === id);
+    const publicador = filteredPublicadores.find(p => p.id === id);
     if (publicador) {
         showPublicadorForm(publicador);
     }
