@@ -10,6 +10,7 @@ import { Op, QueryTypes } from 'sequelize'
 import XlsxPopulate from 'xlsx-populate'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import dayjs from 'dayjs'
 import { Publicadores, Asistencias } from '../common/models/Secretario.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -394,15 +395,16 @@ export const exportarPlantilla = async () => {
         // Publicadores
         const publicadores = await sequelize.query(`
             SELECT
-                p.nombre AS Nombre,
-                tp.descripcion AS 'Tipo Publicador',
-                pr.descripcion AS Privilegio,
+                p.apellidos || ', ' || p.nombre AS Nombre,
+                p.nombre || ' ' || p.apellidos AS 'Nombre completo',
                 p.fecha_nacimiento AS 'Fecha de nacimiento',
                 p.fecha_bautismo AS 'Fecha de bautismo',
                 p.grupo AS Grupo,
                 CASE p.sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' ELSE '' END AS 'Sup. Grupo',
-                p.sexo AS Sexo,
-                CASE WHEN p.ungido = 1 THEN 'Sí' ELSE '' END AS Ungido,
+                CASE p.sexo WHEN 'H' THEN 'Hombre' WHEN 'M' THEN 'Mujer' ELSE '' END AS Sexo,
+                pr.descripcion AS Privilegio,
+                tp.descripcion AS 'Tipo Publicador',
+                CASE p.ungido WHEN 1 THEN 'TRUE' WHEN 0 THEN 'FALSE' ELSE '' END AS Ungido,
                 p.calle AS Calle,
                 p.num AS 'Núm',
                 p.colonia AS Colonia,
@@ -420,11 +422,11 @@ export const exportarPlantilla = async () => {
         // Informes
         const informes = await sequelize.query(`
             SELECT
-                p.nombre AS Nombre,
+                p.apellidos || ', ' || p.nombre AS Nombre,
                 tp.descripcion AS 'Tipo Publicador',
                 i.mes AS Mes,
                 i.mes_enviado AS 'Mes enviado',
-                i.predico_en_el_mes AS 'Predicó en el mes',
+                CASE i.predico_en_el_mes WHEN 1 THEN 'TRUE' WHEN 0 THEN 'FALSE' ELSE '' END AS 'Predicó en el mes',
                 i.cursos_biblicos AS 'Cursos bíblicos',
                 i.horas AS Horas,
                 i.notas AS Notas,
@@ -446,26 +448,29 @@ export const exportarPlantilla = async () => {
         `, { type: QueryTypes.SELECT })
 
         // 3. Escribir en las hojas correspondientes
-        const writeToSheet = (sheetName, data) => {
+        const writeToSheet = (sheetName, data, rangeName = '') => {
             const sheet = workbook.sheet(sheetName);
             if (!sheet) return;
 
-            // Iniciar en fila 2
-            let rowNumber = 2;
-
+            let nuevosDatos = [];
             data.forEach(item => {
+                if (item['Predicó en el mes']) item['Predicó en el mes'] = item['Predicó en el mes'] === 'TRUE';
+                if (item['Ungido']) item['Ungido'] = item['Ungido'] === 'TRUE';
+
+                if (item['Mes']) item['Mes'] = dayjs(item['Mes']).toDate();
+                if (item['Mes enviado']) item['Mes enviado'] = dayjs(item['Mes enviado']).toDate();
+                if (item['Fecha']) item['Fecha'] = dayjs(item['Fecha']).toDate();
+                if (item['Fecha de nacimiento']) item['Fecha de nacimiento'] = dayjs(item['Fecha de nacimiento']).toDate();
+                if (item['Fecha de bautismo']) item['Fecha de bautismo'] = dayjs(item['Fecha de bautismo']).toDate();
                 const values = Object.values(item);
-                // XlsxPopulate usa indices 1-based
-                values.forEach((val, index) => {
-                    sheet.cell(rowNumber, index + 1).value(val);
-                });
-                rowNumber++;
+                nuevosDatos.push(values);
             });
+            sheet.range(rangeName).value(nuevosDatos);
         }
 
-        writeToSheet('Publicadores', publicadores)
-        writeToSheet('Informes', informes)
-        writeToSheet('Asistencias', asistencias)
+        writeToSheet('Publicadores', publicadores, `A2:Q${publicadores.length + 1}`)
+        writeToSheet('Informes', informes, `B2:J${informes.length + 1}`)
+        writeToSheet('Asistencias', asistencias, `E2:G${asistencias.length + 1}`)
 
         // 4. Generar buffer
         const buffer = await workbook.outputAsync();
