@@ -20,81 +20,103 @@ export async function renderInformes(container) {
             <h1 class="page-title">Informes de Predicación</h1>
             <p class="page-description">Gestión de informes mensuales de predicación</p>
         </div>
-        <div class="tab">
-            <a class="tablinks active" tab-name="grupo">Por Grupo</a>
-            <a class="tablinks" tab-name="publicador">Por Publicador</a>
-        </div>
-        <div id="grupo" class="tabcontent" style="display: block;">
-        ${hasPermission('admin') ? `
-            <div class="card mb-lg">
-                <div class="card-header">
-                    <h3 class="card-title">✏️ Editor Masivo de Informes</h3>
-                    <p class="card-subtitle">Edita múltiples informes simultáneamente por grupo</p>
-                </div>
-                <div class="card-body">
-                    <div class="grid grid-cols-3 gap-lg mb-lg">
-                        <div class="form-group">
-                            <label class="form-label">Mes</label>
-                            <input type="month" class="form-input" id="bulkMonth" value="${defaultMonth}" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Grupo</label>
-                            <select class="form-select" id="bulkGroup">
-                                <option value="">Seleccionar grupo</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="display: flex; align-items: flex-end;">
-                            <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%;">Cargar Publicadores</button>
-                        </div>
-                    </div>
-                    <div id="bulkEditorContainer"></div>
-                </div>
-            </div>
-        ` : ''}
-        </div>
-        <div id="publicador" class="tabcontent">
-            <div class="card mb-lg">
-                <div class="card-header">
-                    <h3 class="card-title">Filtros</h3>
-                </div>
-                <div class="card-body">
-                    <div class="grid grid-cols-3">
-                        <div class="form-group">
-                            <label class="form-label">Año de Servicio</label>
-                            <input type="number" class="form-input" id="filterAnio" placeholder="${getAnioServicio()}" min="2020" max="2050">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Publicador</label>
-                            <select class="form-select" id="filterPublicador"></select>
-                        </div>
-                    </div>
-                    <div class="flex justify-end gap-sm mt-md">
-                        <button class="btn btn-secondary" id="clearFiltersBtn">Limpiar</button>
-                        <button class="btn btn-primary" id="applyFiltersBtn">Aplicar Filtros</button>
-                    </div>
-                </div>
-            </div>
         
-        ${hasPermission('admin') ? `
-            <div class="flex justify-between items-center mb-lg">
-                <button class="btn btn-primary" id="addInformeBtn">+ Agregar Informe</button>
-            </div>
-        ` : ''}
-        
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Lista de Informes</h3>
+        <div class="config-layout">
+            <!-- Sidebar Navigation -->
+            <aside class="config-sidebar">
+                <nav class="config-nav">
+                    <a href="#" data-section="grupo" class="config-nav-item active">
+                        <span class="config-nav-icon">👥</span>
+                        <span class="config-nav-text">Por Grupo</span>
+                    </a>
+                    <a href="#" data-section="publicador" class="config-nav-item">
+                        <span class="config-nav-icon">👤</span>
+                        <span class="config-nav-text">Por Publicador</span>
+                    </a>
+                </nav>
+            </aside>
+            
+            <!-- Content Area -->
+            <main class="config-content">
+                <!-- Section: Por Grupo -->
+                <div id="section-grupo" class="config-section active">
+                    ${hasPermission('admin') ? `
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">✏️ Editor Masivo de Informes</h3>
+                                <p class="card-subtitle">Edita múltiples informes simultáneamente por grupo</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="grid grid-cols-3 gap-lg mb-lg">
+                                    <div class="form-group">
+                                        <label class="form-label">Mes</label>
+                                        <input type="month" class="form-input" id="bulkMonth" value="${defaultMonth}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Grupo</label>
+                                        <select class="form-select" id="bulkGroup">
+                                            <option value="">Seleccionar grupo</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                                        <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%;">Cargar Publicadores</button>
+                                    </div>
+                                </div>
+                                <div id="bulkEditorContainer"></div>
+                            </div>
+                        </div>
+                    ` : '<div class="alert alert-info">Necesitas permisos de administrador para acceder al editor masivo.</div>'}
                 </div>
-                <div class="card-body">
-                    <div id="informesTableContainer">
-                        <p class="text-center text-muted">Aplica filtros para ver los informes</p>
+
+                <!-- Section: Por Publicador -->
+                <div id="section-publicador" class="config-section">
+                    <div class="card mb-lg">
+                        <div class="card-header">
+                            <h3 class="card-title">Filtros</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-cols-3">
+                                <div class="form-group">
+                                    <label class="form-label">Año de Servicio</label>
+                                    <input type="number" class="form-input" id="filterAnio" min="${getAnioServicio() - 2}" max="${getAnioServicio()}" value="${getAnioServicio()}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Publicador</label>
+                                    <select class="form-select" id="filterPublicador"></select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-sm mt-md">
+                                <button class="btn btn-secondary" id="clearFiltersBtn">Limpiar</button>
+                                <button class="btn btn-primary" id="applyFiltersBtn">Aplicar Filtros</button>
+                            </div>
+                        </div>
+                    </div>
+                
+                    ${hasPermission('admin') ? `
+                        <div class="flex justify-between items-center mb-lg">
+                            <button class="btn btn-primary" id="addInformeBtn">+ Agregar Informe</button>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Lista de Informes</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="informesTableContainer">
+                                <p class="text-center text-muted">Aplica filtros para ver los informes</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
         
         <div id="informeFormModal"></div>
     `;
+
+    // Setup navigation between sections
+    setupInformesNavigation();
 
     await renderPublicadores();
 
@@ -112,27 +134,38 @@ export async function renderInformes(container) {
     if (addBtn) {
         addBtn.addEventListener('click', () => showInformeForm());
     }
+}
 
-    document.querySelectorAll('.tablinks').forEach(tab => {
-        tab.addEventListener('click', function (event) {
-            openTab(event, this.getAttribute('tab-name'));
+// ============================================
+// INFORMES SECTION NAVIGATION
+// ============================================
+function setupInformesNavigation() {
+    const navItems = document.querySelectorAll('.config-nav-item');
+    const sections = document.querySelectorAll('.config-section');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const sectionId = item.dataset.section;
+
+            // Update active nav item
+            navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+
+            // Show selected section, hide others
+            sections.forEach(section => {
+                if (section.id === `section-${sectionId}`) {
+                    section.classList.add('active');
+                } else {
+                    section.classList.remove('active');
+                }
+            });
         });
     });
 }
 
-function openTab(evt, tabName) {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tabcontent");
-    for (i = 0; i < tabcontent.length; i++) {
-        tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tablinks");
-    for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
-    }
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-}
+// Remove old openTab function - no longer needed
+
 
 async function applyFilters() {
     const anio = document.getElementById('filterAnio').value || getAnioServicio();

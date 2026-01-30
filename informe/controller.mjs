@@ -1,5 +1,5 @@
 import { Publicadores, Informes, sequelize, Configuracion } from '../common/models/Secretario.mjs';
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, Op } from 'sequelize'
 import xlsx from 'xlsx'
 import { sendEmail, createBulkReportEmailHTML } from '../common/services/emailService.mjs';
 import { handleExport } from '../common/utils/ExportHelper.mjs';
@@ -263,6 +263,61 @@ const upsertInformesBulk = async (req, res) => {
     }
 };
 
+// =====================================================================================
+// ELIMINAR INFORMES ANTIGUOS (2+ AÑOS DESDE EL ÚLTIMO INFORME DE CADA PUBLICADOR)
+// =====================================================================================
+const deleteOldInformes = async (req, res) => {
+    try {
+        let totalDeleted = 0;
+
+        // Obtener todos los publicadores
+        const publicadores = await Publicadores.findAll({
+            attributes: ['id']
+        });
+
+        // Para cada publicador, encontrar su último informe y eliminar los de 2+ años atrás
+        for (const publicador of publicadores) {
+            // Encontrar el último informe del publicador
+            const ultimoInforme = await Informes.findOne({
+                where: { id_publicador: publicador.id },
+                order: [['mes', 'DESC']],
+                attributes: ['mes']
+            });
+
+            if (!ultimoInforme) {
+                // Si el publicador no tiene informes, continuar con el siguiente
+                continue;
+            }
+
+            // Calcular la fecha límite (2 años atrás desde el último informe)
+            const ultimaFecha = new Date(ultimoInforme.mes);
+            const fechaLimite = new Date(ultimaFecha.getFullYear() - 2, ultimaFecha.getMonth(), ultimaFecha.getDate());
+            const fechaLimiteStr = fechaLimite.toISOString().substring(0, 10);
+
+            // Eliminar informes antiguos para este publicador
+            const deleted = await Informes.destroy({
+                where: {
+                    id_publicador: publicador.id,
+                    mes: {
+                        [Op.lt]: fechaLimiteStr
+                    }
+                }
+            });
+
+            totalDeleted += deleted;
+        }
+
+        res.json({
+            success: true,
+            message: `Se eliminaron ${totalDeleted} informes antiguos (2+ años desde el último informe de cada publicador)`,
+            deleted: totalDeleted
+        });
+    } catch (error) {
+        console.error('Error deleting old informes:', error);
+        res.json({ success: false, error: error.message });
+    }
+};
+
 export default {
     getInformes,
     addInforme,
@@ -270,5 +325,6 @@ export default {
     updateInforme,
     deleteInforme,
     upsertInformesBulk,
-    exportInformes
+    exportInformes,
+    deleteOldInformes
 };

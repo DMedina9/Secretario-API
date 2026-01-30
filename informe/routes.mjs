@@ -9,6 +9,7 @@ const router = express.Router();
 router.post('/add', check, has('admin'), InformeController.addInforme);
 router.post('/import', check, has('admin'), upload.single('file'), InformeController.importInformes);
 router.put('/:id', check, has('admin'), InformeController.updateInforme);
+router.delete('/maintenance/old', check, has('admin'), InformeController.deleteOldInformes);
 router.delete('/:id', check, has('admin'), InformeController.deleteInforme);
 router.post('/bulk', check, has('admin'), InformeController.upsertInformesBulk);
 router.get('/export', check, has('admin'), InformeController.exportInformes);

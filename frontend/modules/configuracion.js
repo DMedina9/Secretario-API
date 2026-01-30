@@ -12,165 +12,236 @@ export async function renderConfiguracion(container) {
     container.innerHTML = `
         <div class="page-header">
             <h1 class="page-title">Configuración</h1>
-            <p class="page-description">Gestión de configuraciones del sistema y usuarios</p>
+            <p class="page-description">Gestión de configuraciones del sistema</p>
         </div>
         
-        <div class="grid grid-cols-1 gap-lg mb-xl">
-            <!-- Configuration Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Configuraciones del Sistema</h3>
-                    <p class="card-subtitle">Edita los valores de configuración</p>
-                </div>
-                <div class="card-body">
-                    <div class="table-container">
-                        <table class="table" id="configTable">
-                            <thead>
-                                <tr>
-                                    <th>Clave</th>
-                                    <th>Valor</th>
-                                </tr>
-                            </thead>
-                            <tbody id="configTableBody">
-                                <tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>
-                            </tbody>
-                        </table>
+        <div class="config-layout">
+            <!-- Sidebar Navigation -->
+            <aside class="config-sidebar">
+                <nav class="config-nav">
+                    <a href="#" data-section="configuraciones" class="config-nav-item active">
+                        <span class="config-nav-icon">⚙️</span>
+                        <span class="config-nav-text">Configuraciones</span>
+                    </a>
+                    <a href="#" data-section="gestion" class="config-nav-item">
+                        <span class="config-nav-icon">📊</span>
+                        <span class="config-nav-text">Gestión de Datos</span>
+                    </a>
+                    <a href="#" data-section="s21" class="config-nav-item">
+                        <span class="config-nav-icon">📄</span>
+                        <span class="config-nav-text">Reportes S-21</span>
+                    </a>
+                    <a href="#" data-section="mantenimiento" class="config-nav-item">
+                        <span class="config-nav-icon">🗑️</span>
+                        <span class="config-nav-text">Mantenimiento</span>
+                    </a>
+                    <a href="#" data-section="usuarios" class="config-nav-item">
+                        <span class="config-nav-icon">👥</span>
+                        <span class="config-nav-text">Usuarios</span>
+                    </a>
+                </nav>
+            </aside>
+            
+            <!-- Content Area -->
+            <main class="config-content">
+                <!-- Section: Configuraciones del Sistema -->
+                <div id="section-configuraciones" class="config-section active">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Configuraciones del Sistema</h3>
+                            <p class="card-subtitle">Edita los valores de configuración</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table" id="configTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Clave</th>
+                                            <th>Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="configTableBody">
+                                        <tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="btn btn-primary mt-md" id="saveConfigBtn">Guardar Configuraciones</button>
+                        </div>
                     </div>
-                    <button class="btn btn-primary mt-md" id="saveConfigBtn">Guardar Configuraciones</button>
                 </div>
-            </div>
 
-            <!-- Data Management Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Gestión de Datos</h3>
-                    <p class="card-subtitle">Importar y Exportar información del sistema</p>
-                </div>
-                <div class="card-body">
-                    <div class="grid grid-cols-3 gap-lg mt-md">
-                        <div>
-                            <h4>Tablas</h4>
-                            <div class="flex gap-sm items-center">
-                                <div class="radio-group">
-                                    <label for="publicadores" class="radio-input">
-                                        <input id="publicadores" type="radio" name="dataTable" value="publicador" checked>
-                                        Publicadores
-                                    </label>
-                                    <label for="informes" class="radio-input">
-                                        <input id="informes" type="radio" name="dataTable" value="informe">
-                                        Informes
-                                    </label>
-                                    <label for="asistencias" class="radio-input">
-                                        <input id="asistencias" type="radio" name="dataTable" value="asistencias">
-                                        Asistencias
-                                    </label>
+                <!-- Section: Gestión de Datos -->
+                <div id="section-gestion" class="config-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Gestión de Datos</h3>
+                            <p class="card-subtitle">Importar y Exportar información del sistema</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-cols-3 gap-lg mt-md">
+                                <div>
+                                    <h4>Tablas</h4>
+                                    <div class="flex gap-sm items-center">
+                                        <div class="radio-group">
+                                            <label for="publicadores" class="radio-input">
+                                                <input id="publicadores" type="radio" name="dataTable" value="publicador" checked>
+                                                Publicadores
+                                            </label>
+                                            <label for="informes" class="radio-input">
+                                                <input id="informes" type="radio" name="dataTable" value="informe">
+                                                Informes
+                                            </label>
+                                            <label for="asistencias" class="radio-input">
+                                                <input id="asistencias" type="radio" name="dataTable" value="asistencias">
+                                                Asistencias
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4>Importar</h4>
+                                    <p class="text-muted text-sm">Carga masiva desde Excel (.xlsx)</p>
+                                    <div class="flex gap-sm">
+                                        <button class="btn btn-secondary" onclick="window.importData()">Importar</button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4>Exportar</h4>
+                                    <p class="text-muted text-sm">Descargar datos actuales</p>
+                                    <div class="flex gap-sm">
+                                        <button class="btn btn-secondary" onclick="window.exportData('xlsx')">Excel</button>
+                                        <button class="btn btn-secondary" onclick="window.exportData('json')">JSON</button>
+                                        <button class="btn btn-secondary" onclick="window.exportData('xml')">XML</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <h4>Importar</h4>
-                            <p class="text-muted text-sm">Carga masiva desde Excel (.xlsx)</p>
+                    </div>
+                </div>
+
+                <!-- Section: Reportes S-21 -->
+                <div id="section-s21" class="config-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Descargar S-21</h3>
+                            <p class="card-subtitle">Descargar todos los informes S-21</p>
+                        </div>
+                        <div class="card-body">
                             <div class="flex gap-sm">
-                                <button class="btn btn-secondary" onclick="window.importData()">Importar</button>
-                            </div>
-                        </div>
-                        <div>
-                            <h4>Exportar</h4>
-                            <p class="text-muted text-sm">Descargar datos actuales</p>
-                            <div class="flex gap-sm">
-                                <button class="btn btn-secondary" onclick="window.exportData('xlsx')">Excel</button>
-                                <button class="btn btn-secondary" onclick="window.exportData('json')">JSON</button>
-                                <button class="btn btn-secondary" onclick="window.exportData('xml')">XML</button>
+                                <button class="btn btn-secondary" id="downloadAllS21Btn">Descargar todos los S-21</button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Descargar S-21</h3>
-                    <p class="card-subtitle">Descargar todos los informes S-21</p>
-                </div>
-                <div class="card-body">
-                    <div class="flex gap-sm">
-                        <button class="btn btn-secondary" id="downloadAllS21Btn">Descargar todos los S-21</button>
-                    </div>
-                </div>
-            </div>
-            <!-- Users Card -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Administración de Usuarios</h3>
-                    <p class="card-subtitle">Gestiona los usuarios del sistema</p>
-                </div>
-                <div class="card-body">
-                    <button class="btn btn-primary mb-md" id="createUserBtn">Crear Usuario</button>
-                    
-                    <!-- Create/Edit User Form (hidden by default) -->
-                    <div id="userFormContainer" style="display: none;" class="mb-md">
-                        <div class="card">
-                            <div class="card-body">
-                                <h4 id="userFormTitle">Crear Usuario</h4>
-                                <div class="grid grid-cols-2 gap-md mb-md">
-                                    <div class="form-group">
-                                        <label class="form-label">Nombre de usuario</label>
-                                        <input type="text" class="form-input" id="userUsername" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Email</label>
-                                        <input type="email" class="form-input" id="userEmail" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Nombre</label>
-                                        <input type="text" class="form-input" id="userFirstName" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Apellido</label>
-                                        <input type="text" class="form-input" id="userLastName" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Contraseña</label>
-                                        <input type="password" class="form-input" id="userPassword">
-                                        <small class="text-muted" id="passwordHint">Dejar vacío para mantener la contraseña actual</small>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Rol</label>
-                                        <select class="form-select" id="userRole">
-                                            <option value="USER">Usuario</option>
-                                            <option value="admin">Administrador</option>
-                                        </select>
-                                    </div>
+
+                <!-- Section: Mantenimiento -->
+                <div id="section-mantenimiento" class="config-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Mantenimiento de la Base de Datos</h3>
+                            <p class="card-subtitle">Eliminar registros antiguos para optimizar el sistema</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="grid grid-cols-2 gap-md">
+                                <div>
+                                    <h4>Limpiar Asistencias</h4>
+                                    <p class="text-muted text-sm">Eliminar registros de asistencias de hace 2 años o más desde la fecha actual</p>
+                                    <button class="btn btn-warning mt-sm" id="cleanupAsistenciasBtn">
+                                        🗑️ Limpiar Asistencias Antiguas
+                                    </button>
                                 </div>
-                                <div class="card-footer">
-                                    <button class="btn btn-secondary" id="cancelUserBtn">Cancelar</button>
-                                    <button class="btn btn-primary" id="saveUserBtn">Guardar</button>
+                                <div>
+                                    <h4>Limpiar Informes</h4>
+                                    <p class="text-muted text-sm">Eliminar informes de hace 2 años o más desde el último informe de cada publicador</p>
+                                    <button class="btn btn-warning mt-sm" id="cleanupInformesBtn">
+                                        🗑️ Limpiar Informes Antiguos
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="table-container">
-                        <table class="table" id="usersTable">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Usuario</th>
-                                    <th>Email</th>
-                                    <th>Nombre</th>
-                                    <th>Apellido</th>
-                                    <th>Rol</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersTableBody">
-                                <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
-                            </tbody>
-                        </table>
+                </div>
+
+                <!-- Section: Usuarios -->
+                <div id="section-usuarios" class="config-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Administración de Usuarios</h3>
+                            <p class="card-subtitle">Gestiona los usuarios del sistema</p>
+                        </div>
+                        <div class="card-body">
+                            <button class="btn btn-primary mb-md" id="createUserBtn">Crear Usuario</button>
+                            
+                            <!-- Create/Edit User Form (hidden by default) -->
+                            <div id="userFormContainer" style="display: none;" class="mb-md">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h4 id="userFormTitle">Crear Usuario</h4>
+                                        <div class="grid grid-cols-2 gap-md mb-md">
+                                            <div class="form-group">
+                                                <label class="form-label">Nombre de usuario</label>
+                                                <input type="text" class="form-input" id="userUsername" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Email</label>
+                                                <input type="email" class="form-input" id="userEmail" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Nombre</label>
+                                                <input type="text" class="form-input" id="userFirstName" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Apellido</label>
+                                                <input type="text" class="form-input" id="userLastName" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Contraseña</label>
+                                                <input type="password" class="form-input" id="userPassword">
+                                                <small class="text-muted" id="passwordHint">Dejar vacío para mantener la contraseña actual</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Rol</label>
+                                                <select class="form-select" id="userRole">
+                                                    <option value="USER">Usuario</option>
+                                                    <option value="admin">Administrador</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <button class="btn btn-secondary" id="cancelUserBtn">Cancelar</button>
+                                            <button class="btn btn-primary" id="saveUserBtn">Guardar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="table-container">
+                                <table class="table" id="usersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Usuario</th>
+                                            <th>Email</th>
+                                            <th>Nombre</th>
+                                            <th>Apellido</th>
+                                            <th>Rol</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                        <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     `;
+
+    // Setup navigation between sections
+    setupConfigNavigation();
 
     // Setup event listeners
     document.getElementById('saveConfigBtn').addEventListener('click', saveConfigurations);
@@ -178,10 +249,40 @@ export async function renderConfiguracion(container) {
     document.getElementById('cancelUserBtn').addEventListener('click', hideUserForm);
     document.getElementById('saveUserBtn').addEventListener('click', saveUser);
     document.getElementById('downloadAllS21Btn').addEventListener('click', downloadAllS21);
+    document.getElementById('cleanupAsistenciasBtn').addEventListener('click', cleanupOldAsistencias);
+    document.getElementById('cleanupInformesBtn').addEventListener('click', cleanupOldInformes);
 
     // Load data
     await loadConfigurations();
     await loadUsers();
+}
+
+// ============================================
+// CONFIG SECTION NAVIGATION
+// ============================================
+function setupConfigNavigation() {
+    const navItems = document.querySelectorAll('.config-nav-item');
+    const sections = document.querySelectorAll('.config-section');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const sectionId = item.dataset.section;
+
+            // Update active nav item
+            navItems.forEach(nav => nav.classList.remove('active'));
+            item.classList.add('active');
+
+            // Show selected section, hide others
+            sections.forEach(section => {
+                if (section.id === `section-${sectionId}`) {
+                    section.classList.add('active');
+                } else {
+                    section.classList.remove('active');
+                }
+            });
+        });
+    });
 }
 
 async function loadConfigurations() {
@@ -254,16 +355,9 @@ async function saveConfigurations() {
 // ============================================
 
 async function downloadAllS21() {
-    const year = getAnioServicio();
-
-    if (!year) {
-        showToast('No se ha seleccionado un año', 'warning');
-        return;
-    }
-
     await downloadFile('/fillpdf/get-s21', {
-        anio: parseInt(year)
-    }, `S21_${year}_Por_Publicador.zip`);
+        anio: null
+    }, `S21_Por_Publicador.zip`);
 }
 
 async function loadUsers() {
@@ -537,3 +631,78 @@ window.exportData = async function (format) {
         showToast('Error al exportar datos: ' + error.message, 'error');
     }
 };
+
+// ==========================================
+// DATABASE MAINTENANCE FUNCTIONS
+// ==========================================
+
+async function cleanupOldAsistencias() {
+    showConfirm(
+        '⚠️ ¿Estás seguro de que deseas eliminar todas las asistencias de hace 2 años o más?\n\nEsta acción NO se puede deshacer.',
+        async () => {
+            // Segunda confirmación
+            showConfirm(
+                '⚠️ CONFIRMACIÓN FINAL: Se eliminarán PERMANENTEMENTE todos los registros de asistencias anteriores a 2 años desde hoy.\n\n¿Continuar?',
+                async () => {
+                    try {
+                        showLoading();
+
+                        const result = await apiRequest('/asistencias/maintenance/old', {
+                            method: 'DELETE'
+                        });
+
+                        hideLoading();
+
+                        if (result && result.success) {
+                            showToast(
+                                `✅ ${result.message}\nRegistros eliminados: ${result.deleted}`,
+                                'success'
+                            );
+                        } else {
+                            showToast(result.error || 'Error al eliminar asistencias', 'error');
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        showToast('Error al eliminar asistencias antiguas: ' + error.message, 'error');
+                    }
+                }
+            );
+        }
+    );
+}
+
+async function cleanupOldInformes() {
+    showConfirm(
+        '⚠️ ¿Estás seguro de que deseas eliminar los informes antiguos?\n\nSe eliminarán informes de hace 2 años o más desde el último informe de cada publicador.\n\nEsta acción NO se puede deshacer.',
+        async () => {
+            // Segunda confirmación
+            showConfirm(
+                '⚠️ CONFIRMACIÓN FINAL: Se eliminarán PERMANENTEMENTE todos los informes antiguos (2+ años desde el último informe de cada publicador).\n\n¿Continuar?',
+                async () => {
+                    try {
+                        showLoading();
+
+                        const result = await apiRequest('/informe/maintenance/old', {
+                            method: 'DELETE'
+                        });
+
+                        hideLoading();
+
+                        if (result && result.success) {
+                            showToast(
+                                `✅ ${result.message}\nRegistros eliminados: ${result.deleted}`,
+                                'success'
+                            );
+                        } else {
+                            showToast(result.error || 'Error al eliminar informes', 'error');
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        showToast('Error al eliminar informes antiguos: ' + error.message, 'error');
+                    }
+                }
+            );
+        }
+    );
+}
+

@@ -1,5 +1,5 @@
 import { Asistencias, sequelize } from '../common/models/Secretario.mjs'
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, Op } from 'sequelize'
 import xlsx from 'xlsx'
 import { handleExport } from '../common/utils/ExportHelper.mjs';
 
@@ -148,6 +148,47 @@ const importAsistencia = async (req, res) => {
     }
 };
 
+// =====================================================================================
+// ELIMINAR ASISTENCIAS ANTIGUAS (2+ AÑOS)
+// =====================================================================================
+const deleteOldAsistencias = async (req, res) => {
+    try {
+        // Calcular la fecha límite (2 años atrás desde hoy)
+        const today = new Date();
+        const twoYearsAgo = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+        const fechaLimite = twoYearsAgo.toISOString().substring(0, 10);
+        /*
+        // Contar registros a eliminar
+        const countResult = await sequelize.query(
+            `SELECT COUNT(*) as count FROM Asistencias WHERE fecha < :fechaLimite`,
+            {
+                replacements: { fechaLimite },
+                type: QueryTypes.SELECT
+            }
+        );
+        const recordsToDelete = countResult[0].count;
+        */
+        // Eliminar registros antiguos
+        const result = await Asistencias.destroy({
+            where: {
+                fecha: {
+                    [Op.lt]: fechaLimite
+                }
+            }
+        });
+
+        res.json({
+            success: true,
+            message: `Se eliminaron ${result} registros de asistencias anteriores al ${fechaLimite}`,
+            deleted: result,
+            cutoffDate: fechaLimite
+        });
+    } catch (error) {
+        console.error('Error deleting old asistencias:', error);
+        res.json({ success: false, error: error.message });
+    }
+};
+
 export default {
     getAsistencia,
     getAllAsistencias,
@@ -156,5 +197,6 @@ export default {
     deleteAsistencia,
     uploadAsistencias,
     importAsistencia,
-    exportAsistencias
+    exportAsistencias,
+    deleteOldAsistencias
 };

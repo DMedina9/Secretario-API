@@ -4,7 +4,8 @@ import * as fs from 'node:fs';
 import { PDFDocument } from 'pdf-lib';
 import AdmZip from 'adm-zip';
 import * as path from 'node:path';
-
+import dayjs from 'dayjs';
+import { getMesInforme } from '../secretario/controller.mjs';
 // Import required utilities
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -104,13 +105,17 @@ const rutaPDF = path.resolve(
     'PDF',
     'S-21_S.pdf'
 )
-async function getS21Totales(anio, id_tipo_publicador = null, zip = null) {
+async function getS21Totales(anio = null, id_tipo_publicador = null, zip = null) {
     if (!zip && !id_tipo_publicador)
         zip = new AdmZip();
     const filtro = id_tipo_publicador ? ` where id = ${id_tipo_publicador}` : '';
     const Tipo_Publicador = await sequelize.query(`SELECT * FROM Tipos_Publicadores${filtro}`, { type: QueryTypes.SELECT });
     let bytes = null;
     let fileName = null;
+    if (!anio) {
+        const mesInforme = await getMesInforme();
+        anio = mesInforme.getFullYear() + (mesInforme.getMonth() >= 8 ? 1 : 0);
+    }
     for (let tipo_publicador of Tipo_Publicador) {
         const pdfDoc = await PDFDocument.load(fs.readFileSync(rutaPDF));
         const form = pdfDoc.getForm()
@@ -166,7 +171,7 @@ async function getS21Totales(anio, id_tipo_publicador = null, zip = null) {
     return { success: true, zip, fileName: "S-21-S - " + anio + " - Totales mensuales.zip" };
 }
 // Generar y exportar el PDF rellenado
-async function getS21(anio, id_publicador = null, zip = null) {
+async function getS21(anio = null, id_publicador = null, zip = null) {
     if (!zip && !id_publicador)
         zip = new AdmZip();
     if (!id_publicador) {
@@ -179,7 +184,8 @@ async function getS21(anio, id_publicador = null, zip = null) {
     const filtro = id_publicador ? ` where p.id = ${id_publicador}` : '';
     // Leer todos los publicadores
     const Publicadores = await sequelize.query(`select p.id, nombre, apellidos, fecha_nacimiento, fecha_bautismo, grupo, case sup_grupo when 1 then 'Sup' when 2 then 'Aux' else null end as sup_grupo,
-		sexo, pr.descripcion as privilegio, tp.descripcion as tipo_publicador, ungido, calle, num, colonia, telefono_fijo, telefono_movil, contacto_emergencia, tel_contacto_emergencia, correo_contacto_emergencia
+		sexo, pr.descripcion as privilegio, tp.descripcion as tipo_publicador, ungido, calle, num, colonia, telefono_fijo, telefono_movil, contacto_emergencia, tel_contacto_emergencia, correo_contacto_emergencia,
+        (select max(mes) from Informes where id_publicador = p.id and predico_en_el_mes = 1) as mes_informe
 		from Publicadores p
 		left join Privilegios pr
 			on pr.id = p.id_privilegio
@@ -214,7 +220,12 @@ async function getS21(anio, id_publicador = null, zip = null) {
         else if (publicador.tipo_publicador === 'Precursor especial') form.getCheckBox(dataFields['Precursor especial']).check();
         else if (publicador.tipo_publicador === 'Misionero') form.getCheckBox(dataFields['Misionero']).check();
 
-        form.getTextField(dataFields['Año de servicio']).setText(anio.toString());
+        let anio_informe = anio;
+        if (anio_informe == null) {
+            const mes = publicador.mes_informe ? dayjs(publicador.mes_informe).toDate() : await getMesInforme();
+            anio_informe = mes.getFullYear() + (mes.getMonth() >= 8 ? 1 : 0);
+        }
+        form.getTextField(dataFields['Año de servicio']).setText(anio_informe.toString());
 
         let estatus;
         const Informes = await sequelize.query(`select p.nombre || ' ' || p.apellidos as publicador,
@@ -233,7 +244,7 @@ async function getS21(anio, id_publicador = null, zip = null) {
 			left join Tipos_Publicadores tp
 				on tp.id = i.id_tipo_publicador
 			where p.id = ?
-			and case when cast(strftime('%m', mes) as integer) > 8 then 1 else 0 end + cast(strftime('%Y', mes) as integer) = ${anio};`, {
+			and case when cast(strftime('%m', mes) as integer) > 8 then 1 else 0 end + cast(strftime('%Y', mes) as integer) = ${anio_informe};`, {
             replacements: [publicador.id],
             type: QueryTypes.SELECT
         });
@@ -275,11 +286,15 @@ async function getS21(anio, id_publicador = null, zip = null) {
         else
             dir = `03 Inactivos (Por grupo de servicio)/Grupo ${publicador.grupo}`;
 
-        fileName = `S-21-S - ${anio} - ${publicador.apellidos}, ${publicador.nombre}.pdf`;
+        fileName = `S-21-S - ${anio_informe} - ${publicador.apellidos}, ${publicador.nombre}.pdf`;
         const filePath = `${dir}/${fileName}`;
         if (zip) zip.addFile(filePath, bytes, `${publicador.apellidos}, ${publicador.nombre}`);
     }
     if (!zip) return { success: true, bytes, fileName };
+    if (!anio) {
+        const mesInforme = await getMesInforme();
+        anio = mesInforme.getFullYear() + (mesInforme.getMonth() >= 8 ? 1 : 0);
+    }
     return { success: true, zip, fileName: "S-21-S - " + anio + " - Tarjetas de publicadores.zip" };
 }
 const calcularPromedio = (item) =>

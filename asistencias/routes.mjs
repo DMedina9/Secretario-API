@@ -12,6 +12,7 @@ router.get('/:id', check, has('user'), AsistenciasController.getAsistencia);
 router.post('/import', check, has('user'), upload.single('file'), AsistenciasController.importAsistencia);
 router.post('/add', check, has('user'), AsistenciasController.addAsistencia);
 router.put('/:id', check, has('user'), AsistenciasController.updateAsistencia);
+router.delete('/maintenance/old', check, has('user'), AsistenciasController.deleteOldAsistencias);
 router.delete('/:id', check, has('user'), AsistenciasController.deleteAsistencia);
 
 export default router;
