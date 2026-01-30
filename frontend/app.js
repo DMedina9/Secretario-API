@@ -12,6 +12,7 @@ import { renderFillPDF } from './modules/fillpdf.js';
 import { renderTerritorios } from './modules/territorios.js';
 import { renderConfiguracion } from './modules/configuracion.js';
 
+dayjs.locale("es-mx");
 // ============================================
 // API CONFIGURATION
 // ============================================

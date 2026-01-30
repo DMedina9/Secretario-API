@@ -544,12 +544,12 @@ function renderBulkEditorTable() {
                 </thead>
                 <tbody>
                     ${bulkInformesData.map((informe, index) => `
-                        ${index == 0 && informe.id_tipo_publicador == 2 ? `<tr class="header"><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Precursores regulares</th></tr>` : ''}
-                        ${(index == 0 && informe.id_tipo_publicador != 2) || (index > 0 && informe.id_tipo_publicador != 2 && bulkInformesData[index - 1].id_tipo_publicador == 2) ? `<tr class="header"><th colspan="6" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Publicadores</th></tr>` : ''}
+                        ${index == 0 && informe.id_tipo_publicador == 2 ? `<tr class="header"><th colspan="7" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Precursores regulares</th></tr>` : ''}
+                        ${(index == 0 && informe.id_tipo_publicador != 2) || (index > 0 && informe.id_tipo_publicador != 2 && bulkInformesData[index - 1].id_tipo_publicador == 2) ? `<tr class="header"><th colspan="7" style="background-color: var(--bg-primary); color: var(--text-primary); text-align: center; font-weight: bold; font-size: var(--font-size-lg);">Publicadores</th></tr>` : ''}
                         <tr>
                             <td data-label="Publicador"><strong>${informe.nombre}</strong></td>
                             <td data-label="Enviar WhatsApp" style="text-align: center;">
-                                <a id="whatsapp_${index}" style="display: ${informe.predico_en_el_mes ? 'none' : 'block'};" href="https://wa.me/${informe.telefono}?text=Hola%2C%20buen%20d%C3%ADa!%20Me%20puede%20mandar%20su%20informe%20de%20${nombreMes}%2C%20por%20favor%3F%20Saludos!" target="_blank">${informe.telefono}</a>
+                                <a id="whatsapp_${index}" style="display: ${informe.predico_en_el_mes || !informe.telefono ? 'none' : 'block'};" href="https://wa.me/${informe.telefono}?text=Hola%2C%20buen%20d%C3%ADa!%20Me%20puede%20mandar%20su%20informe%20de%20${nombreMes}%2C%20por%20favor%3F%20Saludos!" target="_blank">${informe.telefono}</a>
                             </td>
                             <td data-label="Participación en el ministerio" style="text-align: center;">
                                 <label class="switch">
