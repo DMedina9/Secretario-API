@@ -239,7 +239,7 @@ const upsertInformesBulk = async (req, res) => {
                 // Enviar el correo
                 await sendEmail(
                     configCorreo.valor,
-                    '📊 Notificación de Editor Masivo de Informes',
+                    '📊 Notificación de Editor de Informes',
                     htmlContent
                 );
 

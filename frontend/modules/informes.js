@@ -43,7 +43,7 @@ export async function renderInformes(container) {
                     ${hasPermission('admin') ? `
                         <div class="card">
                             <div class="card-header">
-                                <h3 class="card-title">✏️ Editor Masivo de Informes</h3>
+                                <h3 class="card-title">✏️ Editor de Informes</h3>
                                 <p class="card-subtitle">Edita múltiples informes simultáneamente por grupo</p>
                             </div>
                             <div class="card-body">
@@ -59,13 +59,13 @@ export async function renderInformes(container) {
                                         </select>
                                     </div>
                                     <div class="form-group" style="display: flex; align-items: flex-end;">
-                                        <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%;">Cargar Publicadores</button>
+                                        <button class="btn btn-primary" id="loadBulkBtn" style="width: 100%;">Aplicar Filtros</button>
                                     </div>
                                 </div>
                                 <div id="bulkEditorContainer"></div>
                             </div>
                         </div>
-                    ` : '<div class="alert alert-info">Necesitas permisos de administrador para acceder al editor masivo.</div>'}
+                    ` : '<div class="alert alert-info">Necesitas permisos de administrador para acceder al editor.</div>'}
                 </div>
 
                 <!-- Section: Por Publicador -->

@@ -47,7 +47,7 @@ export async function renderFillPDF(container) {
                                 <div class="form-group">
                                     <label class="form-label">Tipo de Reporte</label>
                                     <select class="form-select" id="viewerTipo">
-                                        <option value="S21I" selected>S-21 Individual</option>
+                                        <option value="S21I" selected>S-21</option>
                                         <option value="S21T">S-21 Totales</option>
                                         <option value="S88">S-88</option>
                                     </select>
@@ -370,6 +370,10 @@ async function renderPage(pageNumber) {
 
         // Update page info
         document.getElementById('pageInfo').textContent = `Página ${pageNumber} de ${currentPDF.numPages}`;
+        if (currentPDF.numPages === 1) {
+            document.getElementById('prevPageBtn').style.display = 'none';
+            document.getElementById('nextPageBtn').style.display = 'none';
+        }
 
         // Update button states
         document.getElementById('prevPageBtn').disabled = pageNumber === 1;

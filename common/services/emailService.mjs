@@ -144,7 +144,7 @@ export const createBulkReportEmailHTML = (usuario, mes, grupo) => {
         </head>
         <body>
             <div class="header">
-                <h2 style="margin: 0;">📊 Notificación de Editor Masivo de Informes</h2>
+                <h2 style="margin: 0;">📊 Notificación de Editor de Informes</h2>
             </div>
             <div class="content">
                 <p>Se ha realizado una inserción masiva de informes en el sistema.</p>
