@@ -1,4 +1,4 @@
-export const API_BASE_URL = ''; // Using proxy defined in vite.config.js
+export const API_BASE_URL = '/api'; // Using proxy defined in vite.config.js
 
 export const getToken = () => localStorage.getItem('auth_token');
 export const setToken = (token) => localStorage.setItem('auth_token', token);

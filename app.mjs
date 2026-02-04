@@ -26,16 +26,16 @@ app.use(cors({
 }));
 app.use(express.json());
 //app.use(express.urlencoded({ extended: true }));
-app.use('/account', authRoutes);
-app.use('/user', userRoutes);
-app.use('/publicador', publicadorRoutes);
-app.use('/informe', informeRoutes);
-app.use('/asistencias', asistenciasRoutes);
-app.use('/secretario', secretarioRoutes);
-app.use('/fillPDF', fillPDFRoutes);
-app.use('/territorios', territoriosRoutes);
-app.use('/configuraciones', configuracionesRoutes);
-app.get('/status', (req, res) => {
+app.use('/api/account', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/publicador', publicadorRoutes);
+app.use('/api/informe', informeRoutes);
+app.use('/api/asistencias', asistenciasRoutes);
+app.use('/api/secretario', secretarioRoutes);
+app.use('/api/fillPDF', fillPDFRoutes);
+app.use('/api/territorios', territoriosRoutes);
+app.use('/api/configuraciones', configuracionesRoutes);
+app.get('/api/status', (req, res) => {
     res.json({
         status: 'Running',
         timestamp: new Date().toISOString()

@@ -8,9 +8,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://secretario-api.onrender.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace('/api', '')
+        target: 'http://localhost:3000',
+        changeOrigin: true
       }
     }
   },
