@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import ConfigSettings from '../components/Configuracion/ConfigSettings';
 import DataManagement from '../components/Configuracion/DataManagement';
-import ReportesS21 from '../components/Configuracion/ReportesS21';
 import Maintenance from '../components/Configuracion/Maintenance';
 import UserManagement from '../components/Configuracion/UserManagement';
 
@@ -28,11 +27,6 @@ const Configuracion = () => {
                             <span className="config-nav-icon">📊</span>
                             <span className="config-nav-text">Gestión de Datos</span>
                         </a>
-                        <a href="#" className={`config-nav-item ${activeSection === 's21' ? 'active' : ''}`}
-                            onClick={(e) => { e.preventDefault(); setActiveSection('s21'); }}>
-                            <span className="config-nav-icon">📄</span>
-                            <span className="config-nav-text">Reportes S-21</span>
-                        </a>
                         <a href="#" className={`config-nav-item ${activeSection === 'mantenimiento' ? 'active' : ''}`}
                             onClick={(e) => { e.preventDefault(); setActiveSection('mantenimiento'); }}>
                             <span className="config-nav-icon">🗑️</span>
@@ -49,7 +43,6 @@ const Configuracion = () => {
                 <main className="config-content">
                     {activeSection === 'configuraciones' && <ConfigSettings />}
                     {activeSection === 'gestion' && <DataManagement />}
-                    {activeSection === 's21' && <ReportesS21 />}
                     {activeSection === 'mantenimiento' && <Maintenance />}
                     {activeSection === 'usuarios' && <UserManagement />}
                 </main>

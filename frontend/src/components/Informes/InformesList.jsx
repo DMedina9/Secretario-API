@@ -25,6 +25,88 @@ const InformesList = () => {
     const [editingInforme, setEditingInforme] = useState(null);
     const [deleteId, setDeleteId] = useState(null);
 
+    // Bulk Edit Year State
+    const [isBulkEditMode, setIsBulkEditMode] = useState(false);
+    const [bulkYearData, setBulkYearData] = useState([]);
+
+    const toggleBulkEditMode = () => {
+        if (!isBulkEditMode) {
+            // Enter bulk mode: generate 12 months for service year
+            const year = parseInt(filterAnio);
+            // Service year starts Sep (year - 1) to Aug (year)
+            const startDate = dayjs(`${year - 1}-09-01`);
+            const maxDate = dayjs().add(-1, 'month');
+            const months = [];
+            for (let i = 0; i < 12; i++) {
+                const currentDate = startDate.add(i, 'month');
+                if (currentDate.isAfter(maxDate)) {
+                    break;
+                }
+                const mesStr = currentDate.format('YYYY-MM');
+                const mesDayStr = mesStr + '-01';
+
+                // Find existing data
+                // `informes` state already contains data for this publisher/year if loaded.
+                // Note: `loadInformes` might need to be called if not already. But assuming user filtered first.
+                // The `informes` array contains objects with `mes` (YYYY-MM-DD or similar).
+                const existing = informes.find(inf => dayjs(inf.mes).format('YYYY-MM') === mesStr);
+                
+                months.push({
+                    mes: mesDayStr,
+                    id_publicador: parseInt(filterPublicadorId),
+                    predico_en_el_mes: existing ? (existing.predico_en_el_mes ? 1 : 0) : 1, 
+                    horas: existing ? existing.horas : 0,
+                    cursos_biblicos: existing ? existing.cursos_biblicos : 0,
+                    notas: existing ? existing.notas : '',
+                    id_tipo_publicador: existing ? existing.id_tipo_publicador : 1 // This might be wrong if pub is RP.
+                    // We need pub details to know default type. `publicadores` has it.
+                });
+            }
+
+            // Correct the default type based on publisher
+            const currentPub = publicadores.find(p => p.id === parseInt(filterPublicadorId));
+            if (currentPub) {
+                months.forEach(m => {
+                    if (!informes.find(inf => dayjs(inf.mes).format('YYYY-MM') === dayjs(m.mes).format('YYYY-MM'))) {
+                        m.id_tipo_publicador = currentPub.id_tipo_publicador || 1;
+                    }
+                });
+            }
+
+            setBulkYearData(months);
+        }
+        setIsBulkEditMode(!isBulkEditMode);
+    };
+
+    const handleBulkChange = (index, field, value) => {
+        setBulkYearData(prev => {
+            const newData = [...prev];
+            newData[index] = { ...newData[index], [field]: value };
+            return newData;
+        });
+    };
+
+    const handleBulkSave = async () => {
+        setLoading(true);
+        try {
+            const result = await apiRequest('/informe/bulk', {
+                method: 'POST',
+                body: bulkYearData
+            });
+
+            if (result && result.success) {
+                showToast('Informes anuales actualizados', 'success');
+                setIsBulkEditMode(false);
+                loadInformes(); // Reload list
+            }
+        } catch (error) {
+            console.error(error);
+            showToast('Error al guardar', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Form fields
     const [formData, setFormData] = useState({
         mes: dayjs().format('YYYY-MM'),
@@ -219,7 +301,8 @@ const InformesList = () => {
         <div>
             <div className="card mb-lg">
                 <div className="card-header">
-                    <h3 className="card-title">Filtros</h3>
+                    <h3 className="card-title">✏️ Editor de Informes</h3>
+                    <p className="card-subtitle">Edita múltiples informes simultáneamente por publicador</p>
                 </div>
                 <div className="card-body">
                     <div className="grid grid-cols-3 gap-md">
@@ -255,65 +338,134 @@ const InformesList = () => {
 
             {isAdmin && (
                 <div className="flex justify-between items-center mb-lg">
-                    <button className="btn btn-primary" onClick={handleCreate}>+ Agregar Informe</button>
+                    <div className="flex gap-sm">
+                        <button className="btn btn-primary" onClick={handleCreate}>+ Agregar Informe</button>
+                        {filterPublicadorId && (
+                            <button className="btn btn-secondary" onClick={toggleBulkEditMode}>
+                                {isBulkEditMode ? 'Cancelar Edición Masiva' : '✏️ Editar Año Completo'}
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
 
             <div className="card">
                 <div className="card-header">
-                    <h3 className="card-title">Lista de Informes</h3>
+                    <h3 className="card-title">{isBulkEditMode ? 'Edición Masiva - Año de Servicio' : 'Lista de Informes'}</h3>
                 </div>
                 <div className="card-body">
                     {loading ? <Loading /> : (
                         <div className="table-container">
-                            {informes.length === 0 ? (
-                                <p className="text-center text-muted">Aplica filtros para ver resultados</p>
-                            ) : (
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Mes</th>
-                                            <th>Publicador</th>
-                                            <th>Tipo</th>
-                                            <th>Predicó</th>
-                                            <th>Horas</th>
-                                            <th>Cursos</th>
-                                            <th>Estatus</th>
-                                            {isAdmin && <th>Acciones</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {informes.map(i => (
-                                            <tr key={i.id}>
-                                                <td data-label="Mes">{dayjs(i.mes).format('YYYY-MM')}</td>
-                                                <td data-label="Publicador">{i.publicador}</td>
-                                                <td data-label="Tipo">{i.tipo_publicador}</td>
-                                                <td data-label="Predicó">
-                                                    {i.predico_en_el_mes ?
-                                                        <span className="badge badge-success">Sí</span> :
-                                                        <span className="badge badge-error">No</span>
-                                                    }
-                                                </td>
-                                                <td data-label="Horas">{i.horas}</td>
-                                                <td data-label="Cursos">{i.cursos_biblicos}</td>
-                                                <td data-label="Estatus">
-                                                    {i.Estatus === 'Activo' ?
-                                                        <span className="badge badge-success">Activo</span> :
-                                                        <span className="badge badge-warning">Inactivo</span>
-                                                    }
-                                                </td>
-                                                {isAdmin && (
-                                                    <td data-label="Acciones">
-                                                        <div className="flex gap-sm">
-                                                            <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(i)}>Editar</button>
-                                                            <button className="btn btn-sm btn-danger" onClick={() => setDeleteId(i.id)}>Eliminar</button>
-                                                        </div>
-                                                    </td>
-                                                )}
+                            {isBulkEditMode ? (
+                                <div>
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Mes</th>
+                                                <th>Predicó</th>
+                                                <th>Horas</th>
+                                                <th>Cursos</th>
+                                                <th>Notas</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {bulkYearData.map((item, index) => (
+                                                <tr key={index}>
+                                                    <td data-label="Mes">{dayjs(item.mes).format('MMMM YYYY')}</td>
+                                                    <td data-label="Predicó" className="text-center">
+                                                        <label className="switch">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={!!item.predico_en_el_mes}
+                                                                onChange={(e) => handleBulkChange(index, 'predico_en_el_mes', e.target.checked ? 1 : 0)}
+                                                            />
+                                                            <span className="slider round"></span>
+                                                        </label>
+                                                    </td>
+                                                    <td data-label="Horas">
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={item.horas}
+                                                            min="0"
+                                                            onChange={(e) => handleBulkChange(index, 'horas', parseInt(e.target.value) || 0)}
+                                                        />
+                                                    </td>
+                                                    <td data-label="Cursos">
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            value={item.cursos_biblicos}
+                                                            min="0"
+                                                            onChange={(e) => handleBulkChange(index, 'cursos_biblicos', parseInt(e.target.value) || 0)}
+                                                        />
+                                                    </td>
+                                                    <td data-label="Notas">
+                                                        <input
+                                                            type="text"
+                                                            className="form-input"
+                                                            value={item.notas || ''}
+                                                            onChange={(e) => handleBulkChange(index, 'notas', e.target.value)}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <div className="flex justify-end gap-sm mt-md">
+                                        <button className="btn btn-primary" onClick={handleBulkSave}>Guardar Todo el Año</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                informes.length === 0 ? (
+                                    <p className="text-center text-muted">Aplica filtros para ver resultados</p>
+                                ) : (
+                                    <table className="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Mes</th>
+                                                <th>Publicador</th>
+                                                <th>Tipo</th>
+                                                <th>Predicó</th>
+                                                <th>Horas</th>
+                                                <th>Cursos</th>
+                                                <th>Estatus</th>
+                                                {isAdmin && <th>Acciones</th>}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {informes.map(i => (
+                                                <tr key={i.id}>
+                                                    <td data-label="Mes">{dayjs(i.mes).format('YYYY-MM')}</td>
+                                                    <td data-label="Publicador">{i.publicador}</td>
+                                                    <td data-label="Tipo">{i.tipo_publicador}</td>
+                                                    <td data-label="Predicó">
+                                                        {i.predico_en_el_mes ?
+                                                            <span className="badge badge-success">Sí</span> :
+                                                            <span className="badge badge-error">No</span>
+                                                        }
+                                                    </td>
+                                                    <td data-label="Horas">{i.horas}</td>
+                                                    <td data-label="Cursos">{i.cursos_biblicos}</td>
+                                                    <td data-label="Estatus">
+                                                        {i.Estatus === 'Activo' ?
+                                                            <span className="badge badge-success">Activo</span> :
+                                                            <span className="badge badge-warning">Inactivo</span>
+                                                        }
+                                                    </td>
+                                                    {isAdmin && (
+                                                        <td data-label="Acciones">
+                                                            <div className="flex gap-sm">
+                                                                <button className="btn btn-sm btn-secondary" onClick={() => handleEdit(i)}>Editar</button>
+                                                                <button className="btn btn-sm btn-danger" onClick={() => setDeleteId(i.id)}>Eliminar</button>
+                                                            </div>
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )
                             )}
                         </div>
                     )}

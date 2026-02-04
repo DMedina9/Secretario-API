@@ -5,7 +5,7 @@ import { useToast } from '../../contexts/ToastContext';
 import Loading from '../Common/Loading';
 
 const InformesBulkEditor = () => {
-    const [month, setMonth] = useState(dayjs().format('YYYY-MM'));
+    const [month, setMonth] = useState(dayjs().add(-1, 'month').format('YYYY-MM'));
     const [groups, setGroups] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState('');
     const [bulkData, setBulkData] = useState([]);

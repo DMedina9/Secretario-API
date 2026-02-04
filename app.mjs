@@ -26,7 +26,7 @@ app.use(cors({
 }));
 app.use(express.json());
 //app.use(express.urlencoded({ extended: true }));
-app.use('/', authRoutes);
+app.use('/account', authRoutes);
 app.use('/user', userRoutes);
 app.use('/publicador', publicadorRoutes);
 app.use('/informe', informeRoutes);
@@ -41,7 +41,7 @@ app.get('/status', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
-app.use('/web', express.static('frontend'));
+app.use('/', express.static('frontend/dist'));
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({

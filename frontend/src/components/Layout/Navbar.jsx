@@ -74,7 +74,7 @@ const Navbar = () => {
                                     <div className="user-avatar">{user?.username?.charAt(0).toUpperCase() || 'U'}</div>
                                     <span className="hidden-mobile">{user?.username || 'Usuario'}</span>
                                 </div>
-                                <button className="btn btn-secondary btn-sm" onClick={handleLogout} title="Cerrar Sessión">
+                                <button className="btn btn-secondary btn-sm" id="logoutBtn" onClick={handleLogout} title="Cerrar Sessión">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                                         <polyline points="16 17 21 12 16 7" />
@@ -83,7 +83,7 @@ const Navbar = () => {
                                 </button>
                             </>
                         ) : (
-                            <button className="btn btn-primary btn-sm" onClick={() => setIsAuthModalOpen(true)}>
+                            <button className="btn btn-primary btn-sm" id="loginBtn" onClick={() => setIsAuthModalOpen(true)}>
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                                     <polyline points="10 17 15 12 10 7" />

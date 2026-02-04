@@ -1,127 +1,16 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sistema de gestión para secretarios de congregación - Secretario API">
-    <title>Secretario - Sistema de Gestión</title>
-    <link rel="icon" href="favicon.ico">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-
-    <!-- Styles -->
-    <link rel="stylesheet" href="styles.css">
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-    <!-- toGeoJSON for KML parsing -->
-    <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
-
-    <!-- Day.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.18/dayjs.min.js"
-        integrity="sha512-FwNWaxyfy2XlEINoSnZh1JQ5TRRtGow0D6XcmAWmYCRgvqOUTnzCxPc9uF35u5ZEpirk1uhlPVA19tflhvnW1g=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.18/locale/es-mx.min.js"
-        integrity="sha512-dIk5t6xgFnZTHhp527gfoTLBxLv/PMW4nl8EUDEg/+s8u6/aqpSVifLefkx3drYOKl/RlJ0kXt2LsVmjCFIGwA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secretario - Sistema de Gestión</title>
 </head>
 
 <body>
-    <!-- Navigation -->
-    <nav class="navbar" id="navbar">
-        <div class="container navbar-content">
-            <div class="navbar-brand">
-                <img src="logo.png" alt="Secretario Logo" class="navbar-logo">
-                <span>Secretario</span>
-            </div>
-
-            <!-- Hamburger Menu Button (Mobile) -->
-            <button class="navbar-toggle" id="navbarToggle" aria-label="Toggle menu">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-
-            <ul class="navbar-menu" id="navMenu">
-                <li><a href="#" data-page="dashboard" class="active">Inicio</a></li>
-                <li><a href="#" data-page="publicadores">Publicadores</a></li>
-                <li><a href="#" data-page="asistencias">Asistencias</a></li>
-                <li><a href="#" data-page="informes">Informes</a></li>
-                <li><a href="#" data-page="secretario">Servicios</a></li>
-                <li><a href="#" data-page="fillpdf">Reportes</a></li>
-                <li><a href="#" data-page="territorios">Territorios</a></li>
-                <li><a href="#" data-page="configuracion">Configuración</a></li>
-            </ul>
-
-            <div class="navbar-actions">
-                <div class="user-info hidden" id="userInfo">
-                    <div class="user-avatar" id="userAvatar">U</div>
-                    <span id="userName">Usuario</span>
-                </div>
-                <button class="btn btn-primary btn-sm" id="loginBtn"><svg width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-log-in">
-                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                        <polyline points="10 17 15 12 10 7" />
-                        <line x1="15" x2="3" y1="12" y2="12" />
-                    </svg></button>
-                <button class="btn btn-secondary btn-sm hidden" id="logoutBtn"><svg width="24" height="24"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" class="lucide lucide-log-out">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" x2="9" y1="12" y2="12" />
-                    </svg></button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="container" id="appContent">
-            <!-- Dynamic content will be loaded here -->
-        </div>
-    </main>
-
-    <!-- Login/Signup Modal -->
-    <div class="modal-overlay" id="authModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title" id="authModalTitle">Iniciar Sesión</h3>
-                <button class="modal-close" id="closeAuthModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <!-- Login Form -->
-                <form id="loginForm" class="auth-form">
-                    <div class="form-group">
-                        <label class="form-label" for="loginUsername">Nombre de Usuario</label>
-                        <input type="text" class="form-input" id="loginUsername" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="loginPassword">Contraseña</label>
-                        <input type="password" class="form-input" id="loginPassword" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Entrar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
-
-    <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script type="module" src="app.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 
 </html>

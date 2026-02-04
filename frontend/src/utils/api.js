@@ -1,5 +1,3 @@
-import { useNavigate } from 'react-router-dom';
-
 export const API_BASE_URL = '/api'; // Using proxy defined in vite.config.js
 
 export const getToken = () => localStorage.getItem('auth_token');
@@ -9,7 +7,8 @@ export const getUser = () => {
     const userStr = localStorage.getItem('user');
     try {
         return userStr ? JSON.parse(userStr) : null;
-    } catch (e) {
+    } catch (error) {
+        console.error('Error al obtener el usuario:', error);
         return null;
     }
 };
