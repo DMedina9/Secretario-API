@@ -10,7 +10,7 @@ export default defineConfig({
       '/api': {
         target: 'https://secretario-api.onrender.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, 'https://secretario-api.onrender.com')
+        rewrite: (path) => path.replace('/api', '')
       }
     }
   },
