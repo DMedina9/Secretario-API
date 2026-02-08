@@ -296,6 +296,11 @@ input:checked+.slider:before {
     border-radius: 50%;
 }
 
+.switch:focus-within .slider {
+    outline: 2px solid var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
 /* Hamburger Menu Button (Hidden on Desktop) */
 .navbar-toggle {
     display: none;
@@ -1641,4 +1646,14 @@ input:checked+.slider:before {
 .btn-warning:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), var(--shadow-lg);
+}
+
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+    z-index: 1;
+}
+
+.leaflet-bottom {
+    display: none !important;
 }

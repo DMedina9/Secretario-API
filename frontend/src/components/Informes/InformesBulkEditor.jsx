@@ -295,19 +295,18 @@ const InformesBulkEditor = () => {
                                                     <input
                                                         type="number"
                                                         className="form-input"
-                                                        value={item.cursos_biblicos}
+                                                        hidden={!item.predico_en_el_mes}
+                                                        value={item.cursos_biblicos || ''}
                                                         min="0"
                                                         onChange={(e) => handleFieldChange(index, 'cursos_biblicos', parseInt(e.target.value) || 0)}
                                                         style={{ padding: '0.4rem' }}
                                                     />
                                                 </td>
                                                 <td data-label="Precursor Aux." className="text-center">
-                                                    <label className="switch">
+                                                    <label className="switch" style={{ visibility: !item.predico_en_el_mes || item.id_base_tipo === 2 ? 'hidden' : 'visible' }}>
                                                         <input
                                                             type="checkbox"
-                                                            // Disabled if base type is RP (2)
-                                                            disabled={item.id_base_tipo === 2}
-                                                            // Checked if type is PA (3)
+                                                            disabled={!item.predico_en_el_mes || item.id_base_tipo === 2}
                                                             checked={item.id_tipo_publicador === 3}
                                                             onChange={(e) => handleFieldChange(index, 'id_tipo_publicador', e.target.checked ? 3 : 1)}
                                                         />
@@ -318,7 +317,8 @@ const InformesBulkEditor = () => {
                                                     <input
                                                         type="number"
                                                         className="form-input"
-                                                        value={item.horas}
+                                                        hidden={!item.predico_en_el_mes || item.id_tipo_publicador === 1}
+                                                        value={item.predico_en_el_mes && item.id_tipo_publicador != 1 && item.horas || ''}
                                                         min="0"
                                                         onChange={(e) => handleFieldChange(index, 'horas', parseInt(e.target.value) || 0)}
                                                         style={{ padding: '0.4rem' }}

@@ -50,11 +50,11 @@ const InformesList = () => {
                 // Note: `loadInformes` might need to be called if not already. But assuming user filtered first.
                 // The `informes` array contains objects with `mes` (YYYY-MM-DD or similar).
                 const existing = informes.find(inf => dayjs(inf.mes).format('YYYY-MM') === mesStr);
-                
+
                 months.push({
                     mes: mesDayStr,
                     id_publicador: parseInt(filterPublicadorId),
-                    predico_en_el_mes: existing ? (existing.predico_en_el_mes ? 1 : 0) : 1, 
+                    predico_en_el_mes: existing ? (existing.predico_en_el_mes ? 1 : 0) : 1,
                     horas: existing ? existing.horas : 0,
                     cursos_biblicos: existing ? existing.cursos_biblicos : 0,
                     notas: existing ? existing.notas : '',
@@ -70,6 +70,7 @@ const InformesList = () => {
                     if (!informes.find(inf => dayjs(inf.mes).format('YYYY-MM') === dayjs(m.mes).format('YYYY-MM'))) {
                         m.id_tipo_publicador = currentPub.id_tipo_publicador || 1;
                     }
+                    m.id_base_tipo = currentPub.id_tipo_publicador || 1;
                 });
             }
 
@@ -363,8 +364,9 @@ const InformesList = () => {
                                             <tr>
                                                 <th>Mes</th>
                                                 <th>Predicó</th>
-                                                <th>Horas</th>
                                                 <th>Cursos</th>
+                                                <th>Precursor Aux.</th>
+                                                <th>Horas</th>
                                                 <th>Notas</th>
                                             </tr>
                                         </thead>
@@ -382,22 +384,35 @@ const InformesList = () => {
                                                             <span className="slider round"></span>
                                                         </label>
                                                     </td>
-                                                    <td data-label="Horas">
-                                                        <input
-                                                            type="number"
-                                                            className="form-input"
-                                                            value={item.horas}
-                                                            min="0"
-                                                            onChange={(e) => handleBulkChange(index, 'horas', parseInt(e.target.value) || 0)}
-                                                        />
-                                                    </td>
                                                     <td data-label="Cursos">
                                                         <input
                                                             type="number"
                                                             className="form-input"
-                                                            value={item.cursos_biblicos}
+                                                            hidden={!item.predico_en_el_mes}
+                                                            value={item.cursos_biblicos || ''}
                                                             min="0"
                                                             onChange={(e) => handleBulkChange(index, 'cursos_biblicos', parseInt(e.target.value) || 0)}
+                                                        />
+                                                    </td>
+                                                    <td data-label="Precursor Aux." className="text-center">
+                                                        <label className="switch" style={{ visibility: !item.predico_en_el_mes || item.id_base_tipo === 2 ? 'hidden' : 'visible' }}>
+                                                            <input
+                                                                type="checkbox"
+                                                                disabled={!item.predico_en_el_mes || item.id_base_tipo === 2}
+                                                                checked={item.id_tipo_publicador === 3}
+                                                                onChange={(e) => handleBulkChange(index, 'id_tipo_publicador', e.target.checked ? 3 : 1)}
+                                                            />
+                                                            <span className="slider round"></span>
+                                                        </label>
+                                                    </td>
+                                                    <td data-label="Horas">
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            hidden={!item.predico_en_el_mes || item.id_tipo_publicador === 1}
+                                                            value={item.predico_en_el_mes && item.id_tipo_publicador != 1 && item.horas || ''}
+                                                            min="0"
+                                                            onChange={(e) => handleBulkChange(index, 'horas', parseInt(e.target.value) || 0)}
                                                         />
                                                     </td>
                                                     <td data-label="Notas">

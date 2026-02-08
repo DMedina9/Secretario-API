@@ -40,7 +40,7 @@ const getInformes = async (req, res) => {
             ${anio_servicio ? `AND (CASE WHEN CAST(STRFTIME('%m', i.mes) AS INTEGER) > 8 THEN 1 ELSE 0 END + CAST(STRFTIME('%Y', i.mes) AS INTEGER)) = ${anio_servicio}` : ''}
             ${id_publicador ? `AND p.id = ${id_publicador}` : ''}
             ${mes ? `AND CAST(STRFTIME('%m', i.mes) AS INTEGER) = ${mes}` : ''}
-            ORDER BY i.mes DESC, p.apellidos, p.nombre
+            ORDER BY i.mes asc, p.apellidos, p.nombre
             `,
             { type: QueryTypes.SELECT }
         )
