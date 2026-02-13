@@ -14,7 +14,8 @@ const schema = {
         firstName: { type: 'string', minLength: 3, maxLength: 20 },
         lastName: { type: 'string', minLength: 3, maxLength: 20 },
         age: { type: 'integer', minimum: 18, maximum: 120 },
-        role: { type: 'string', enum: ['user', 'admin'] }
+        role: { type: 'string', enum: ['user', 'admin'] },
+        publisherId: { type: 'integer', nullable: true }
     }
 };
 const validate = ajv.compile(schema);
@@ -40,7 +41,8 @@ const register = async (req, res) => {
             firstName,
             lastName,
             role,
-            age
+            age,
+            publisherId: req.body.publisherId
         });
         const accessToken = generateAccessToken(username, user.id);
         res.status(201).json({

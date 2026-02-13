@@ -35,7 +35,8 @@ const createUser = async (req, res) => {
             password: hashedPassword,
             firstName,
             lastName,
-            role: role || 'USER'
+            role: role || 'USER',
+            publisherId: req.body.publisherId
         });
 
         res.json({ success: true, message: 'Usuario creado exitosamente', data: user });
@@ -60,6 +61,7 @@ const updateUser = async (req, res) => {
         if (firstName) user.firstName = firstName;
         if (lastName) user.lastName = lastName;
         if (role) user.role = role;
+        if (req.body.publisherId !== undefined) user.publisherId = req.body.publisherId;
         if (password) {
             // Hash new password
             user.password = encryptPassword(password);

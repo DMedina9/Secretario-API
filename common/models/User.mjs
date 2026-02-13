@@ -8,7 +8,8 @@ const UserModel = {
     firstName: { type: DataTypes.STRING, allowNull: false },
     lastName: { type: DataTypes.STRING, allowNull: false },
     role: { type: DataTypes.STRING, defaultValue: 'USER' },
-    age: { type: DataTypes.INTEGER }
+    age: { type: DataTypes.INTEGER },
+    publisherId: { type: DataTypes.INTEGER, allowNull: true }
 };
 
 export default (sequelize) => sequelize.define('user', UserModel);

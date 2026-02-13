@@ -135,14 +135,30 @@ const UserManagement = () => {
 const UserFormModal = ({ isOpen, onClose, user, onSave }) => {
     const { showToast } = useToast();
     const [formData, setFormData] = useState({
-        username: '', email: '', firstName: '', lastName: '', password: '', role: 'USER'
+        username: '', email: '', firstName: '', lastName: '', password: '', role: 'USER', publisherId: ''
     });
+    const [publicadores, setPublicadores] = useState([]);
+
+    const loadPublicadores = async () => {
+        try {
+            const result = await apiRequest('/publicador/all');
+            if (result && result.data) {
+                setPublicadores(result.data.sort((a, b) => a.apellidos.localeCompare(b.apellidos)));
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    useEffect(() => {
+        loadPublicadores();
+    }, []);
 
     useEffect(() => {
         if (user) {
-            setFormData({ ...user, password: '' });
+            setFormData({ ...user, password: '', publisherId: user.publisherId || '' });
         } else {
-            setFormData({ username: '', email: '', firstName: '', lastName: '', password: '', role: 'USER' });
+            setFormData({ username: '', email: '', firstName: '', lastName: '', password: '', role: 'USER', publisherId: '' });
         }
     }, [user, isOpen]);
 
@@ -155,7 +171,8 @@ const UserFormModal = ({ isOpen, onClose, user, onSave }) => {
         e.preventDefault();
         try {
             const body = { ...formData };
-            if (!body.password) delete body.password; // Don't send empty password if editing
+            if (!body.password) delete body.password;
+            if (body.publisherId === '') body.publisherId = null;
 
             let result;
             if (user) {
@@ -207,6 +224,15 @@ const UserFormModal = ({ isOpen, onClose, user, onSave }) => {
                     <select name="role" value={formData.role} onChange={handleChange} className="form-select">
                         <option value="USER">Usuario</option>
                         <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div className="form-group col-span-full">
+                    <label className="form-label">Publicador Asociado</label>
+                    <select name="publisherId" value={formData.publisherId} onChange={handleChange} className="form-select">
+                        <option value="">Ninguno</option>
+                        {publicadores.map(p => (
+                            <option key={p.id} value={p.id}>{p.apellidos}, {p.nombre}</option>
+                        ))}
                     </select>
                 </div>
 

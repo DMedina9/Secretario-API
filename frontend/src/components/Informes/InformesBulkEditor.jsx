@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { apiRequest } from '../../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import Loading from '../Common/Loading';
 
@@ -11,10 +12,7 @@ const InformesBulkEditor = () => {
     const [bulkData, setBulkData] = useState([]);
     const [loading, setLoading] = useState(false);
     const { showToast } = useToast();
-
-    useEffect(() => {
-        loadGroups();
-    }, []);
+    const { user } = useAuth();
 
     const loadGroups = async () => {
         try {
@@ -24,11 +22,29 @@ const InformesBulkEditor = () => {
                 const uniqueGroups = [...new Set(data.data.map(p => p.grupo).filter(g => g))];
                 uniqueGroups.sort((a, b) => a - b);
                 setGroups(uniqueGroups);
+
+                // Auto-select group if user has publisherId
+                if (user?.publisherId) {
+                    const publisher = data.data.find(p => p.id === user.publisherId);
+                    if (publisher && publisher.grupo) {
+                        setSelectedGroup(publisher.grupo);
+                    }
+                }
             }
         } catch (error) {
             console.error('Error loading groups', error);
         }
     };
+
+    useEffect(() => {
+        loadGroups();
+    }, []);
+
+    useEffect(() => {
+        if (month && selectedGroup) {
+            loadBulkData();
+        }
+    }, [month, selectedGroup]);
 
     const loadBulkData = async () => {
         if (!month || !selectedGroup) {
