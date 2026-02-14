@@ -95,6 +95,63 @@
     --z-dropdown: 1000;
     --z-modal: 2000;
     --z-toast: 3000;
+
+    /* Theme specific variables (Default Dark) */
+    --bg-gradient-start: var(--bg-primary);
+    --bg-gradient-mid: hsl(220, 18%, 10%);
+    --bg-gradient-end: var(--bg-primary);
+
+    --navbar-bg: rgba(20, 24, 35, 0.8);
+    --navbar-border: rgba(255, 255, 255, 0.05);
+    --mobile-menu-bg: rgba(20, 24, 35, 0.98);
+
+    --card-bg: rgba(255, 255, 255, 0.03);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(255, 255, 255, 0.1);
+
+    --table-hover: rgba(255, 255, 255, 0.03);
+    --table-border: rgba(255, 255, 255, 0.05);
+    --table-head-bg: rgba(255, 255, 255, 0.05);
+    --loading-bg: rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="light"] {
+    /* Light Mode Background */
+    --bg-primary: hsl(220, 20%, 97%);
+    --bg-secondary: hsl(220, 20%, 100%);
+    --bg-tertiary: hsl(220, 20%, 94%);
+
+    /* Text Colors */
+    --text-primary: hsl(220, 20%, 20%);
+    --text-secondary: hsl(220, 15%, 40%);
+    --text-muted: hsl(220, 10%, 55%);
+
+    /* Gradient */
+    --bg-gradient-start: hsl(220, 30%, 96%);
+    --bg-gradient-mid: hsl(220, 30%, 98%);
+    --bg-gradient-end: hsl(220, 30%, 96%);
+
+    /* Component Colors */
+    --navbar-bg: rgba(255, 255, 255, 0.85);
+    --navbar-border: rgba(0, 0, 0, 0.05);
+    --mobile-menu-bg: rgba(255, 255, 255, 0.98);
+
+    --card-bg: rgba(255, 255, 255, 0.7);
+    --card-border: rgba(0, 0, 0, 0.05);
+    --input-bg: rgba(0, 0, 0, 0.03);
+    --input-border: rgba(0, 0, 0, 0.1);
+
+    --table-hover: rgba(0, 0, 0, 0.02);
+    --table-border: rgba(0, 0, 0, 0.05);
+    --table-head-bg: rgba(0, 0, 0, 0.03);
+    --loading-bg: rgba(255, 255, 255, 0.8);
+
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    --color-primary-light: hsl(var(--primary-hue), var(--primary-sat), 50%);
+    /* Darker for light mode contrast */
 }
 
 /* === BASE STYLES === */
@@ -108,7 +165,7 @@ body {
     font-size: var(--font-size-base);
     line-height: 1.6;
     color: var(--text-primary);
-    background: linear-gradient(135deg, var(--bg-primary) 0%, hsl(220, 18%, 10%) 50%, var(--bg-primary) 100%);
+    background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
     background-attachment: fixed;
     min-height: 100vh;
     overflow-x: hidden;
@@ -184,10 +241,10 @@ a:hover {
 
 /* === NAVIGATION === */
 .navbar {
-    background: rgba(20, 24, 35, 0.8);
+    background: var(--navbar-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--navbar-border);
     padding: var(--space-md) 0;
     position: sticky;
     top: 0;
@@ -346,7 +403,7 @@ input:checked+.slider:before {
     align-items: center;
     gap: var(--space-sm);
     padding: var(--space-sm) var(--space-md);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--input-bg);
     border-radius: var(--border-radius-full);
     font-size: var(--font-size-sm);
 }
@@ -364,8 +421,8 @@ input:checked+.slider:before {
 
 /* === CARDS === */
 .card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: var(--border-radius-lg);
     padding: var(--space-lg);
     box-shadow: var(--shadow-md);
@@ -502,8 +559,8 @@ input:checked+.slider:before {
 .form-textarea {
     width: 100%;
     padding: var(--space-sm) var(--space-md);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: var(--border-radius-md);
     color: var(--text-primary);
     font-size: var(--font-size-base);
@@ -516,7 +573,7 @@ input:checked+.slider:before {
 .form-textarea:focus {
     outline: none;
     border-color: var(--color-primary);
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--input-bg);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
@@ -549,7 +606,7 @@ input:checked+.slider:before {
 .table-container {
     overflow-x: auto;
     border-radius: var(--border-radius-lg);
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--card-bg);
 }
 
 .table {
@@ -558,7 +615,7 @@ input:checked+.slider:before {
 }
 
 .table thead {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--table-head-bg);
 }
 
 .table th {
@@ -571,7 +628,7 @@ input:checked+.slider:before {
 
 .table td {
     padding: var(--space-md);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--table-border);
     color: var(--text-secondary);
 }
 
@@ -580,7 +637,7 @@ input:checked+.slider:before {
 }
 
 .table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--table-hover);
 }
 
 /* Mobile-friendly table cards */
@@ -804,7 +861,7 @@ input:checked+.slider:before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+    background: var(--loading-bg);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -1101,7 +1158,7 @@ input:checked+.slider:before {
         top: 100%;
         left: 0;
         right: 0;
-        background: rgba(20, 24, 35, 0.98);
+        background: var(--mobile-menu-bg);
         backdrop-filter: blur(20px);
         padding: var(--space-md);
         flex-direction: column;
