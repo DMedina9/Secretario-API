@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { apiRequest } from '../utils/api';
 import PublicadorForm from '../components/Publicadores/PublicadorForm';
+import PublicadorCard from '../components/Publicadores/PublicadorCard';
+import Modal from '../components/Common/Modal';
 import ConfirmDialog from '../components/Common/ConfirmDialog';
 import Loading from '../components/Common/Loading';
 
@@ -17,6 +19,8 @@ const Publicadores = () => {
     const [editingPublicador, setEditingPublicador] = useState(null);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [publicadorToDelete, setPublicadorToDelete] = useState(null);
+    const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+    const [viewingPublicador, setViewingPublicador] = useState(null);
 
     const { user } = useAuth();
     const { showToast } = useToast();
@@ -130,6 +134,11 @@ const Publicadores = () => {
         setIsDeleteConfirmOpen(true);
     };
 
+    const openCardModal = (publicador) => {
+        setViewingPublicador(publicador);
+        setIsCardModalOpen(true);
+    };
+
     return (
         <div className="fade-in">
             <div className="page-header">
@@ -208,6 +217,7 @@ const Publicadores = () => {
                                             {isAdmin && (
                                                 <td data-label="Acciones">
                                                     <div className="flex gap-sm">
+                                                        <button className="btn btn-sm btn-secondary" onClick={() => openCardModal(p)} title="Ver Tarjeta">📇</button>
                                                         <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(p)} title="Editar">✏️</button>
                                                         <button className="btn btn-sm btn-danger" onClick={() => openDeleteConfirm(p)} title="Eliminar">🗑️</button>
                                                     </div>
@@ -242,6 +252,17 @@ const Publicadores = () => {
                 message={`¿Estás seguro de que deseas eliminar al publicador ${publicadorToDelete?.nombre} ${publicadorToDelete?.apellidos}?`}
                 title="Eliminar Publicador"
             />
+
+            <Modal
+                isOpen={isCardModalOpen}
+                onClose={() => setIsCardModalOpen(false)}
+                title="Tarjeta de Publicador"
+            >
+                <PublicadorCard
+                    publicador={viewingPublicador}
+                    onClose={() => setIsCardModalOpen(false)}
+                />
+            </Modal>
         </div>
     );
 };

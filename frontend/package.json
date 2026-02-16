@@ -12,6 +12,7 @@
   "dependencies": {
     "@tmcw/togeojson": "^7.1.2",
     "dayjs": "^1.11.19",
+    "html2canvas": "^1.4.1",
     "leaflet": "^1.9.4",
     "pdfjs-dist": "^5.4.624",
     "react": "^19.2.0",

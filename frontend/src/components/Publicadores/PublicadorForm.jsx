@@ -146,7 +146,7 @@ const PublicadorForm = ({ isOpen, onClose, onSubmit, publicador, title = "Public
                 </div>
                 <div className="form-group">
                     <label className="form-label">Sup Grupo</label>
-                    <select className="form-select" name="sup_grupo" value={formData.sup_grupo} onChange={handleChange} required>
+                    <select className="form-select" name="sup_grupo" value={formData.sup_grupo} onChange={handleChange}>
                         <option value="">Seleccione</option>
                         <option value="1">Sup</option>
                         <option value="2">Aux</option>
