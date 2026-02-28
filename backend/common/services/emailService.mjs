@@ -7,29 +7,19 @@ dotenv.config();
  * Crea y configura el transporte SMTP para envío de correos
  */
 const createTransporter = () => {
-    const port = parseInt(process.env.SMTP_PORT || '587');
     return nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: port,
-        secure: port === 465, // true para puerto 465 (SSL), false para 587 (TLS)
+        service: 'gmail',
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
         },
-        // Configuraciones adicionales para mejorar conectividad
-        connectionTimeout: 30000,
-        greetingTimeout: 30000,
-        socketTimeout: 30000,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
         debug: true,
         logger: true,
-        // Forzar IPv4 para evitar problemas con IPv6
-        family: 4,
-        // Requerir TLS para puerto 587
-        requireTLS: port === 587,
-        tls: {
-            // No rechazar certificados no autorizados (solo para desarrollo)
-            rejectUnauthorized: process.env.NODE_ENV === 'production'
-        }
+        // Eliminamos el hardcode de family: 4 y otras configuraciones manuales
+        // ya que al usar service: 'gmail' NodeMailer configura automáticamente los puertos, hosts seguros, y TLS adecuados.
     });
 };
 
