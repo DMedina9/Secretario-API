@@ -11,6 +11,12 @@ import fillPDFRoutes from './fillPDF/routes.mjs';
 import territoriosRoutes from './territorios/routes.mjs';
 import configuracionesRoutes from './configuraciones/routes.mjs';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 dotenv.config();
 
 initDb();
@@ -41,7 +47,7 @@ app.get('/api/status', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
-app.use('/', express.static('frontend/dist'));
+app.use('/', express.static(path.join(__dirname, '../frontend/dist')));
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({
