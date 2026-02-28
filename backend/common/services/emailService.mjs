@@ -1,35 +1,13 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-/**
- * Crea y configura el transporte SMTP para envío de correos
- */
-const createTransporter = () => {
-    return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // Use SSL/TLS immediately
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-        // Increase timeouts slightly for cloud environments
-        connectionTimeout: 20000,
-        greetingTimeout: 20000,
-        socketTimeout: 20000,
-        debug: true,
-        logger: true,
-        tls: {
-            // Allows self-signed certificates or minor TLS issues in internal cloud routing
-            rejectUnauthorized: false
-        }
-    });
-};
+// Inicializar cliente de Resend con la API Key del entorno
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Envía un correo electrónico
+ * Envía un correo electrónico usando la API de Resend
  * @param {string} to - Dirección de correo del destinatario
  * @param {string} subject - Asunto del correo
  * @param {string} html - Contenido HTML del correo
@@ -37,25 +15,27 @@ const createTransporter = () => {
  */
 export const sendEmail = async (to, subject, html) => {
     try {
-        // Validar que existan las credenciales SMTP
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            throw new Error('Las credenciales SMTP no están configuradas en las variables de entorno');
+        if (!process.env.RESEND_API_KEY) {
+            throw new Error('La API Key de Resend (RESEND_API_KEY) no está configurada.');
         }
 
-        const transporter = createTransporter();
+        const fromEmail = process.env.SMTP_FROM || 'onboarding@resend.dev';
 
-        const mailOptions = {
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
-            to,
-            subject,
-            html,
-        };
+        const { data, error } = await resend.emails.send({
+            from: `Secretario-API <${fromEmail}>`,
+            to: [to],
+            subject: subject,
+            html: html,
+        });
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Correo enviado:', info.messageId);
-        return { success: true, messageId: info.messageId };
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        console.log('Correo enviado con éxito (Resend ID):', data.id);
+        return { success: true, messageId: data.id };
     } catch (error) {
-        console.error('Error al enviar correo:', error.message);
+        console.error('Error al enviar correo con Resend:', error.message);
         throw error;
     }
 };
