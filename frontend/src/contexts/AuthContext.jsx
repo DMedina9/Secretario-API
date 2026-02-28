@@ -12,6 +12,13 @@ export const AuthProvider = ({ children }) => {
         // Here we could validate the token with the backend if needed
         // For now, we trust the local storage until a 401 happens
         setLoading(false);
+
+        const handleUnauthorized = () => {
+            logout();
+        };
+
+        window.addEventListener('auth:unauthorized', handleUnauthorized);
+        return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
     }, []);
 
     const login = async (username, password) => {

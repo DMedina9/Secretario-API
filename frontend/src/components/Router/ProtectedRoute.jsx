@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -7,19 +7,26 @@ const ProtectedRoute = () => {
     const { isAuthenticated, loading } = useAuth();
     const { showToast } = useToast();
     const location = useLocation();
+    const toastShown = useRef(false);
+
+    useEffect(() => {
+        if (!loading && !isAuthenticated() && !toastShown.current) {
+            toastShown.current = true;
+            // Only show toast if we are accessing a protected route directly, not when logging out
+            // We use a small timeout so that if Navbar redirects before logout, it cancels
+            const timer = setTimeout(() => {
+                showToast('Debes iniciar sesión para acceder a esta sección', 'warning');
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [loading, isAuthenticated, showToast]);
 
     if (loading) {
         return <div className="loading-overlay"><div className="spinner"></div></div>;
     }
 
     if (!isAuthenticated()) {
-        showToast('Debes iniciar sesión para acceder a esta sección', 'warning');
         return <Navigate to="/" state={{ from: location }} replace />;
-        // Note: We might want to trigger the auth modal instead of redirecting to home,
-        // but for now redirecting to home (where we can trigger modal) is safer.
-        // Actually, let's just render the Outlet but trigger the modal via a side effect?
-        // No, standard pattern is redirect or show login page.
-        // Given our design has a modal login, maybe we just redirect to home
     }
 
     return <Outlet />;

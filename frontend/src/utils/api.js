@@ -42,12 +42,13 @@ export async function apiRequest(endpoint, options = {}) {
             headers
         });
 
-        // Handle 401 Unauthorized is handled better in the context or where this is called
-        // but we can throw a specific error
+        // Handle 401 Unauthorized by dispatching a global event
+        // so that AuthContext can catch it and log the user out across the app
         if (response.status === 401) {
             removeToken();
             removeUser();
-            throw new Error('Unauthorized'); // Let the caller or global handler deal with redirect
+            window.dispatchEvent(new Event('auth:unauthorized'));
+            throw new Error('Su sesión ha expirado'); // Let the caller or global handler deal with redirect
         }
 
         const data = await response.json();

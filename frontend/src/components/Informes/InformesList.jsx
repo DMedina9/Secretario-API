@@ -56,6 +56,7 @@ const InformesList = () => {
                     id_publicador: parseInt(filterPublicadorId),
                     predico_en_el_mes: existing ? (existing.predico_en_el_mes ? 1 : 0) : 1,
                     horas: existing ? existing.horas : 0,
+                    horas_SS: existing ? existing.horas_SS : 0,
                     cursos_biblicos: existing ? existing.cursos_biblicos : 0,
                     notas: existing ? existing.notas : '',
                     id_tipo_publicador: existing ? existing.id_tipo_publicador : 1 // This might be wrong if pub is RP.
@@ -115,7 +116,9 @@ const InformesList = () => {
         id_tipo_publicador: 1,
         predico_en_el_mes: 1,
         horas: 0,
-        cursos_biblicos: 0
+        horas_SS: 0,
+        cursos_biblicos: 0,
+        notas: ''
     });
 
     useEffect(() => {
@@ -221,7 +224,9 @@ const InformesList = () => {
             id_tipo_publicador: 1,
             predico_en_el_mes: 1,
             horas: 0,
-            cursos_biblicos: 0
+            horas_SS: 0,
+            cursos_biblicos: 0,
+            notas: ''
         });
         setIsFormOpen(true);
     };
@@ -234,7 +239,9 @@ const InformesList = () => {
             id_tipo_publicador: informe.id_tipo_publicador || 1,
             predico_en_el_mes: informe.predico_en_el_mes ? 1 : 0,
             horas: informe.horas || 0,
-            cursos_biblicos: informe.cursos_biblicos || 0
+            horas_SS: informe.horas_SS || 0,
+            cursos_biblicos: informe.cursos_biblicos || 0,
+            notas: informe.notas || ''
         });
         setIsFormOpen(true);
     };
@@ -249,7 +256,9 @@ const InformesList = () => {
             id_tipo_publicador: parseInt(formData.id_tipo_publicador),
             predico_en_el_mes: parseInt(formData.predico_en_el_mes),
             horas: parseInt(formData.horas),
-            cursos_biblicos: parseInt(formData.cursos_biblicos)
+            horas_SS: parseInt(formData.horas_SS),
+            cursos_biblicos: parseInt(formData.cursos_biblicos),
+            notas: formData.notas
         };
 
         try {
@@ -367,6 +376,7 @@ const InformesList = () => {
                                                 <th>Cursos</th>
                                                 <th>Precursor Aux.</th>
                                                 <th>Horas</th>
+                                                <th>Horas SS</th>
                                                 <th>Notas</th>
                                             </tr>
                                         </thead>
@@ -415,6 +425,16 @@ const InformesList = () => {
                                                             onChange={(e) => handleBulkChange(index, 'horas', parseInt(e.target.value) || 0)}
                                                         />
                                                     </td>
+                                                    <td data-label="Horas SS">
+                                                        <input
+                                                            type="number"
+                                                            className="form-input"
+                                                            hidden={!item.predico_en_el_mes || item.id_tipo_publicador === 1}
+                                                            value={item.predico_en_el_mes && item.id_tipo_publicador != 1 && item.horas_SS || ''}
+                                                            min="0"
+                                                            onChange={(e) => handleBulkChange(index, 'horas_SS', parseInt(e.target.value) || 0)}
+                                                        />
+                                                    </td>
                                                     <td data-label="Notas">
                                                         <input
                                                             type="text"
@@ -443,7 +463,9 @@ const InformesList = () => {
                                                 <th>Tipo</th>
                                                 <th>Predicó</th>
                                                 <th>Horas</th>
+                                                <th>Horas SS</th>
                                                 <th>Cursos</th>
+                                                <th>Notas</th>
                                                 <th>Estatus</th>
                                                 {isAdmin && <th>Acciones</th>}
                                             </tr>
@@ -461,7 +483,9 @@ const InformesList = () => {
                                                         }
                                                     </td>
                                                     <td data-label="Horas">{i.horas}</td>
+                                                    <td data-label="Horas SS">{i.horas_SS}</td>
                                                     <td data-label="Cursos">{i.cursos_biblicos}</td>
+                                                    <td data-label="Notas">{i.notas}</td>
                                                     <td data-label="Estatus">
                                                         {i.Estatus === 'Activo' ?
                                                             <span className="badge badge-success">Activo</span> :
@@ -533,9 +557,17 @@ const InformesList = () => {
                             <input type="number" className="form-input" name="horas" min="0" value={formData.horas} onChange={handleFormChange} />
                         </div>
                         <div className="form-group">
-                            <label className="form-label">Cursos bíblicos</label>
-                            <input type="number" className="form-input" name="cursos_biblicos" min="0" value={formData.cursos_biblicos} onChange={handleFormChange} />
+                            <label className="form-label">Horas Servicio Sagrado</label>
+                            <input type="number" className="form-input" name="horas_SS" min="0" value={formData.horas_SS} onChange={handleFormChange} />
                         </div>
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Cursos bíblicos</label>
+                        <input type="number" className="form-input" name="cursos_biblicos" min="0" value={formData.cursos_biblicos} onChange={handleFormChange} />
+                    </div>
+                    <div className="form-group">
+                        <label className="form-label">Notas</label>
+                        <input type="text" className="form-input" name="notas" value={formData.notas} onChange={handleFormChange} />
                     </div>
                 </form>
             </Modal>

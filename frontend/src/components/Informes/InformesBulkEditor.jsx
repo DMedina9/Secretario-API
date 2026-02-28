@@ -133,6 +133,7 @@ const InformesBulkEditor = () => {
                     mes: month + '-01',
                     predico_en_el_mes: existing ? existing.predico_en_el_mes : 0,
                     horas: existing ? existing.horas : 0,
+                    horas_SS: existing ? existing.horas_SS : 0,
                     cursos_biblicos: existing ? existing.cursos_biblicos : 0,
                     id_base_tipo: pub.id_tipo_publicador, // To know which switch to disable
                     id_tipo_publicador: existing ? existing.id_tipo_publicador : (pub.id_tipo_publicador || 1),
@@ -169,6 +170,7 @@ const InformesBulkEditor = () => {
                 mes: item.mes,
                 predico_en_el_mes: item.predico_en_el_mes ? 1 : 0, // Ensure int
                 horas: parseInt(item.horas) || 0,
+                horas_SS: parseInt(item.horas_SS) || 0,
                 cursos_biblicos: parseInt(item.cursos_biblicos) || 0,
                 id_tipo_publicador: parseInt(item.id_tipo_publicador),
                 notas: item.notas
@@ -263,6 +265,7 @@ const InformesBulkEditor = () => {
                                         <th style={{ width: '100px' }}>Cursos</th>
                                         <th style={{ width: '100px' }}>Precursor Aux.</th>
                                         <th style={{ width: '100px' }}>Horas</th>
+                                        <th style={{ width: '100px' }}>Horas Servicio Sagrado</th>
                                         <th style={{ minWidth: '150px' }}>Notas</th>
                                     </tr>
                                 </thead>
@@ -272,14 +275,14 @@ const InformesBulkEditor = () => {
                                             {/* Section Headers */}
                                             {index === 0 && item.id_tipo_publicador === 2 && (
                                                 <tr className="header">
-                                                    <th colSpan="7" className="text-center bg-primary text-white">Precursores regulares</th>
+                                                    <th colSpan="8" className="text-center bg-primary text-white">Precursores regulares</th>
                                                 </tr>
                                             )}
                                             {/* Logic for Publicadores Header: if first item is NOT RP, OR if previous was RP and current is NOT */}
                                             {((index === 0 && item.id_tipo_publicador !== 2) ||
                                                 (index > 0 && item.id_tipo_publicador !== 2 && bulkData[index - 1].id_tipo_publicador === 2)) && (
                                                     <tr className="header">
-                                                        <th colSpan="7" className="text-center bg-primary text-white">Publicadores</th>
+                                                        <th colSpan="8" className="text-center bg-primary text-white">Publicadores</th>
                                                     </tr>
                                                 )}
 
@@ -337,6 +340,17 @@ const InformesBulkEditor = () => {
                                                         value={item.predico_en_el_mes && item.id_tipo_publicador != 1 && item.horas || ''}
                                                         min="0"
                                                         onChange={(e) => handleFieldChange(index, 'horas', parseInt(e.target.value) || 0)}
+                                                        style={{ padding: '0.4rem' }}
+                                                    />
+                                                </td>
+                                                <td data-label="Horas Servicio Sagrado" className="text-center">
+                                                    <input
+                                                        type="number"
+                                                        className="form-input"
+                                                        hidden={!item.predico_en_el_mes || item.id_tipo_publicador === 1}
+                                                        value={item.predico_en_el_mes && item.id_tipo_publicador != 1 && item.horas_SS || ''}
+                                                        min="0"
+                                                        onChange={(e) => handleFieldChange(index, 'horas_SS', parseInt(e.target.value) || 0)}
                                                         style={{ padding: '0.4rem' }}
                                                     />
                                                 </td>

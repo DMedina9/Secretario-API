@@ -481,6 +481,11 @@ input:checked+.slider:before {
     text-decoration: none;
     font-family: inherit;
     white-space: nowrap;
+    min-height: 44px;
+    /* Improved touch target for mobile */
+    min-width: 44px;
+    /* Improved touch target for mobile */
+    line-height: normal;
 }
 
 .btn:disabled {
@@ -537,8 +542,11 @@ input:checked+.slider:before {
 
 .btn-icon {
     padding: var(--space-sm);
-    width: 40px;
-    height: 40px;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* === FORMS === */
@@ -566,6 +574,8 @@ input:checked+.slider:before {
     font-size: var(--font-size-base);
     font-family: inherit;
     transition: all var(--transition-base);
+    min-height: 44px;
+    /* Improved touch target for inputs */
 }
 
 .form-input:focus,
@@ -661,17 +671,24 @@ input:checked+.slider:before {
         margin-bottom: var(--space-md);
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: var(--border-radius-md);
-        padding: var(--space-md);
+        border-radius: var(--border-radius-lg);
+        padding: var(--space-sm);
     }
 
     .table td {
-        padding: var(--space-sm) 0;
+        padding: var(--space-md) 0;
         min-height: var(--space-2xl);
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         position: relative;
         padding-left: 50%;
         text-align: right;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .table td:last-child {
+        border-bottom: none;
     }
 
 
@@ -679,7 +696,7 @@ input:checked+.slider:before {
     .table td::before {
         content: attr(data-label);
         position: absolute;
-        left: 0;
+        left: var(--space-sm);
         width: 45%;
         padding-right: var(--space-sm);
         font-weight: 600;
@@ -887,7 +904,12 @@ input:checked+.slider:before {
         top: 100%;
         left: 0;
         padding: var(--space-md);
+        padding-bottom: var(--space-2xl);
+        /* Add extra padding for bottom navigation area */
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        max-height: calc(100vh - 80px);
+        /* Ensure menu can scroll */
+        overflow-y: auto;
     }
 
     .navbar-menu.active {
@@ -1056,7 +1078,7 @@ input:checked+.slider:before {
 
 /* === MAIN CONTENT === */
 .main-content {
-    padding: var(--space-xl) 0;
+    padding: var(--space-lg) 0 var(--space-2xl);
     min-height: calc(100vh - 80px);
 }
 
@@ -1161,6 +1183,7 @@ input:checked+.slider:before {
         background: var(--mobile-menu-bg);
         backdrop-filter: blur(20px);
         padding: var(--space-md);
+        padding-bottom: var(--space-xl);
         flex-direction: column;
         box-shadow: var(--shadow-lg);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -1179,9 +1202,14 @@ input:checked+.slider:before {
     }
 
     .navbar-menu a {
-        display: block;
+        display: flex;
+        align-items: center;
         padding: var(--space-md);
         width: 100%;
+        min-height: 48px;
+        /* Touch friendly */
+        margin-bottom: var(--space-xs);
+        border-radius: var(--border-radius-md);
     }
 
     .navbar-actions {
@@ -1703,6 +1731,10 @@ input:checked+.slider:before {
 .btn-warning:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), var(--shadow-lg);
+}
+
+.items-end {
+    align-items: flex-end;
 }
 
 .leaflet-pane,

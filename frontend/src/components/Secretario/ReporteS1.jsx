@@ -60,9 +60,11 @@ const ReporteS1 = () => {
                             onChange={(e) => setMonth(e.target.value)}
                         />
                     </div>
-                    <button className="btn btn-primary" onClick={loadReport} disabled={loading}>
-                        {loading ? 'Generando...' : 'Generar Reporte S-1'}
-                    </button>
+                    <div className="form-group flex-1" style={{ maxWidth: '300px' }}>
+                        <button className="btn btn-primary" onClick={loadReport} disabled={loading}>
+                            {loading ? 'Generando...' : 'Generar Reporte S-1'}
+                        </button>
+                    </div>
                 </div>
 
                 {loading && <Loading />}

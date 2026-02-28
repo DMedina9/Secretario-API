@@ -63,9 +63,11 @@ const ReporteS3 = () => {
                             <option value="FS">Fin de Semana</option>
                         </select>
                     </div>
-                    <button className="btn btn-primary" onClick={loadReport} disabled={loading}>
-                        Generar Reporte
-                    </button>
+                    <div className="form-group" style={{ width: '200px' }}>
+                        <button className="btn btn-primary" onClick={loadReport} disabled={loading}>
+                            Generar Reporte
+                        </button>
+                    </div>
                 </div>
 
                 {loading && <Loading />}

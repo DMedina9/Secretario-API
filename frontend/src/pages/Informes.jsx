@@ -26,31 +26,21 @@ const Informes = () => {
                             <span className="config-nav-icon">👥</span>
                             <span className="config-nav-text">Por Grupo</span>
                         </a>
-                        <a
+                        {isAdmin && <a
                             href="#"
                             className={`config-nav-item ${activeSection === 'publicador' ? 'active' : ''}`}
                             onClick={(e) => { e.preventDefault(); setActiveSection('publicador'); }}
                         >
                             <span className="config-nav-icon">👤</span>
                             <span className="config-nav-text">Por Publicador</span>
-                        </a>
+                        </a>}
                     </nav>
                 </aside>
 
                 <main className="config-content">
                     {activeSection === 'grupo' && (
                         <div>
-                            {isAdmin ? (
-                                <InformesBulkEditor />
-                            ) : (
-                                <div className="card">
-                                    <div className="card-body">
-                                        <div className="alert alert-info">
-                                            Necesitas permisos de administrador para acceder al editor.
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
+                            <InformesBulkEditor />
                         </div>
                     )}
 

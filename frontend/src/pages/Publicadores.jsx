@@ -181,7 +181,7 @@ const Publicadores = () => {
                                     <th>Tipo</th>
                                     <th>Priv.</th>
                                     <th>Tel. Móvil</th>
-                                    {isAdmin && <th>Acciones</th>}
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -214,15 +214,17 @@ const Publicadores = () => {
                                                 {p.id_privilegio === 2 && 'Siervo Ministerial'}
                                             </td>
                                             <td data-label="Tel. Móvil">{p.telefono_movil}</td>
-                                            {isAdmin && (
-                                                <td data-label="Acciones">
-                                                    <div className="flex gap-sm">
-                                                        <button className="btn btn-sm btn-secondary" onClick={() => openCardModal(p)} title="Ver Tarjeta">📇</button>
-                                                        <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(p)} title="Editar">✏️</button>
-                                                        <button className="btn btn-sm btn-danger" onClick={() => openDeleteConfirm(p)} title="Eliminar">🗑️</button>
-                                                    </div>
-                                                </td>
-                                            )}
+                                            <td data-label="Acciones">
+                                                <div className="flex gap-sm">
+                                                    <button className="btn btn-sm btn-secondary" onClick={() => openCardModal(p)} title="Ver Tarjeta">📇</button>
+                                                    {isAdmin && (
+                                                        <>
+                                                            <button className="btn btn-sm btn-secondary" onClick={() => openEditModal(p)} title="Editar">✏️</button>
+                                                            <button className="btn btn-sm btn-danger" onClick={() => openDeleteConfirm(p)} title="Eliminar">🗑️</button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (

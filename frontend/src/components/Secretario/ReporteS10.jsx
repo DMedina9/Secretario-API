@@ -51,9 +51,11 @@ const ReporteS10 = () => {
                             onChange={(e) => setYear(e.target.value)}
                         />
                     </div>
-                    <button className="btn btn-primary" onClick={loadReport} disabled={loading}>
-                        Generar Reporte S-10
-                    </button>
+                    <div className="form-group" style={{ width: '150px' }}>
+                        <button className="btn btn-primary" onClick={loadReport} disabled={loading}>
+                            Generar Reporte S-10
+                        </button>
+                    </div>
                 </div>
 
                 {loading && <Loading />}

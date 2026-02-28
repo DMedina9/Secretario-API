@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../../utils/api';
 import { useToast } from '../../contexts/ToastContext';
 import Loading from '../Common/Loading';
+import { useAuth } from '../../contexts/AuthContext';
 
 const TerritoriosConfig = ({ onKmlUploaded }) => {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin';
     const [total, setTotal] = useState('');
     const [noPredicados, setNoPredicados] = useState('');
     const [loading, setLoading] = useState(false);
@@ -93,33 +96,33 @@ const TerritoriosConfig = ({ onKmlUploaded }) => {
                     <div className="grid grid-cols-2 gap-md mb-md">
                         <div className="form-group">
                             <label className="form-label">Total Territorios</label>
-                            <input
+                            {isAdmin ? <input
                                 type="number"
                                 className="form-input"
                                 value={total}
                                 onChange={(e) => setTotal(e.target.value)}
                                 min="0"
-                            />
+                            /> : <p className="form-input">{total}</p>}
                         </div>
                         <div className="form-group">
                             <label className="form-label">No Predicados</label>
-                            <input
+                            {isAdmin ? <input
                                 type="number"
                                 className="form-input"
                                 value={noPredicados}
                                 onChange={(e) => setNoPredicados(e.target.value)}
                                 min="0"
-                            />
+                            /> : <p className="form-input">{noPredicados}</p>}
                         </div>
                     </div>
-                    <button className="btn btn-primary" onClick={handleSaveConfig} disabled={loading}>
+                    {isAdmin && <button className="btn btn-primary" onClick={handleSaveConfig} disabled={loading}>
                         Guardar Configuración
-                    </button>
+                    </button>}
                 </div>
             </div>
 
             {/* KML Upload Card */}
-            <div className="card">
+            {isAdmin && <div className="card">
                 <div className="card-header">
                     <h3 className="card-title">Subir archivo KML</h3>
                     <p className="card-subtitle">Actualiza los límites de los territorios</p>
@@ -139,7 +142,7 @@ const TerritoriosConfig = ({ onKmlUploaded }) => {
                     </div>
                     {loading && <Loading />}
                 </div>
-            </div>
+            </div>}
         </div>
     );
 };

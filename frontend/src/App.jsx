@@ -17,7 +17,8 @@ import Territorios from './pages/Territorios';
 import Configuracion from './pages/Configuracion';
 
 const AppContent = () => {
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   if (loading) {
     return <Loading />;
@@ -38,7 +39,7 @@ const AppContent = () => {
               <Route path="/secretario" element={<Secretario />} />
               <Route path="/fillpdf" element={<FillPDF />} />
               <Route path="/territorios" element={<Territorios />} />
-              <Route path="/configuracion" element={<Configuracion />} />
+              {isAdmin && <Route path="/configuracion" element={<Configuracion />} />}
             </Route>
           </Routes>
         </div>

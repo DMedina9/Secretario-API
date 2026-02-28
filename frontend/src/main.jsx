@@ -8,6 +8,18 @@ import { ToastProvider } from './contexts/ToastContext'
 import { AnioServicioProvider } from './contexts/AnioServicioContext'
 import './index.css' // Standard Vite css
 import './App.css' // Our migrated styles
+import { registerSW } from 'virtual:pwa-register'
+
+const updateSW = registerSW({
+  onNeedRefresh() {
+    if (confirm('Nueva versión disponible. ¿Recargar?')) {
+      updateSW(true)
+    }
+  },
+  onOfflineReady() {
+    console.log('Aplicación lista para uso offline')
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

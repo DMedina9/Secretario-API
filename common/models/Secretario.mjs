@@ -93,7 +93,8 @@ export const initDb = async () => {
         await sequelize.authenticate()
         console.log('DB conectada.')
 
-        await sequelize.sync({ alter: true }) // crea tablas si no existen
+        //await sequelize.sync({ alter: true }) // crea tablas si no existen
+        await sequelize.sync()
         console.log('Tablas sincronizadas.')
         await insertConfiguraciones()
         await insertPrivilegios()
