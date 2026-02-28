@@ -8,18 +8,23 @@ dotenv.config();
  */
 const createTransporter = () => {
     return nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // Use SSL/TLS immediately
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
         },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000,
+        // Increase timeouts slightly for cloud environments
+        connectionTimeout: 20000,
+        greetingTimeout: 20000,
+        socketTimeout: 20000,
         debug: true,
         logger: true,
-        // Eliminamos el hardcode de family: 4 y otras configuraciones manuales
-        // ya que al usar service: 'gmail' NodeMailer configura automáticamente los puertos, hosts seguros, y TLS adecuados.
+        tls: {
+            // Allows self-signed certificates or minor TLS issues in internal cloud routing
+            rejectUnauthorized: false
+        }
     });
 };
 
