@@ -58,6 +58,16 @@ export const Informes = sequelize.define('Informes', {
     indexes: [{ unique: true, fields: ['id_publicador', 'mes'] }]
 })
 
+// PrecursoresAuxiliares
+export const PrecursoresAuxiliares = sequelize.define('PrecursoresAuxiliares', {
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    id_publicador: DataTypes.INTEGER,
+    mes: DataTypes.TEXT,
+    notas: DataTypes.TEXT
+}, {
+    indexes: [{ unique: true, fields: ['id_publicador', 'mes'] }]
+})
+
 // Asistencias
 export const Asistencias = sequelize.define('Asistencias', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
@@ -83,6 +93,8 @@ Publicadores.belongsTo(TipoPublicador, { foreignKey: 'id_tipo_publicador' })
 
 Informes.belongsTo(Publicadores, { foreignKey: 'id_publicador' })
 Informes.belongsTo(TipoPublicador, { foreignKey: 'id_tipo_publicador' })
+
+PrecursoresAuxiliares.belongsTo(Publicadores, { foreignKey: 'id_publicador' })
 
 // ======================
 // Inicializar DB

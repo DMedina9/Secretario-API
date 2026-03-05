@@ -10,6 +10,10 @@ import { UserProvider, useUser } from './src/contexts/UserContext';
 import RegistrationScreen from './src/screens/RegistrationScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
 import PublicadoresScreen from './src/screens/PublicadoresScreen';
+import AsistenciasScreen from './src/screens/AsistenciasScreen';
+import InformesScreen from './src/screens/InformesScreen';
+import SecretarioScreen from './src/screens/SecretarioScreen';
+import ConfiguracionScreen from './src/screens/ConfiguracionScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,20 +21,22 @@ const AppNavigator = () => {
   const { userProfile, loading } = useUser();
 
   if (loading) {
-    return null; // Or a splash screen
+    return null;
   }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {userProfile ? (
-          // Main App Flow
           <>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="Publicadores" component={PublicadoresScreen} />
+            <Stack.Screen name="Asistencias" component={AsistenciasScreen} />
+            <Stack.Screen name="Informes" component={InformesScreen} />
+            <Stack.Screen name="Secretario" component={SecretarioScreen} />
+            <Stack.Screen name="Configuracion" component={ConfiguracionScreen} />
           </>
         ) : (
-          // Registration Flow
           <Stack.Screen name="Registration" component={RegistrationScreen} />
         )}
       </Stack.Navigator>

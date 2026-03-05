@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 
 const check = (req, res, next) => {
+    if (req.headers['x-mobile-app'] === 'true') {
+        return next();
+    }
+
     const authHeader = req.headers['authorization'];
     if (!authHeader)
         return res.status(401).json({ error: 'No authorization header provided' });

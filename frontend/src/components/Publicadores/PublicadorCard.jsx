@@ -1,5 +1,9 @@
 import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es'; // Spanish
+
+dayjs.locale('es');
 
 const PublicadorCard = ({ publicador, onClose }) => {
     const cardRef = useRef(null);
@@ -28,11 +32,7 @@ const PublicadorCard = ({ publicador, onClose }) => {
     // Helper to format dates
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        return dayjs(dateString).format('DD [de] MMMM [de] YYYY');
     };
 
     // Helper for boolean badges

@@ -58,7 +58,14 @@ const getPublicadores = async (req, res) => {
                 p.*,
                 CASE p.sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' END AS sup_grupo_desc,
                 pr.descripcion AS privilegio,
-                tp.descripcion AS tipo_publicador
+                tp.descripcion AS tipo_publicador,
+                CASE WHEN (
+                    SELECT SUM(predico_en_el_mes)
+                    FROM Informes a
+                    WHERE a.id_publicador = p.id
+                      AND DATE(a.mes) BETWEEN date(date('now', 'start of month'), '-5 months')
+                      AND date('now', 'start of month')
+                ) > 0 THEN 'Activo' ELSE 'Inactivo' END AS Estatus
             FROM Publicadores p
             LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
             LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador

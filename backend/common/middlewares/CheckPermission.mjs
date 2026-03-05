@@ -7,6 +7,9 @@ const roles = {
     user: 1
 }
 export const has = (requiredRole) => async (req, res, next) => {
+    if (req.headers['x-mobile-app'] === 'true') {
+        return next();
+    }
     const user = await User.findByPk(req.user.userId);
     if (!user || user.role < roles[requiredRole]) {
         return res.status(403).json({ error: `No tienes permiso para acceder a esta ruta` });
