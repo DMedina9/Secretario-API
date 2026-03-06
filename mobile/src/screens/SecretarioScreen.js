@@ -145,7 +145,7 @@ const s = StyleSheet.create({
         borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
     },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
-    tabs: { backgroundColor: '#fff', paddingVertical: 8 },
+    tabs: { backgroundColor: '#fff', paddingVertical: 8, height: 50, maxHeight: 50 },
     tab: {
         paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
         borderWidth: 1, borderColor: '#d1d5db', marginRight: 8, backgroundColor: '#f9fafb',

@@ -41,7 +41,7 @@ export const insertTipoPublicador = async () => {
 // =====================================================================================
 export const insertConfiguraciones = async () => {
     // Insertar configuraciones
-    for (let configuracion of [{ clave: 'mes_informe', valor: '2025-01', tipo: 'month' }, { clave: 'correo_admin', valor: 'daniel.medina.moreno@outlook.com', tipo: 'email' }, { clave: 'total_territorios', valor: '0', tipo: 'number' }, { clave: 'territorios_no_predicados', valor: '0', tipo: 'number' }]) {
+    for (let configuracion of [{ clave: 'mes_informe', valor: '2025-01', tipo: 'month' }, { clave: 'correo_admin', valor: 'daniel.medina.moreno@outlook.com', tipo: 'email' }, { clave: 'total_territorios', valor: '0', tipo: 'number' }, { clave: 'territorios_no_predicados', valor: '0', tipo: 'number' }, { clave: 'nombre_congregacion', valor: 'Jardines de Andalucía', tipo: 'text' }]) {
         await Configuracion.findOrCreate({ where: { clave: configuracion.clave }, defaults: configuracion })
     }
     return { success: true, message: 'Importado Configuraciones' }

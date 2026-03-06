@@ -63,7 +63,20 @@ const PublicadorCard = ({ publicador, onClose }) => {
             default: return null;
         }
     };
+    const [configuraciones, setConfiguraciones] = useState([]);
+    useEffect(() => {
+        const fetchConfiguraciones = async () => {
+            const response = await fetch('/configuraciones');
+            const data = await response.json();
+            setConfiguraciones(data);
+        };
+        fetchConfiguraciones();
+    }, []);
 
+    const getCongregacion = () => {
+        const configuracion = configuraciones.find(c => c.clave === 'nombre_congregacion');
+        return configuracion?.valor || '';
+    };
     return (
         <div className="flex flex-col gap-md">
             <div
@@ -181,7 +194,7 @@ const PublicadorCard = ({ publicador, onClose }) => {
                     )}
 
                     <div style={{ marginTop: '1.5rem', fontSize: '0.75rem', textAlign: 'center', color: '#888', fontStyle: 'italic' }}>
-                        Congregación Jardines de Andalucía
+                        Congregación {getCongregacion()}
                     </div>
                 </div>
             </div>

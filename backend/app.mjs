@@ -10,6 +10,7 @@ import secretarioRoutes from './secretario/routes.mjs';
 import fillPDFRoutes from './fillPDF/routes.mjs';
 import territoriosRoutes from './territorios/routes.mjs';
 import configuracionesRoutes from './configuraciones/routes.mjs';
+import precursoresAuxiliaresRoutes from './precursoresAuxiliares/routes.mjs';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -27,7 +28,7 @@ const app = express();
 //app.use(cors());
 //Producción:
 app.use(cors({
-    origin: ['https://dmedina9.github.io', 'https://secretario-api.onrender.com'],
+    origin: ['http://localhost:3000', 'https://dmedina9.github.io', 'https://secretario-api.onrender.com'],
     credentials: true
 }));
 app.use(express.json());
@@ -41,6 +42,7 @@ app.use('/api/secretario', secretarioRoutes);
 app.use('/api/fillPDF', fillPDFRoutes);
 app.use('/api/territorios', territoriosRoutes);
 app.use('/api/configuraciones', configuracionesRoutes);
+app.use('/api/precursoresAuxiliares', precursoresAuxiliaresRoutes);
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'Running',

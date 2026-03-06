@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Alert, ActivityIndicator
+    Alert, ActivityIndicator, Modal, TextInput
 } from 'react-native';
 import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight } from 'lucide-react-native';
 import api from '../services/api';
@@ -9,23 +9,100 @@ import api from '../services/api';
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
 const ConfiguracionesSection = () => {
     const items = [
-        { label: 'Nombre de la Congregación', desc: 'Identidad de la congregación' },
-        { label: 'Año de Servicio', desc: 'Período de servicio activo' },
-        { label: 'Mes de Informe', desc: 'Referencia global de informes' },
+        { key: 'nombre_congregacion', label: 'Nombre de la Congregación', desc: 'Identidad de la congregación' },
+        { key: 'correo_admin', label: 'Correo del Administrador', desc: 'Correo electrónico del administrador' },
+        { key: 'total_territorios', label: 'Total de Territorios', desc: 'Cantidad total de territorios' },
+        { key: 'territorios_no_predicados', label: 'Territorios No Predicados', desc: 'Cantidad de territorios no predicados' },
+        { key: 'mes_informe', label: 'Mes de Informe', desc: 'Referencia global de informes' },
     ];
+
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedConfig, setSelectedConfig] = useState(null);
+    const [inputValue, setInputValue] = useState('');
+
+    const [configuraciones, setConfiguraciones] = useState([]);
+
+    useEffect(() => {
+        const fetchConfiguraciones = async () => {
+            try {
+                const response = await api.get('/configuraciones');
+                setConfiguraciones(response.data.data);
+            } catch (error) {
+                console.error('Error al obtener configuraciones:', error);
+            }
+        };
+        fetchConfiguraciones();
+    }, []);
+
+    const handleEditConfig = async (type) => {
+        setSelectedConfig(type);
+        const configuracion = configuraciones.find(c => c.clave === type);
+        setInputValue(configuracion?.valor || '');
+        setIsModalVisible(true);
+    };
+
+    const handleSaveConfig = async () => {
+        if (!inputValue.trim()) {
+            Alert.alert('Error', 'El valor no puede estar vacío.');
+            return;
+        }
+
+        try {
+            await api.put(`/configuraciones/${selectedConfig}`, { value: inputValue });
+            Alert.alert('Éxito', 'Configuración actualizada correctamente.');
+            setIsModalVisible(false);
+            // Aquí podrías recargar los datos si es necesario
+        } catch (error) {
+            Alert.alert('Error', 'No se pudo actualizar la configuración.');
+        }
+    };
+
     return (
         <View style={s.card}>
             <Text style={s.cardTitle}>⚙️ Configuraciones del Sistema</Text>
-            <Text style={s.cardSubtitle}>Las configuraciones avanzadas están disponibles en la versión web de la aplicación.</Text>
             {items.map((item, i) => (
-                <View key={i} style={s.configRow}>
+                <TouchableOpacity key={i} style={s.configRow} onPress={() => handleEditConfig(item.key)}>
                     <View>
                         <Text style={s.configLabel}>{item.label}</Text>
                         <Text style={s.configDesc}>{item.desc}</Text>
                     </View>
                     <ChevronRight size={18} color="#9ca3af" />
-                </View>
+                </TouchableOpacity>
             ))}
+
+            <Modal
+                visible={isModalVisible}
+                animationType="slide"
+                transparent
+                onRequestClose={() => setIsModalVisible(false)}
+            >
+                <View style={s.modalOverlay}>
+                    <View style={s.modalContent}>
+                        <Text style={s.modalTitle}>Editar {selectedConfig}</Text>
+                        <TextInput
+                            style={s.modalInput}
+                            placeholder={`Ingrese el nuevo valor para ${selectedConfig}`}
+                            value={inputValue}
+                            onChangeText={setInputValue}
+                            keyboardType="default"
+                        />
+                        <View style={s.modalButtons}>
+                            <TouchableOpacity
+                                style={[s.modalButton, s.modalButtonCancel]}
+                                onPress={() => setIsModalVisible(false)}
+                            >
+                                <Text style={s.modalButtonText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[s.modalButton, s.modalButtonSave]}
+                                onPress={handleSaveConfig}
+                            >
+                                <Text style={s.modalButtonText}>Guardar</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -204,6 +281,51 @@ const s = StyleSheet.create({
     dangerLabel: { fontSize: 15, fontWeight: '600' },
     infoBox: { backgroundColor: '#eff6ff', borderRadius: 8, padding: 14 },
     infoText: { fontSize: 14, color: '#1d4ed8', lineHeight: 20 },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 15,
+    },
+    modalInput: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 5,
+        padding: 10,
+        marginBottom: 15,
+        fontSize: 16,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 10,
+    },
+    modalButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+    },
+    modalButtonCancel: {
+        backgroundColor: '#ccc',
+    },
+    modalButtonSave: {
+        backgroundColor: '#28a745',
+    },
+    modalButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
 });
 
 export default ConfiguracionScreen;

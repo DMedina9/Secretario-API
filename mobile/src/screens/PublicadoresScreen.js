@@ -75,59 +75,74 @@ const Toggle = ({ label, value, onToggle }) => (
 );
 
 // ─── Publisher Card ──────────────────────────────────────────────────────────
-const PublicadorCardView = ({ p }) => (
-    <View style={cs.card}>
-        <View style={cs.header}>
-            <Text style={cs.name}>{p.nombre} {p.apellidos}</Text>
-            {getType(p.id_tipo_publicador) ? (
-                <View style={cs.typeBadge}><Text style={cs.typeBadgeText}>{getType(p.id_tipo_publicador)}</Text></View>
-            ) : null}
-        </View>
-        <View style={cs.body}>
-            {getPrivilege(p.id_privilegio) ? (
-                <View style={cs.row}><Text style={cs.rowLabel}>Privilegio:</Text><Text style={cs.rowValue}>{getPrivilege(p.id_privilegio)}</Text></View>
-            ) : null}
-            <View style={cs.row}>
-                <Text style={cs.rowLabel}>Grupo:</Text>
-                <Text style={cs.rowValue}>{p.grupo}{p.sup_grupo === 1 ? ' (Sup)' : p.sup_grupo === 2 ? ' (Aux)' : ''}</Text>
-            </View>
-            <View style={cs.row}>
-                <Text style={cs.rowLabel}>Estatus:</Text>
-                <Text style={[cs.rowValue, { color: p.Estatus === 'Activo' ? '#065f46' : '#991b1b' }]}>{p.Estatus || 'N/A'}</Text>
-            </View>
-            <View style={cs.row}><Text style={cs.rowLabel}>Tel. Móvil:</Text><Text style={cs.rowValue}>{p.telefono_movil || 'N/A'}</Text></View>
-            <View style={cs.row}><Text style={cs.rowLabel}>Tel. Fijo:</Text><Text style={cs.rowValue}>{p.telefono_fijo || 'N/A'}</Text></View>
-            {p.fecha_nacimiento ? (
-                <View style={cs.row}><Text style={cs.rowLabel}>Nacimiento:</Text><Text style={cs.rowValue}>{formatDate(p.fecha_nacimiento)}</Text></View>
-            ) : null}
-            {p.fecha_bautismo ? (
-                <View style={cs.row}><Text style={cs.rowLabel}>Bautismo:</Text><Text style={cs.rowValue}>{formatDate(p.fecha_bautismo)}</Text></View>
-            ) : null}
-            {(p.calle || p.colonia) ? (
-                <View style={cs.section}>
-                    <Text style={cs.sectionLabel}>Dirección:</Text>
-                    <Text style={cs.sectionValue}>{p.calle}{p.num ? ` #${p.num}` : ''}{p.colonia ? `\n${p.colonia}` : ''}</Text>
-                </View>
-            ) : null}
-            {(p.contacto_emergencia || p.tel_contacto_emergencia) ? (
-                <View style={[cs.section, { borderTopColor: '#fca5a5' }]}>
-                    <Text style={[cs.sectionLabel, { color: '#b91c1c' }]}>🚑 Emergencia:</Text>
-                    {p.contacto_emergencia ? <Text style={cs.sectionValue}>{p.contacto_emergencia}</Text> : null}
-                    {p.tel_contacto_emergencia ? <Text style={cs.sectionValue}>📞 {p.tel_contacto_emergencia}</Text> : null}
-                </View>
-            ) : null}
-            {getBadges(p).length > 0 ? (
-                <View style={cs.badgeRow}>
-                    {getBadges(p).map(b => (
-                        <View key={b} style={cs.badge}><Text style={cs.badgeText}>{b}</Text></View>
-                    ))}
-                </View>
-            ) : null}
-            <Text style={cs.footer}>Congregación Jardines de Andalucía</Text>
-        </View>
-    </View>
-);
+const PublicadorCardView = ({ p }) => {
+    const [configuraciones, setConfiguraciones] = useState([]);
+    useEffect(() => {
+        const fetchConfiguraciones = async () => {
+            const response = await api.get('/configuraciones');
+            const data = await response.data;
+            setConfiguraciones(data.data);
+        };
+        fetchConfiguraciones();
+    }, []);
 
+    const getCongregacion = () => {
+        const configuracion = configuraciones.find(c => c.clave === 'nombre_congregacion');
+        return configuracion?.valor || '';
+    };
+    return (
+        <View style={cs.card}>
+            <View style={cs.header}>
+                <Text style={cs.name}>{p.nombre} {p.apellidos}</Text>
+                {getType(p.id_tipo_publicador) ? (
+                    <View style={cs.typeBadge}><Text style={cs.typeBadgeText}>{getType(p.id_tipo_publicador)}</Text></View>
+                ) : null}
+            </View>
+            <View style={cs.body}>
+                {getPrivilege(p.id_privilegio) ? (
+                    <View style={cs.row}><Text style={cs.rowLabel}>Privilegio:</Text><Text style={cs.rowValue}>{getPrivilege(p.id_privilegio)}</Text></View>
+                ) : null}
+                <View style={cs.row}>
+                    <Text style={cs.rowLabel}>Grupo:</Text>
+                    <Text style={cs.rowValue}>{p.grupo}{p.sup_grupo === 1 ? ' (Sup)' : p.sup_grupo === 2 ? ' (Aux)' : ''}</Text>
+                </View>
+                <View style={cs.row}>
+                    <Text style={cs.rowLabel}>Estatus:</Text>
+                    <Text style={[cs.rowValue, { color: p.Estatus === 'Activo' ? '#065f46' : '#991b1b' }]}>{p.Estatus || 'N/A'}</Text>
+                </View>
+                <View style={cs.row}><Text style={cs.rowLabel}>Tel. Móvil:</Text><Text style={cs.rowValue}>{p.telefono_movil || 'N/A'}</Text></View>
+                <View style={cs.row}><Text style={cs.rowLabel}>Tel. Fijo:</Text><Text style={cs.rowValue}>{p.telefono_fijo || 'N/A'}</Text></View>
+                {p.fecha_nacimiento ? (
+                    <View style={cs.row}><Text style={cs.rowLabel}>Nacimiento:</Text><Text style={cs.rowValue}>{formatDate(p.fecha_nacimiento)}</Text></View>
+                ) : null}
+                {p.fecha_bautismo ? (
+                    <View style={cs.row}><Text style={cs.rowLabel}>Bautismo:</Text><Text style={cs.rowValue}>{formatDate(p.fecha_bautismo)}</Text></View>
+                ) : null}
+                {(p.calle || p.colonia) ? (
+                    <View style={cs.section}>
+                        <Text style={cs.sectionLabel}>Dirección:</Text>
+                        <Text style={cs.sectionValue}>{p.calle}{p.num ? ` #${p.num}` : ''}{p.colonia ? `\n${p.colonia}` : ''}</Text>
+                    </View>
+                ) : null}
+                {(p.contacto_emergencia || p.tel_contacto_emergencia) ? (
+                    <View style={[cs.section, { borderTopColor: '#fca5a5' }]}>
+                        <Text style={[cs.sectionLabel, { color: '#b91c1c' }]}>🚑 Emergencia:</Text>
+                        {p.contacto_emergencia ? <Text style={cs.sectionValue}>{p.contacto_emergencia}</Text> : null}
+                        {p.tel_contacto_emergencia ? <Text style={cs.sectionValue}>📞 {p.tel_contacto_emergencia}</Text> : null}
+                    </View>
+                ) : null}
+                {getBadges(p).length > 0 ? (
+                    <View style={cs.badgeRow}>
+                        {getBadges(p).map(b => (
+                            <View key={b} style={cs.badge}><Text style={cs.badgeText}>{b}</Text></View>
+                        ))}
+                    </View>
+                ) : null}
+                <Text style={cs.footer}>Congregación {getCongregacion()}</Text>
+            </View>
+        </View>
+    );
+};
 // ─── DatePickerField helper ──────────────────────────────────────────────────
 // Converts a YYYY-MM-DD string ↔ Date object for the native picker
 const strToDate = (s) => {
