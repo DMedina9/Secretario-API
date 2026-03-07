@@ -98,13 +98,15 @@ const SecretarioScreen = ({ navigation }) => {
                 {section === 'datos' && <DatosBasicos />}
                 {section === 's1' && (
                     <ReporteView
-                        title="Reporte S-1 — Resumen del Año de Servicio"
-                        endpoint="/secretario/s1"
+                        title="Reporte S-1 — Estadísticas Mensuales"
+                        endpoint={`/secretario/s1/${dayjs().add(-2, 'months').format("YYYY-MM")}-01`}
                         renderRow={(item, i) => (
-                            <View key={i} style={s.reporteRow}>
-                                <Text style={s.reporteLabel}>{item.mes || item.label}</Text>
-                                <Text style={s.reporteValue}>{item.asistentes ?? item.value ?? ''}</Text>
-                            </View>
+                            item.subsecciones && item.subsecciones.map((sub, idx) => (
+                                <View key={idx} style={s.reporteRow}>
+                                    <Text style={s.reporteLabel}>{sub.label}</Text>
+                                    <Text style={s.reporteValue}>{sub.valor !== undefined && sub.valor !== null ? Math.round(sub.valor * 100) / 100 : 'N/A'}</Text>
+                                </View>
+                            ))
                         )}
                     />
                 )}

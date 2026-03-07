@@ -25,10 +25,10 @@ const InformeRow = ({ item, index, data, onChange, isFirst }) => {
                 <View style={s.informeTop}>
                     <Text style={s.informeName}>{item.nombre}</Text>
                     {!item.predico_en_el_mes && item.telefono ? (
-                        <View style={s.waBadge}>
+                        <TouchableOpacity style={s.waBadge} onPress={() => Linking.openURL(`https://wa.me/${item.telefono}?text=Hola%20${item.sexo === 'M' ? 'hermano' : 'hermana'}%2C%20buen%20d%C3%ADa!%20Me%20puede%20mandar%20su%20informe%20de%20${dayjs(month + '-01').format('MMMM YYYY')}%2C%20por%20favor%3F%20Saludos!`)}>
                             <MessageCircle size={12} color="#25d366" />
                             <Text style={s.waText}>{item.telefono}</Text>
-                        </View>
+                        </TouchableOpacity>
                     ) : null}
                 </View>
                 <View style={s.informeRow}>
@@ -155,6 +155,7 @@ const InformesScreen = ({ navigation }) => {
                 return {
                     id_publicador: pub.id,
                     nombre: `${pub.apellidos}, ${pub.nombre}`,
+                    sexo: pub.sexo,
                     telefono: pub.telefono_movil,
                     mes: month + '-01',
                     predico_en_el_mes: ex ? ex.predico_en_el_mes : 0,

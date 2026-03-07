@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es'; // Spanish
@@ -26,6 +26,16 @@ const PublicadorCard = ({ publicador, onClose }) => {
             console.error("Error generating image:", error);
         }
     };
+
+    const [configuraciones, setConfiguraciones] = useState([]);
+    useEffect(() => {
+        const fetchConfiguraciones = async () => {
+            const response = await fetch('/configuraciones');
+            const data = await response.json();
+            setConfiguraciones(data);
+        };
+        fetchConfiguraciones();
+    }, []);
 
     if (!publicador) return null;
 
@@ -63,16 +73,6 @@ const PublicadorCard = ({ publicador, onClose }) => {
             default: return null;
         }
     };
-    const [configuraciones, setConfiguraciones] = useState([]);
-    useEffect(() => {
-        const fetchConfiguraciones = async () => {
-            const response = await fetch('/configuraciones');
-            const data = await response.json();
-            setConfiguraciones(data);
-        };
-        fetchConfiguraciones();
-    }, []);
-
     const getCongregacion = () => {
         const configuracion = configuraciones.find(c => c.clave === 'nombre_congregacion');
         return configuracion?.valor || '';
