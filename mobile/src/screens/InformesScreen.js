@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert, TextInput, Switch
+    ActivityIndicator, Alert, TextInput, Switch, Linking
 } from 'react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
@@ -11,7 +11,7 @@ import api from '../services/api';
 dayjs.locale('es');
 
 // ─── Informe Row ──────────────────────────────────────────────────────────────
-const InformeRow = ({ item, index, data, onChange, isFirst }) => {
+const InformeRow = ({ item, index, data, onChange, month }) => {
     const isRP = item.id_tipo_publicador === 2;
     const prevIsRP = index > 0 && data[index - 1].id_tipo_publicador === 2;
     const showRPHeader = index === 0 && isRP;
@@ -248,7 +248,7 @@ const InformesScreen = ({ navigation }) => {
                 </View>
 
                 {bulkData.map((item, index) => (
-                    <InformeRow key={item.id_publicador} item={item} index={index} data={bulkData} onChange={handleFieldChange} />
+                    <InformeRow key={item.id_publicador} item={item} index={index} data={bulkData} onChange={handleFieldChange} month={month} />
                 ))}
 
                 {bulkData.length > 0 && (

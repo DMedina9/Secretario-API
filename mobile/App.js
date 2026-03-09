@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 
 // Contexts
 import { UserProvider, useUser } from './src/contexts/UserContext';
+import { AnioServicioProvider } from './src/contexts/AnioServicioContext';
 
 // Screens
 import RegistrationScreen from './src/screens/RegistrationScreen';
@@ -26,20 +27,22 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {userProfile ? (
-          <>
-            <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            <Stack.Screen name="Publicadores" component={PublicadoresScreen} />
-            <Stack.Screen name="Asistencias" component={AsistenciasScreen} />
-            <Stack.Screen name="Informes" component={InformesScreen} />
-            <Stack.Screen name="Secretario" component={SecretarioScreen} />
-            <Stack.Screen name="Configuracion" component={ConfiguracionScreen} />
-          </>
-        ) : (
-          <Stack.Screen name="Registration" component={RegistrationScreen} />
-        )}
-      </Stack.Navigator>
+      <AnioServicioProvider>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {userProfile ? (
+            <>
+              <Stack.Screen name="Dashboard" component={DashboardScreen} />
+              <Stack.Screen name="Publicadores" component={PublicadoresScreen} />
+              <Stack.Screen name="Asistencias" component={AsistenciasScreen} />
+              <Stack.Screen name="Informes" component={InformesScreen} />
+              <Stack.Screen name="Secretario" component={SecretarioScreen} />
+              <Stack.Screen name="Configuracion" component={ConfiguracionScreen} />
+            </>
+          ) : (
+            <Stack.Screen name="Registration" component={RegistrationScreen} />
+          )}
+        </Stack.Navigator>
+      </AnioServicioProvider>
     </NavigationContainer>
   );
 };
