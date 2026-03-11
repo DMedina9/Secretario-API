@@ -154,6 +154,7 @@ const DashboardScreen = ({ navigation }) => {
                         { screen: 'Asistencias', icon: '📅', label: 'Asistencias', color: '#3b82f6' },
                         { screen: 'Informes', icon: '📋', label: 'Informes', color: '#8b5cf6' },
                         { screen: 'Secretario', icon: '📊', label: 'Secretario', color: '#f59e0b' },
+                        { screen: 'Reportes', icon: '📑', label: 'Reportes PDF', color: '#0ea5e9' },
                         { screen: 'Configuracion', icon: '⚙️', label: 'Configuración', color: '#6b7280' },
                     ].map(item => (
                         <TouchableOpacity

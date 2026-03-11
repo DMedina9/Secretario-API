@@ -16,6 +16,7 @@ import InformesScreen from './src/screens/InformesScreen';
 import SecretarioScreen from './src/screens/SecretarioScreen';
 import ConfiguracionScreen from './src/screens/ConfiguracionScreen';
 import PrecursoresAuxiliaresScreen from './src/screens/PrecursoresAuxiliaresScreen';
+import ReportesScreen from './src/screens/ReportesScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +38,7 @@ const AppNavigator = () => {
               <Stack.Screen name="Asistencias" component={AsistenciasScreen} />
               <Stack.Screen name="Informes" component={InformesScreen} />
               <Stack.Screen name="PrecursoresAuxiliares" component={PrecursoresAuxiliaresScreen} />
+              <Stack.Screen name="Reportes" component={ReportesScreen} />
               <Stack.Screen name="Secretario" component={SecretarioScreen} />
               <Stack.Screen name="Configuracion" component={ConfiguracionScreen} />
             </>

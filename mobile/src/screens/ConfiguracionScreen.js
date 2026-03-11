@@ -4,7 +4,10 @@ import {
     Alert, ActivityIndicator, Modal, TextInput
 } from 'react-native';
 import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight } from 'lucide-react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import api from '../services/api';
+import { useUser } from '../contexts/UserContext';
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
 const ConfiguracionesSection = () => {
@@ -110,31 +113,99 @@ const ConfiguracionesSection = () => {
 // ─── Sub-section: Gestión de Datos ────────────────────────────────────────────
 const GestionDatosSection = () => {
     const [loading, setLoading] = useState(null);
+    const { token } = useUser();
 
-    const handleExport = async (type) => {
-        Alert.alert('Exportar', `La exportación de ${type} se realiza desde la versión web.`);
+    const handleExport = async (tableKey, tableName) => {
+        Alert.alert(
+            `Exportar ${tableName}`,
+            'Selecciona el formato de exportación',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Excel (.xlsx)', onPress: () => downloadAndShare(tableKey, 'excel', 'xlsx') },
+                { text: 'JSON', onPress: () => downloadAndShare(tableKey, 'json', 'json') },
+                { text: 'XML', onPress: () => downloadAndShare(tableKey, 'xml', 'xml') }
+            ]
+        );
+    };
+
+    const downloadAndShare = async (tableKey, format, extension) => {
+        setLoading(tableKey);
+        try {
+            const url = `${api.defaults.baseURL}/${tableKey}/export?format=${format}`;
+            const options = {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+
+            const response = await fetch(url, options);
+
+            if (!response.ok) {
+                throw new Error('Error al descargar el archivo desde el servidor');
+            }
+
+            const blob = await response.blob();
+            
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                try {
+                    const base64data = reader.result.split(',')[1];
+                    const filename = `${tableKey}_export.${extension}`;
+                    const fileUri = `${FileSystem.documentDirectory}${filename}`;
+                    
+                    await FileSystem.writeAsStringAsync(fileUri, base64data, {
+                        encoding: FileSystem.EncodingType.Base64
+                    });
+                    
+                    if (await Sharing.isAvailableAsync()) {
+                        await Sharing.shareAsync(fileUri);
+                    } else {
+                        Alert.alert('Éxito', 'Archivo guardado, pero la opción de compartir no está disponible.');
+                    }
+                } catch (e) {
+                    Alert.alert('Error', 'No se pudo guardar ni compartir el archivo.');
+                } finally {
+                    setLoading(null);
+                }
+            };
+        } catch (error) {
+            Alert.alert('Error', error.message);
+            setLoading(null);
+        }
     };
 
     const actions = [
-        { key: 'publicadores', label: 'Exportar Publicadores', icon: '📋' },
+        { key: 'publicador', label: 'Exportar Publicadores', icon: '📋' },
         { key: 'asistencias', label: 'Exportar Asistencias', icon: '📊' },
-        { key: 'informes', label: 'Exportar Informes', icon: '📈' },
+        { key: 'informe', label: 'Exportar Informes', icon: '📈' },
     ];
 
     return (
         <View style={s.card}>
             <Text style={s.cardTitle}>📊 Gestión de Datos</Text>
-            <Text style={s.cardSubtitle}>Importar/exportar datos desde la versión web para mayor funcionalidad.</Text>
+            <Text style={s.cardSubtitle}>Exporta datos desde la aplicación móvil. La importación de Excel está disponible en la versión web.</Text>
             {actions.map(a => (
-                <TouchableOpacity key={a.key} style={s.actionRow} onPress={() => handleExport(a.label)}>
+                <TouchableOpacity 
+                    key={a.key} 
+                    style={[s.actionRow, loading === a.key && { opacity: 0.5 }]} 
+                    onPress={() => handleExport(a.key, a.label)}
+                    disabled={loading !== null}
+                >
                     <Text style={s.actionIcon}>{a.icon}</Text>
-                    <Text style={s.actionLabel}>{a.label}</Text>
+                    {loading === a.key ? (
+                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                    ) : (
+                        <Text style={s.actionLabel}>{a.label}</Text>
+                    )}
                     <ChevronRight size={18} color="#9ca3af" />
                 </TouchableOpacity>
             ))}
         </View>
     );
 };
+
 
 // ─── Sub-section: Mantenimiento ───────────────────────────────────────────────
 const MantenimientoSection = () => {
