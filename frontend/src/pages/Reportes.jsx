@@ -3,7 +3,7 @@ import PDFViewer from '../components/Reportes/PDFViewer';
 import ReportesS21 from '../components/Reportes/ReportesS21';
 import ReporteGeneral from '../components/Reportes/ReporteGeneral';
 
-const FillPDF = () => {
+const Reportes = () => {
     const [activeSection, setActiveSection] = useState('visualizador');
 
     return (
@@ -50,4 +50,4 @@ const FillPDF = () => {
     );
 };
 
-export default FillPDF;
+export default Reportes;

@@ -95,7 +95,7 @@ const PDFViewer = () => {
                 showToast('Selecciona un publicador válido', 'warning');
                 return;
             }
-            endpoint = '/fillpdf/get-s21';
+            endpoint = '/reportes/get-s21';
             body = { anio: parseInt(year), id_publicador: pub.id };
             generatedFileName = `S21_${year}_${pub.nombre}_${pub.apellidos}.pdf`;
         } else if (type === 'S21T') {
@@ -103,12 +103,12 @@ const PDFViewer = () => {
                 showToast('Selecciona un tipo de publicador', 'warning');
                 return;
             }
-            endpoint = '/fillpdf/get-s21-totales';
+            endpoint = '/reportes/get-s21-totales';
             body = { anio: parseInt(year), id_tipo_publicador: parseInt(tipoPublicadorId) };
             const tipoName = tiposPublicador.find(t => t.id == tipoPublicadorId)?.descripcion || 'Totales';
             generatedFileName = `S21_Totales_${year}_${tipoName}.pdf`;
         } else if (type === 'S88') {
-            endpoint = `/fillpdf/get-s88/${year}`;
+            endpoint = `/reportes/get-s88/${year}`;
             generatedFileName = `S88_${year}.pdf`;
         }
 

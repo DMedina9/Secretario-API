@@ -15,8 +15,10 @@ const Navbar = () => {
 
     // Close menu when route changes
     useEffect(() => {
-        setIsMenuOpen(false);
-    }, [location]);
+        if (isMenuOpen) {
+            setIsMenuOpen(false);
+        }
+    }, [location, isMenuOpen]);
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -70,7 +72,7 @@ const Navbar = () => {
                         <li><NavLink to="/asistencias" className={({ isActive }) => isActive ? "active" : ""}>Asistencias</NavLink></li>
                         <li><NavLink to="/informes" className={({ isActive }) => isActive ? "active" : ""}>Informes</NavLink></li>
                         <li><NavLink to="/secretario" className={({ isActive }) => isActive ? "active" : ""}>Servicios</NavLink></li>
-                        <li><NavLink to="/fillpdf" className={({ isActive }) => isActive ? "active" : ""}>Reportes</NavLink></li>
+                        <li><NavLink to="/reportes" className={({ isActive }) => isActive ? "active" : ""}>Reportes</NavLink></li>
                         <li><NavLink to="/territorios" className={({ isActive }) => isActive ? "active" : ""}>Territorios</NavLink></li>
                         {isAdmin && <li><NavLink to="/configuracion" className={({ isActive }) => isActive ? "active" : ""}>Configuración</NavLink></li>}
                     </ul>

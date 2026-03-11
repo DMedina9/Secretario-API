@@ -11,7 +11,7 @@ const ReportesS21 = () => {
     const handleDownload = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/fillpdf/get-s21`, {
+            const response = await fetch(`${API_BASE_URL}/reportes/get-s21`, {
                 method: 'POST',
                 headers: {
                     ...getAuthHeaders(),
@@ -30,7 +30,7 @@ const ReportesS21 = () => {
             const a = document.createElement('a');
             a.href = url;
             a.download = `S21_Por_Publicador.zip`; // The API returns a ZIP probably if multiple? Or concatenated PDF? The endpoint /get-s21 with no publicador sends a zip?
-            // Original code: downloadFile('/fillpdf/get-s21', { anio: null }, 'S21_Por_Publicador.zip');
+            // Original code: downloadFile('/reportes/get-s21', { anio: null }, 'S21_Por_Publicador.zip');
             // So it expects a zip.
             document.body.appendChild(a);
             a.click();

@@ -7,13 +7,16 @@ import publicadorRoutes from './publicador/routes.mjs';
 import informeRoutes from './informe/routes.mjs';
 import asistenciasRoutes from './asistencias/routes.mjs';
 import secretarioRoutes from './secretario/routes.mjs';
-import fillPDFRoutes from './fillPDF/routes.mjs';
+import reportesRoutes from './reportes/routes.mjs';
 import territoriosRoutes from './territorios/routes.mjs';
 import configuracionesRoutes from './configuraciones/routes.mjs';
 import precursoresAuxiliaresRoutes from './precursoresAuxiliares/routes.mjs';
+import backupRoutes from './backup/routes.mjs';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import http from 'http';
+import { initSocket } from './common/socket.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,7 +31,7 @@ const app = express();
 //app.use(cors());
 //Producción:
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://dmedina9.github.io', 'https://secretario-api.onrender.com'],
+    origin: ['http://localhost:8081', 'https://dmedina9.github.io', 'https://secretario-api.onrender.com'],
     credentials: true
 }));
 app.use(express.json());
@@ -39,10 +42,11 @@ app.use('/api/publicador', publicadorRoutes);
 app.use('/api/informe', informeRoutes);
 app.use('/api/asistencias', asistenciasRoutes);
 app.use('/api/secretario', secretarioRoutes);
-app.use('/api/fillPDF', fillPDFRoutes);
+app.use('/api/reportes', reportesRoutes);
 app.use('/api/territorios', territoriosRoutes);
 app.use('/api/configuraciones', configuracionesRoutes);
 app.use('/api/precursoresAuxiliares', precursoresAuxiliaresRoutes);
+app.use('/api/backup', backupRoutes);
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'Running',
@@ -58,4 +62,7 @@ app.use((err, req, res, next) => {
     });
 });
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

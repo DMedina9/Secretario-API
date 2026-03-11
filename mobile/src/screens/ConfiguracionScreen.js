@@ -6,8 +6,10 @@ import {
 import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight } from 'lucide-react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
+import { io as ioClient } from 'socket.io-client';
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
 const ConfiguracionesSection = () => {
@@ -176,6 +178,90 @@ const GestionDatosSection = () => {
         }
     };
 
+    const downloadBackup = async () => {
+        setLoading('backup');
+        try {
+            const url = `${api.defaults.baseURL}/backup/download`;
+            const options = {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            };
+
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error('Error al descargar respaldo');
+
+            const blob = await response.blob();
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                try {
+                    const base64data = reader.result.split(',')[1];
+                    const filename = `backup-${Date.now()}.db`;
+                    const fileUri = `${FileSystem.documentDirectory}${filename}`;
+                    await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: FileSystem.EncodingType.Base64 });
+                    if (await Sharing.isAvailableAsync()) {
+                        await Sharing.shareAsync(fileUri);
+                    } else {
+                        Alert.alert('Éxito', 'Respaldo guardado, pero compartir no está disponible.');
+                    }
+                } catch (e) {
+                    Alert.alert('Error', 'No se pudo guardar el respaldo.');
+                } finally {
+                    setLoading(null);
+                }
+            };
+        } catch (error) {
+            Alert.alert('Error', error.message);
+            setLoading(null);
+        }
+    };
+
+    const restoreBackup = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+            if (result.type !== 'success') return;
+            // Pedir confirmación antes de proceder
+            Alert.alert(
+                'Confirmar restauración',
+                'La restauración reemplazará completamente la base de datos del servidor. ¿Deseas continuar?',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    { text: 'Restaurar', style: 'destructive', onPress: async () => {
+                        setLoading('restore');
+                        try {
+                            const fetched = await fetch(result.uri);
+                            const blob = await fetched.blob();
+
+                            const form = new FormData();
+                            form.append('backup', blob, result.name || 'backup.db');
+
+                            const resp = await fetch(`${api.defaults.baseURL}/backup/restore`, {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` },
+                                body: form
+                            });
+
+                            const data = await resp.json();
+                            if (data && data.success) {
+                                Alert.alert('Éxito', 'Restauración completada.');
+                            } else {
+                                Alert.alert('Error', 'No se pudo restaurar: ' + (data.error || 'respuesta inesperada'));
+                            }
+                        } catch (e) {
+                            Alert.alert('Error', 'No se pudo restaurar el respaldo.');
+                        } finally {
+                            setLoading(null);
+                        }
+                    }}
+                ]
+            );
+        } catch (e) {
+            Alert.alert('Error', 'No se pudo restaurar el respaldo.');
+        } finally {
+            // loading is handled in the confirmation branch
+        }
+    };
+
     const actions = [
         { key: 'publicador', label: 'Exportar Publicadores', icon: '📋' },
         { key: 'asistencias', label: 'Exportar Asistencias', icon: '📊' },
@@ -186,6 +272,18 @@ const GestionDatosSection = () => {
         <View style={s.card}>
             <Text style={s.cardTitle}>📊 Gestión de Datos</Text>
             <Text style={s.cardSubtitle}>Exporta datos desde la aplicación móvil. La importación de Excel está disponible en la versión web.</Text>
+            <Modal
+                visible={loading === 'restore' || loading === 'backup'}
+                transparent
+                animationType="fade"
+            >
+                <View style={s.modalOverlayCentered}>
+                    <View style={s.modalProgress}>
+                        <ActivityIndicator size="large" color="#3b82f6" />
+                        <Text style={{ marginTop: 12 }}>{loading === 'backup' ? 'Descargando respaldo...' : 'Restaurando respaldo...'}</Text>
+                    </View>
+                </View>
+            </Modal>
             {actions.map(a => (
                 <TouchableOpacity 
                     key={a.key} 
@@ -202,6 +300,34 @@ const GestionDatosSection = () => {
                     <ChevronRight size={18} color="#9ca3af" />
                 </TouchableOpacity>
             ))}
+
+            <TouchableOpacity
+                style={[s.actionRow, loading === 'backup' && { opacity: 0.5 }]}
+                onPress={downloadBackup}
+                disabled={!!loading}
+            >
+                <Text style={s.actionIcon}>💾</Text>
+                {loading === 'backup' ? (
+                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                ) : (
+                    <Text style={s.actionLabel}>Descargar Respaldo de la Base</Text>
+                )}
+                <ChevronRight size={18} color="#9ca3af" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={[s.actionRow, loading === 'restore' && { opacity: 0.5 }]}
+                onPress={restoreBackup}
+                disabled={!!loading}
+            >
+                <Text style={s.actionIcon}>🔁</Text>
+                {loading === 'restore' ? (
+                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                ) : (
+                    <Text style={s.actionLabel}>Restaurar Respaldo desde Archivo</Text>
+                )}
+                <ChevronRight size={18} color="#9ca3af" />
+            </TouchableOpacity>
         </View>
     );
 };
@@ -274,6 +400,21 @@ const UsuariosSection = () => (
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const ConfiguracionScreen = ({ navigation }) => {
     const [section, setSection] = useState('configuraciones');
+    const { token } = useUser();
+
+    useEffect(() => {
+        // connect to Socket.IO to receive backup notifications
+        if (!token) return;
+        const socket = ioClient(api.defaults.baseURL, { transports: ['websocket'], auth: { token } });
+        socket.on('connect', () => {});
+        socket.on('backup', (data) => {
+            if (data.status === 'restore_started') Alert.alert('Restauración', 'La restauración ha iniciado');
+            if (data.status === 'restore_success') Alert.alert('Restauración', 'Restauración completada con éxito');
+            if (data.status === 'restore_error') Alert.alert('Error', 'Error al restaurar: ' + (data.error || ''));
+        });
+
+        return () => socket.disconnect();
+    }, [token]);
 
     const sections = [
         { key: 'configuraciones', label: 'Config.', icon: <Settings size={16} color="#fff" /> },
@@ -357,6 +498,19 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    modalOverlayCentered: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalProgress: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        minWidth: 220,
     },
     modalContent: {
         backgroundColor: 'white',

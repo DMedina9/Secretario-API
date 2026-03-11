@@ -37,19 +37,44 @@ const ReportesScreen = ({ navigation }) => {
                 throw new Error('Error al descargar el archivo desde el servidor');
             }
 
+            const contentType = response.headers.get('content-type') || '';
             const blob = await response.blob();
-            
+
+            // If server returned a PDF, save and open preview screen
+            if (contentType.includes('application/pdf')) {
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = async () => {
+                    try {
+                        const base64data = reader.result.split(',')[1];
+                        const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+                        await FileSystem.writeAsStringAsync(fileUri, base64data, {
+                            encoding: FileSystem.EncodingType.Base64
+                        });
+
+                        navigation.navigate('PDFViewer', { fileUri, filename });
+                    } catch (e) {
+                        Alert.alert('Error', 'No se pudo guardar ni abrir el PDF.');
+                    } finally {
+                        setLoading(null);
+                    }
+                };
+                return;
+            }
+
+            // Fallback: treat as other file types (zip, xlsx) and share
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
                 try {
                     const base64data = reader.result.split(',')[1];
                     const fileUri = `${FileSystem.documentDirectory}${filename}`;
-                    
+
                     await FileSystem.writeAsStringAsync(fileUri, base64data, {
                         encoding: FileSystem.EncodingType.Base64
                     });
-                    
+
                     if (await Sharing.isAvailableAsync()) {
                         await Sharing.shareAsync(fileUri);
                     } else {
@@ -69,11 +94,13 @@ const ReportesScreen = ({ navigation }) => {
     };
 
     const handleS21 = () => {
-        downloadAndShareFile('/fillpdf/get-s21', 'POST', { anio: null }, 'S21_Por_Publicador.zip');
+        downloadAndShareFile('/reportes/get-s21', 'POST', { anio: null }, 'S21_Por_Publicador.zip');
     };
 
     const handleS88 = () => {
-        downloadAndShareFile(`/fillpdf/get-s88/${anioServicio || new Date().getFullYear()}`, 'GET', null, `S88_${anioServicio || new Date().getFullYear()}.pdf`);
+        const year = anioServicio || new Date().getFullYear();
+        const fullUrl = `${api.defaults.baseURL}/reportes/get-s88/${year}`;
+        navigation.navigate('PDFViewer', { endpoint: fullUrl, method: 'GET', filename: `S88_${year}.pdf` });
     };
 
     const handleReporteGeneral = () => {

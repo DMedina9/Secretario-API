@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const sequelize = new Sequelize({
     dialect: 'sqlite',
+    logging: false,   // Desactiva completamente el log en consola
     storage: path.join(__dirname, '../storage/data.db')
 });
 export default sequelize;

@@ -1,6 +1,6 @@
 import express from 'express';
 import { check } from '../common/middlewares/IsAuthenticated.mjs';
-import * as FillPDFController from './controller.mjs';
+import * as ReportesController from './controller.mjs';
 
 const router = express.Router();
 
@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/get-s21-totales', check, async (req, res) => {
     try {
         const { anio, id_tipo_publicador } = req.body;
-        const result = await FillPDFController.getS21Totales(anio, id_tipo_publicador);
+        const result = await ReportesController.getS21Totales(anio, id_tipo_publicador);
         if (!result.success) return res.json(result);
         if (result.zip) {
             const zipBytes = result.zip.toBuffer();
@@ -43,7 +43,7 @@ router.post('/get-s21-totales', check, async (req, res) => {
 router.post('/get-s21', check, async (req, res) => {
     try {
         const { anio, id_publicador } = req.body;
-        const result = await FillPDFController.getS21(anio, id_publicador);
+        const result = await ReportesController.getS21(anio, id_publicador);
         if (!result.success) return res.json(result);
         if (result.zip) {
             const zipBytes = result.zip.toBuffer();
@@ -78,7 +78,7 @@ router.post('/get-s21', check, async (req, res) => {
 router.get('/get-s88/:anio', check, async (req, res) => {
     try {
         const { anio } = req.params;
-        const result = await FillPDFController.getS88(anio);
+        const result = await ReportesController.getS88(anio);
         if (!result.success) return res.json(result);
         if (result.zip) {
             const zipBytes = result.zip.toBuffer();

@@ -12,7 +12,7 @@ import Publicadores from './pages/Publicadores';
 import Asistencias from './pages/Asistencias';
 import Informes from './pages/Informes';
 import Secretario from './pages/Secretario';
-import FillPDF from './pages/FillPDF';
+import Reportes from './pages/Reportes';
 import Territorios from './pages/Territorios';
 import Configuracion from './pages/Configuracion';
 import PrecursoresAuxiliares from './pages/PrecursoresAuxiliares';
@@ -39,7 +39,7 @@ const AppContent = () => {
               <Route path="/asistencias" element={<Asistencias />} />
               <Route path="/informes" element={<Informes />} />
               <Route path="/secretario" element={<Secretario />} />
-              <Route path="/fillpdf" element={<FillPDF />} />
+              <Route path="/reportes" element={<Reportes />} />
               <Route path="/territorios" element={<Territorios />} />
               {isAdmin && <Route path="/configuracion" element={<Configuracion />} />}
             </Route>
