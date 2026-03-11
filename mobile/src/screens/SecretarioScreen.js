@@ -123,7 +123,7 @@ const ReporteS3View = () => {
                 </View>
                 {data.length === 0 ?
                     <Text style={s.headerText}>No hay datos disponibles</Text> :
-                    <FlatList showsHorizontalScrollIndicator={false} data={data} renderItem={({ item, index }) => (
+                    <FlatList scrollEnabled={false} showsHorizontalScrollIndicator={false} data={data} renderItem={({ item, index }) => (
                         <View key={index} style={s.row}>
                             <Text style={s.cell}>{item.month}</Text>
                             <Text style={s.cell}>{item.year}</Text>
@@ -272,27 +272,24 @@ const SecretarioScreen = ({ navigation }) => {
 
     return (
         <View style={s.container}>
-            {/* Top bar */}
             <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-                    <ArrowLeft size={24} color="#1f2937" />
-                </TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#1f2937" /></TouchableOpacity>
                 <Text style={s.headerTitle}>Secretario</Text>
-                <View style={{ width: 32 }} />
+                <View style={{ width: 24 }} />
             </View>
 
-            {/* Tabs */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.tabs} contentContainerStyle={{ paddingHorizontal: 12 }}>
+            {/* Tab bar */}
+            <View style={s.tabBar}>
                 {sections.map(sec => (
                     <TouchableOpacity
                         key={sec.key}
-                        style={[s.tab, section === sec.key && s.tabActive]}
-                        onPress={() => { setSection(sec.key); }}
+                        style={[s.tabItem, section === sec.key && s.tabItemActive]}
+                        onPress={() => setSection(sec.key)}
                     >
-                        <Text style={[s.tabText, section === sec.key && s.tabTextActive]}>{sec.label}</Text>
+                        <Text style={[s.tabLabel, section === sec.key && s.tabLabelActive]}>{sec.label}</Text>
                     </TouchableOpacity>
                 ))}
-            </ScrollView>
+            </View>
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
                 {section === 's1' && <ReporteS1View />}
@@ -310,16 +307,15 @@ const s = StyleSheet.create({
         padding: 20, paddingTop: 50, backgroundColor: '#fff',
         borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
     },
-    backBtn: { padding: 4 },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
-    tabs: { backgroundColor: '#fff', paddingVertical: 8, height: 50, minHeight: 50, maxHeight: 50 },
-    tab: {
-        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
-        borderWidth: 1, borderColor: '#d1d5db', marginRight: 8, backgroundColor: '#f9fafb',
+    tabBar: {
+        flexDirection: 'row', backgroundColor: '#fff',
+        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
     },
-    tabActive: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-    tabText: { fontSize: 14, color: '#374151' },
-    tabTextActive: { color: '#fff', fontWeight: '600' },
+    tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    tabItemActive: { borderBottomColor: '#3b82f6' },
+    tabLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+    tabLabelActive: { color: '#3b82f6', fontWeight: '700' },
     card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
     cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 12 },
     listItem: { fontSize: 15, color: '#374151', marginBottom: 6, paddingLeft: 4 },
@@ -337,7 +333,6 @@ const s = StyleSheet.create({
     reporteValue: { fontSize: 15, fontWeight: '700', color: '#1f2937' },
     tableContainer: { flex: 1, backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, elevation: 2 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#ccc', marginBottom: 16, alignItems: 'center', justifyContent: 'center' },
-    header: { backgroundColor: '#f3f4f6', fontWeight: 'bold' },
     cell: { flex: 1, textAlign: 'center', fontSize: 14, color: '#374151' },
     headerText: { fontWeight: 'bold', color: '#1f2937' },
     flexRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },

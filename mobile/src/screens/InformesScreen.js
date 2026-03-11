@@ -23,9 +23,10 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
             {showPubHeader && <Text style={s.groupHeader}>👥 Publicadores</Text>}
             <View style={s.informeCard}>
                 <View style={s.informeTop}>
-                    <Text style={s.informeName}>{item.nombre}</Text>
+                    {item.telefono ? <TouchableOpacity onPress={() => Linking.openURL(`https://wa.me/${item.telefono}`)}><Text style={s.informeName}>{item.nombre}</Text></TouchableOpacity>
+                        : <Text style={s.informeName}>{item.nombre}</Text>}
                     {!item.predico_en_el_mes && item.telefono ? (
-                        <TouchableOpacity style={s.waBadge} onPress={() => Linking.openURL(`https://wa.me/${item.telefono}?text=Hola%20${item.sexo === 'M' ? 'hermano' : 'hermana'}%2C%20buen%20d%C3%ADa!%20Me%20puede%20mandar%20su%20informe%20de%20${dayjs(month + '-01').format('MMMM YYYY')}%2C%20por%20favor%3F%20Saludos!`)}>
+                        <TouchableOpacity style={s.waBadge} onPress={() => Linking.openURL(`https://wa.me/${item.telefono}?text=Hola%20${item.sexo === 'H' ? 'hermano' : 'hermana'}%2C%20buen%20d%C3%ADa!%20Me%20puede%20mandar%20su%20informe%20de%20${dayjs(month + '-01').format('MMMM YYYY')}%2C%20por%20favor%3F%20Saludos!`)}>
                             <MessageCircle size={12} color="#25d366" />
                             <Text style={s.waText}>{item.telefono}</Text>
                         </TouchableOpacity>

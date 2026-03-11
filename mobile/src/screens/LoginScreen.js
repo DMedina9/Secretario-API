@@ -2,22 +2,24 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useUser } from '../contexts/UserContext';
 
-const RegistrationScreen = ({ navigation }) => {
-    const [nombre, setNombre] = useState('');
-    const { saveProfile } = useUser();
+const LoginScreen = ({ navigation }) => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { login } = useUser();
 
-    const handleRegister = async () => {
-        if (!nombre.trim()) {
-            alert('Por favor, ingresa tu nombre');
+    const handleLogin = async () => {
+        if (!username.trim() || !password.trim()) {
+            alert('Por favor, ingresa tu usuario y contraseña');
             return;
         }
 
-        try {
-            await saveProfile({ nombre: nombre.trim() });
-            // The App.js navigation will automatically switch to the Main App Stack 
-            // when userProfile is populated in context
-        } catch (error) {
-            alert('Error al guardar el perfil');
+        setLoading(true);
+        const result = await login(username.trim(), password);
+        setLoading(false);
+
+        if (!result.success) {
+            alert(result.error || 'Error al iniciar sesión');
         }
     };
 
@@ -28,18 +30,32 @@ const RegistrationScreen = ({ navigation }) => {
         >
             <View style={styles.card}>
                 <Text style={styles.title}>Bienvenido a Secretario</Text>
-                <Text style={styles.subtitle}>Ingresa tu nombre para identificarte localmente en esta aplicación.</Text>
+                <Text style={styles.subtitle}>Ingresa tus credenciales para acceder a la aplicación local.</Text>
 
+                <Text style={styles.label}>Usuario</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="Tu nombre (Ej. Juan Pérez)"
-                    value={nombre}
-                    onChangeText={setNombre}
-                    autoCapitalize="words"
+                    placeholder="ej. secretario"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
                 />
 
-                <TouchableOpacity style={styles.button} onPress={handleRegister}>
-                    <Text style={styles.buttonText}>Comenzar</Text>
+                <Text style={styles.label}>Contraseña</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="••••••••"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                />
+
+                <TouchableOpacity
+                    style={[styles.button, loading && styles.buttonDisabled]}
+                    onPress={handleLogin}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>{loading ? 'Iniciando...' : 'Iniciar Sesión'}</Text>
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
@@ -101,6 +117,15 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
     },
+    label: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#374151',
+        marginBottom: 4,
+    },
+    buttonDisabled: {
+        opacity: 0.7,
+    },
 });
 
-export default RegistrationScreen;
+export default LoginScreen;

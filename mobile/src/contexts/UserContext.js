@@ -9,6 +9,7 @@ export const useUser = () => {
 
 export const UserProvider = ({ children }) => {
     const [userProfile, setUserProfile] = useState(null);
+    const [token, setToken] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -18,8 +19,10 @@ export const UserProvider = ({ children }) => {
     const loadProfile = async () => {
         try {
             const storedProfile = await AsyncStorage.getItem('@user_profile');
-            if (storedProfile) {
+            const storedToken = await AsyncStorage.getItem('@auth_token');
+            if (storedProfile && storedToken) {
                 setUserProfile(JSON.parse(storedProfile));
+                setToken(storedToken);
             }
         } catch (error) {
             console.error('Error loading user profile', error);
@@ -38,10 +41,36 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+    const login = async (username, password) => {
+        try {
+            // Note: Update to use api.js when we refactor it
+            const response = await fetch('http://localhost:3000/api/account/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                await AsyncStorage.setItem('@auth_token', data.token);
+                await AsyncStorage.setItem('@user_profile', JSON.stringify(data.user));
+                setToken(data.token);
+                setUserProfile(data.user);
+                return { success: true };
+            }
+            return { success: false, error: data.error || 'Credenciales inválidas' };
+        } catch (error) {
+            console.error('Error in login:', error);
+            return { success: false, error: 'Ocurrió un error. Verifica tu conexión.' };
+        }
+    };
+
     const clearProfile = async () => {
         try {
             await AsyncStorage.removeItem('@user_profile');
+            await AsyncStorage.removeItem('@auth_token');
             setUserProfile(null);
+            setToken(null);
         } catch (error) {
             console.error('Error clearing profile', error);
         }
@@ -49,7 +78,9 @@ export const UserProvider = ({ children }) => {
 
     const value = {
         userProfile,
+        token,
         loading,
+        login,
         saveProfile,
         clearProfile
     };

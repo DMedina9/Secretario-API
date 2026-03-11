@@ -69,7 +69,7 @@ const DashboardScreen = ({ navigation }) => {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.headerGreeting}>Hola,</Text>
-                        <Text style={styles.headerName}>{userProfile?.nombre}</Text>
+                        <Text style={styles.headerName}>{userProfile?.firstName}</Text>
                     </View>
                     <TouchableOpacity onPress={clearProfile} style={styles.logoutBtn}>
                         <LogOut size={24} color="#ef4444" />
@@ -150,6 +150,7 @@ const DashboardScreen = ({ navigation }) => {
                 <View style={styles.navGrid}>
                     {[
                         { screen: 'Publicadores', icon: '👥', label: 'Publicadores', color: '#10b981' },
+                        { screen: 'PrecursoresAuxiliares', icon: '⭐', label: 'P. Auxiliares', color: '#ec4899' },
                         { screen: 'Asistencias', icon: '📅', label: 'Asistencias', color: '#3b82f6' },
                         { screen: 'Informes', icon: '📋', label: 'Informes', color: '#8b5cf6' },
                         { screen: 'Secretario', icon: '📊', label: 'Secretario', color: '#f59e0b' },
