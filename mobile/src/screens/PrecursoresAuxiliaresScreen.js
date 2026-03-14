@@ -6,7 +6,7 @@ import {
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import api from '../services/api';
-import { Picker } from '@react-native-picker/picker'; // Assumes this is available, if not we'll use a simpler selection or rely on it being installed
+import DropDownPicker from 'react-native-dropdown-picker'; // Assumes this is available, if not we'll use a simpler selection or rely on it being installed
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react-native';
 
 dayjs.locale('es');
@@ -21,6 +21,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
     const [showForm, setShowForm] = useState(false);
     const [selectedPublicadorId, setSelectedPublicadorId] = useState('');
     const [notas, setNotas] = useState('');
+    const [openPublicador, setOpenPublicador] = useState(false);
 
     useEffect(() => {
         loadPublicadores();
@@ -153,19 +154,21 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                         <Text style={s.cardTitle}>Nuevo Registro</Text>
 
                         <Text style={s.label}>Publicador</Text>
-                        <View style={s.pickerContainer}>
-                            {/* Simple mapping if Picker is not available, but Picker is standard */}
-                            <Picker
-                                selectedValue={selectedPublicadorId}
-                                onValueChange={(itemValue) => setSelectedPublicadorId(itemValue)}
-                                style={s.picker}
-                            >
-                                <Picker.Item label="Seleccionar publicador..." value="" />
-                                {publicadores.map(p => (
-                                    <Picker.Item key={p.id} label={`${p.apellidos}, ${p.nombre}`} value={p.id.toString()} />
-                                ))}
-                            </Picker>
-                        </View>
+                        <DropDownPicker
+                            open={openPublicador}
+                            value={selectedPublicadorId}
+                            items={[
+                                {label: 'Seleccionar publicador...', value: ''},
+                                ...publicadores.map(p => ({label: `${p.apellidos}, ${p.nombre}`, value: p.id.toString()}))
+                            ]}
+                            setOpen={setOpenPublicador}
+                            setValue={setSelectedPublicadorId}
+                            searchable={true}
+                            placeholder="Seleccionar publicador"
+                            style={s.pickerContainer}
+                            dropDownContainerStyle={s.dropDownContainer}
+                            listMode="MODAL"
+                        />
 
                         <Text style={s.label}>Notas (Opcional)</Text>
                         <TextInput
@@ -230,6 +233,7 @@ const s = StyleSheet.create({
     cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e40af', marginBottom: 12 },
     label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 8 },
     pickerContainer: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#f9fafb', marginBottom: 8 },
+    dropDownContainer: { borderColor: '#d1d5db' },
     picker: { height: 50 },
     input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#f9fafb', color: '#1f2937' },
     formActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, gap: 10 },

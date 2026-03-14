@@ -4,7 +4,7 @@ import {
     ActivityIndicator, Alert, ScrollView, TextInput
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Picker } from '@react-native-picker/picker';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { WebView } from 'react-native-webview';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -222,6 +222,9 @@ const VisualizadorTab = ({ anioServicio }) => {
     const [selectedTipoId, setSelectedTipoId] = useState('');
     const [loadingPdf, setLoadingPdf] = useState(false);
     const [pdfState, setPdfState] = useState(null); // { fileUri, base64, filename }
+    const [openReportType, setOpenReportType] = useState(false);
+    const [openPublicador, setOpenPublicador] = useState(false);
+    const [openTipo, setOpenTipo] = useState(false);
 
     useEffect(() => {
         const loadLists = async () => {
@@ -319,13 +322,22 @@ const VisualizadorTab = ({ anioServicio }) => {
                     {/* Tipo de Reporte */}
                     <View style={s.card}>
                         <Text style={s.sectionLabel}>Tipo de Reporte</Text>
-                        <View style={s.pickerContainer}>
-                            <Picker selectedValue={reportType} onValueChange={v => setReportType(v)} style={s.picker}>
-                                <Picker.Item label="S-21 (por Publicador)" value="S21I" />
-                                <Picker.Item label="S-21 Totales (por Tipo)" value="S21T" />
-                                <Picker.Item label="S-88 (Anual)" value="S88" />
-                            </Picker>
-                        </View>
+                        <DropDownPicker
+                            open={openReportType}
+                            value={reportType}
+                            items={[
+                                {label: 'S-21 (por Publicador)', value: 'S21I'},
+                                {label: 'S-21 Totales (por Tipo)', value: 'S21T'},
+                                {label: 'S-88 (Anual)', value: 'S88'}
+                            ]}
+                            setOpen={setOpenReportType}
+                            setValue={setReportType}
+                            searchable={true}
+                            placeholder="Seleccionar tipo de reporte"
+                            style={s.pickerContainer}
+                            dropDownContainerStyle={s.dropDownContainer}
+                            listMode="MODAL"
+                        />
                     </View>
 
                     {/* Año */}
@@ -347,13 +359,18 @@ const VisualizadorTab = ({ anioServicio }) => {
                             <Text style={s.sectionLabel}>Publicador</Text>
                             {publicadores.length === 0
                                 ? <ActivityIndicator color="#3b82f6" />
-                                : <View style={s.pickerContainer}>
-                                    <Picker selectedValue={selectedPublicadorId} onValueChange={setSelectedPublicadorId} style={s.picker}>
-                                        {publicadores.map(p => (
-                                            <Picker.Item key={p.id} label={`${p.nombre} ${p.apellidos}`} value={String(p.id)} />
-                                        ))}
-                                    </Picker>
-                                </View>
+                                : <DropDownPicker
+                                    open={openPublicador}
+                                    value={selectedPublicadorId}
+                                    items={publicadores.map(p => ({label: `${p.nombre} ${p.apellidos}`, value: String(p.id)}))}
+                                    setOpen={setOpenPublicador}
+                                    setValue={setSelectedPublicadorId}
+                                    searchable={true}
+                                    placeholder="Seleccionar publicador"
+                                    style={s.pickerContainer}
+                                    dropDownContainerStyle={s.dropDownContainer}
+                                    listMode="MODAL"
+                                />
                             }
                         </View>
                     )}
@@ -364,13 +381,18 @@ const VisualizadorTab = ({ anioServicio }) => {
                             <Text style={s.sectionLabel}>Tipo de Publicador</Text>
                             {tiposPublicador.length === 0
                                 ? <ActivityIndicator color="#3b82f6" />
-                                : <View style={s.pickerContainer}>
-                                    <Picker selectedValue={selectedTipoId} onValueChange={setSelectedTipoId} style={s.picker}>
-                                        {tiposPublicador.map(t => (
-                                            <Picker.Item key={t.id} label={t.descripcion} value={String(t.id)} />
-                                        ))}
-                                    </Picker>
-                                </View>
+                                : <DropDownPicker
+                                    open={openTipo}
+                                    value={selectedTipoId}
+                                    items={tiposPublicador.map(t => ({label: t.descripcion, value: String(t.id)}))}
+                                    setOpen={setOpenTipo}
+                                    setValue={setSelectedTipoId}
+                                    searchable={true}
+                                    placeholder="Seleccionar tipo"
+                                    style={s.pickerContainer}
+                                    dropDownContainerStyle={s.dropDownContainer}
+                                    listMode="MODAL"
+                                />
                             }
                         </View>
                     )}
@@ -388,13 +410,13 @@ const VisualizadorTab = ({ anioServicio }) => {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 const TABS = [
-    { key: 'descargas', label: '⬇️  Descargas' },
     { key: 'visualizador', label: '👁️  Visualizador' },
+    { key: 'descargas', label: '⬇️  Descargas' },
 ];
 
 const ReportesScreen = ({ navigation }) => {
     const { anioServicio } = useAnioServicio();
-    const [activeTab, setActiveTab] = useState('descargas');
+    const [activeTab, setActiveTab] = useState('visualizador');
 
     return (
         <SafeAreaView style={s.safeArea}>
@@ -462,7 +484,8 @@ const s = StyleSheet.create({
     cardSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
     sectionLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
     pickerContainer: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#f9fafb', overflow: 'hidden' },
-    picker: { height: 50 },
+    dropDownContainer: { borderColor: '#d1d5db' },
+    picker: { color: '#1f2937', height: 50 },
     input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#f9fafb', color: '#1f2937' },
     btn: { backgroundColor: '#3b82f6', paddingVertical: 13, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
     btnDisabled: { opacity: 0.65 },

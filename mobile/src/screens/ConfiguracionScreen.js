@@ -177,10 +177,16 @@ const GestionDatosSection = () => {
     const downloadBackup = async () => {
         setLoading('backup');
         try {
+            // Obtener el token desde AsyncStorage
+            const token = await AsyncStorage.getItem('@auth_token');
+            if (!token) throw new Error('No hay token de autenticación');
             const url = `${api.defaults.baseURL}/backup/download`;
             const options = {
                 method: 'GET',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: {
+                    'x-mobile-app': 'true',
+                    'Authorization': `Bearer ${token}`
+                }
             };
 
             const response = await fetch(url, options);
@@ -222,33 +228,35 @@ const GestionDatosSection = () => {
                 'La restauración reemplazará completamente la base de datos del servidor. ¿Deseas continuar?',
                 [
                     { text: 'Cancelar', style: 'cancel' },
-                    { text: 'Restaurar', style: 'destructive', onPress: async () => {
-                        setLoading('restore');
-                        try {
-                            const fetched = await fetch(result.uri);
-                            const blob = await fetched.blob();
+                    {
+                        text: 'Restaurar', style: 'destructive', onPress: async () => {
+                            setLoading('restore');
+                            try {
+                                const fetched = await fetch(result.uri);
+                                const blob = await fetched.blob();
 
-                            const form = new FormData();
-                            form.append('backup', blob, result.name || 'backup.db');
+                                const form = new FormData();
+                                form.append('backup', blob, result.name || 'backup.db');
 
-                            const resp = await fetch(`${api.defaults.baseURL}/backup/restore`, {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${token}` },
-                                body: form
-                            });
+                                const resp = await fetch(`${api.defaults.baseURL}/backup/restore`, {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${token}` },
+                                    body: form
+                                });
 
-                            const data = await resp.json();
-                            if (data && data.success) {
-                                Alert.alert('Éxito', 'Restauración completada.');
-                            } else {
-                                Alert.alert('Error', 'No se pudo restaurar: ' + (data.error || 'respuesta inesperada'));
+                                const data = await resp.json();
+                                if (data && data.success) {
+                                    Alert.alert('Éxito', 'Restauración completada.');
+                                } else {
+                                    Alert.alert('Error', 'No se pudo restaurar: ' + (data.error || 'respuesta inesperada'));
+                                }
+                            } catch (e) {
+                                Alert.alert('Error', 'No se pudo restaurar el respaldo.');
+                            } finally {
+                                setLoading(null);
                             }
-                        } catch (e) {
-                            Alert.alert('Error', 'No se pudo restaurar el respaldo.');
-                        } finally {
-                            setLoading(null);
                         }
-                    }}
+                    }
                 ]
             );
         } catch (e) {
@@ -281,9 +289,9 @@ const GestionDatosSection = () => {
                 </View>
             </Modal>
             {actions.map(a => (
-                <TouchableOpacity 
-                    key={a.key} 
-                    style={[s.actionRow, loading === a.key && { opacity: 0.5 }]} 
+                <TouchableOpacity
+                    key={a.key}
+                    style={[s.actionRow, loading === a.key && { opacity: 0.5 }]}
                     onPress={() => handleExport(a.key, a.label)}
                     disabled={loading !== null}
                 >
@@ -402,7 +410,7 @@ const ConfiguracionScreen = ({ navigation }) => {
         // connect to Socket.IO to receive backup notifications
         if (!token) return;
         const socket = ioClient(api.defaults.baseURL, { transports: ['websocket'], auth: { token } });
-        socket.on('connect', () => {});
+        socket.on('connect', () => { });
         socket.on('backup', (data) => {
             if (data.status === 'restore_started') Alert.alert('Restauración', 'La restauración ha iniciado');
             if (data.status === 'restore_success') Alert.alert('Restauración', 'Restauración completada con éxito');

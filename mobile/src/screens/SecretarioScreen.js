@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    ActivityIndicator, Alert, FlatList
+    ActivityIndicator, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
@@ -123,7 +123,7 @@ const ReporteS3View = () => {
                 </View>
                 {data.length === 0 ?
                     <Text style={s.headerText}>No hay datos disponibles</Text> :
-                    <FlatList scrollEnabled={false} showsHorizontalScrollIndicator={false} data={data} renderItem={({ item, index }) => (
+                    data.map((item, index) => (
                         <View key={index} style={s.row}>
                             <Text style={s.cell}>{item.month}</Text>
                             <Text style={s.cell}>{item.year}</Text>
@@ -133,8 +133,7 @@ const ReporteS3View = () => {
                             <Text style={s.cell}>{item.semana_4 || '-'}</Text>
                             <Text style={s.cell}>{item.semana_5 || '-'}</Text>
                         </View>
-                    )}
-                    />}
+                    ))}
             </SafeAreaView>
         )
     );
