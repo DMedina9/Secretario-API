@@ -9,56 +9,6 @@ const DashboardScreen = ({ navigation }) => {
     const { userProfile, clearProfile } = useUser();
     const [loading, setLoading] = useState(false);
 
-    // Form state
-    const [asistentes, setAsistentes] = useState('');
-    const [notas, setNotas] = useState('');
-    const [fecha, setFecha] = useState(new Date());
-    const [showDatePicker, setShowDatePicker] = useState(false);
-
-    const onDateChange = (event, selectedDate) => {
-        const currentDate = selectedDate || fecha;
-        setShowDatePicker(Platform.OS === 'ios');
-        setFecha(currentDate);
-    };
-
-    const handleRegisterAttendance = async () => {
-        if (!asistentes || isNaN(asistentes)) {
-            Alert.alert('Aviso', 'Por favor ingresa un número válido de asistentes.');
-            return;
-        }
-
-        setLoading(true);
-        try {
-            const payload = {
-                fecha: fecha.toISOString().split('T')[0],
-                asistentes: parseInt(asistentes, 10),
-                notas: notas
-            };
-
-            const response = await api.post('/asistencias/add', payload);
-
-            if (response.data.success) {
-                Alert.alert(
-                    '¡Éxito!',
-                    `Asistencia registrada el ${fecha} con ${asistentes} asistentes.`,
-                    [{ text: 'OK' }]
-                );
-                // Reset form
-                setAsistentes('');
-                setNotas('');
-                setFecha(new Date());
-            } else {
-                Alert.alert('Error', response.data.error || 'No se pudo guardar la asistencia.');
-            }
-
-        } catch (error) {
-            console.error('Error recording attendance:', error);
-            Alert.alert('Error', 'No se pudo conectar con el servidor. Intenta nuevamente.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -73,76 +23,6 @@ const DashboardScreen = ({ navigation }) => {
                     </View>
                     <TouchableOpacity onPress={clearProfile} style={styles.logoutBtn}>
                         <LogOut size={24} color="#ef4444" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Attendance Widget */}
-                <View style={styles.widgetContainer}>
-                    <View style={styles.widgetHeader}>
-                        <Calendar size={20} color="#3b82f6" />
-                        <Text style={styles.widgetTitle}>Registro Rápido de Asistencia</Text>
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Fecha</Text>
-                        <TouchableOpacity
-                            style={styles.input}
-                            onPress={() => setShowDatePicker(true)}
-                        >
-                            <Text>{fecha.toISOString().split('T')[0]}</Text>
-                        </TouchableOpacity>
-
-                        {showDatePicker && (
-                            <DateTimePicker
-                                testID="dateTimePicker"
-                                value={fecha}
-                                mode="date"
-                                is24Hour={true}
-                                display="default"
-                                onChange={onDateChange}
-                            />
-                        )}
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Número de Asistentes</Text>
-                        <TextInput
-                            style={styles.input}
-                            value={asistentes}
-                            onChangeText={setAsistentes}
-                            keyboardType="numeric"
-                            placeholder="Ej. 120"
-                        />
-                    </View>
-
-                    <View style={styles.formGroup}>
-                        <Text style={styles.label}>Notas (Opcional)</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea]}
-                            value={notas}
-                            onChangeText={setNotas}
-                            placeholder="Circunstancia especial, clima, etc."
-                            multiline
-                            numberOfLines={3}
-                        />
-                    </View>
-
-                    <TouchableOpacity
-                        style={[
-                            styles.submitButton,
-                            (!asistentes || loading) && styles.submitButtonDisabled
-                        ]}
-                        onPress={handleRegisterAttendance}
-                        disabled={!asistentes || loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator size="small" color="#ffffff" />
-                        ) : (
-                            <>
-                                <Text style={styles.submitButtonText}>Guardar Asistencia</Text>
-                                <Send size={18} color="#ffffff" style={{ marginLeft: 8 }} />
-                            </>
-                        )}
                     </TouchableOpacity>
                 </View>
 
@@ -264,7 +144,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         padding: 16,
-        paddingTop: 0,
+        paddingTop: 16,
         gap: 12,
     },
     navCard: {

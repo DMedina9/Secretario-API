@@ -11,7 +11,7 @@ router.post('/add', check, has('user'), PublicadorController.addPublicador);
 router.put('/:id', check, has('user'), PublicadorController.updatePublicador);
 router.delete('/:id', check, has('user'), PublicadorController.deletePublicador);
 router.get('/export', check, has('user'), PublicadorController.exportPublicadores);
-router.get('/grupo/:grupo', check, has('user'), PublicadorController.getPublicadoresByGrupo);
+router.get('/grupo/:grupo', check, has('user'), PublicadorController.getPublicadores);
 router.post('/import', check, has('user'), upload.single('file'), PublicadorController.importPublicadores);
 
 // Get privilegios

@@ -3,6 +3,7 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     ActivityIndicator, Alert, Modal, TextInput
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X } from 'lucide-react-native';
@@ -12,14 +13,15 @@ dayjs.locale('es');
 
 // ─── Attendance Form Modal ────────────────────────────────────────────────────
 const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => {
-    const [fecha, setFecha] = useState('');
+    const [fecha, setFecha] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const [asistentes, setAsistentes] = useState('');
     const [notas, setNotas] = useState('');
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (visible) {
-            setFecha(asistencia?.fecha ? dayjs(asistencia.fecha).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'));
+            setFecha(asistencia?.fecha ? dayjs(asistencia.fecha).toDate() : dayjs().toDate());
             setAsistentes(asistencia?.asistentes?.toString() ?? '');
             setNotas(asistencia?.notas ?? '');
         }
@@ -55,6 +57,12 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
         ]);
     };
 
+    const onDateChange = (event, selectedDate) => {
+        const currentDate = selectedDate && dayjs(selectedDate).toDate() || fecha;
+        setFecha(currentDate);
+        setShowDatePicker(false);
+    };
+
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
             <View style={s.overlay}>
@@ -64,8 +72,24 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
                         <TouchableOpacity onPress={onClose}><X size={22} color="#6b7280" /></TouchableOpacity>
                     </View>
                     <View style={s.fieldGroup}>
-                        <Text style={s.label}>Fecha (YYYY-MM-DD)</Text>
-                        <TextInput style={s.input} value={fecha} onChangeText={setFecha} />
+                        <Text style={s.label}>Fecha</Text>
+                        <TouchableOpacity
+                            style={[s.input, s.fechaText]}
+                            onPress={() => setShowDatePicker(true)}
+                        >
+                            <Text>{fecha.toISOString().split('T')[0]}</Text>
+                        </TouchableOpacity>
+
+                        {showDatePicker && (
+                            <DateTimePicker
+                                testID="dateTimePicker"
+                                value={fecha}
+                                mode="date"
+                                is24Hour={true}
+                                display="default"
+                                onChange={onDateChange}
+                            />
+                        )}
                     </View>
                     <View style={s.fieldGroup}>
                         <Text style={s.label}>Asistentes</Text>
@@ -73,7 +97,9 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
                     </View>
                     <View style={s.fieldGroup}>
                         <Text style={s.label}>Notas</Text>
-                        <TextInput style={[s.input, { minHeight: 64, textAlignVertical: 'top' }]} value={notas} onChangeText={setNotas} multiline />
+                        <TextInput style={[s.input, { minHeight: 64, textAlignVertical: 'top' }]} value={notas || ''} onChangeText={setNotas} multiline
+                            numberOfLines={4}
+                            placeholder="Circunstancia especial, clima, etc." />
                     </View>
                     <View style={s.dialogFooter}>
                         {asistencia?.id && (
@@ -239,6 +265,7 @@ const s = StyleSheet.create({
         padding: 20, paddingTop: 50, backgroundColor: '#fff',
         borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
     },
+    fechaText: { alignItems: 'center', justifyContent: 'center' },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     monthNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

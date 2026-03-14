@@ -44,15 +44,12 @@ const getAllPublicadores = async (req, res) => {
     const publicadores = await Publicadores.findAll();
     res.json({ success: true, data: publicadores });
 };
-const getPublicadoresByGrupo = async (req, res) => {
-    const publicadores = await Publicadores.findAll({ where: { grupo: req.params.grupo } });
-    res.json({ success: true, data: publicadores });
-};
 // =====================================================================================
 // OBTENER PUBLICADORES (RAW por el CASE)
 // =====================================================================================
 const getPublicadores = async (req, res) => {
     try {
+        const grupo = req.params?.grupo;
         const rows = await sequelize.query(`
             SELECT
                 p.*,
@@ -69,6 +66,7 @@ const getPublicadores = async (req, res) => {
             FROM Publicadores p
             LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
             LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador
+            ${grupo ? 'WHERE p.grupo = ' + grupo : ''}
             ORDER BY grupo, apellidos, nombre
         `, { type: QueryTypes.SELECT })
 
@@ -220,7 +218,6 @@ export default {
     getTiposPublicador,
     getPublicador,
     getAllPublicadores,
-    getPublicadoresByGrupo,
     getPublicadores,
     exportPublicadores,
     importPublicadores,

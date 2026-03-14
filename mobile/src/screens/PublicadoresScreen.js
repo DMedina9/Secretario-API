@@ -408,6 +408,27 @@ const PublicadoresScreen = ({ navigation }) => {
                 <View style={{ width: 32 }} />
             </View>
 
+            {filtered.length > 0 && (
+                <View style={{ marginTop: 8, marginBottom: 8, padding: 8, backgroundColor: '#fff', borderRadius: 12 }}>
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Publicadores (total): </Text>
+                        <Text style={styles.totalValue}>{filtered.length}</Text>
+                    </View>
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Precursores regulares:</Text>
+                        <Text style={styles.totalValue}>{filtered.reduce((acc, item) => acc + (item.id_tipo_publicador === 2 ? 1 : 0), 0)}</Text>
+                    </View>
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Activos:</Text>
+                        <Text style={styles.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Activo' ? 1 : 0), 0)}</Text>
+                    </View>
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Inactivos:</Text>
+                        <Text style={styles.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Inactivo' ? 1 : 0), 0)}</Text>
+                    </View>
+                </View>
+            )}
+
             {/* Search */}
             <View style={styles.searchWrapper}>
                 <Search size={18} color="#9ca3af" style={{ marginRight: 8 }} />
@@ -576,6 +597,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb',
     },
     dangerBtn: { borderColor: '#fecaca', backgroundColor: '#fff1f2' },
+    totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    totalLabel: { fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
+    totalValue: { fontSize: 16, color: '#1f2937', alignSelf: 'flex-end', textAlign: 'right' },
 });
 
 // ─── Card Styles ───────────────────────────────────────────────────────────────

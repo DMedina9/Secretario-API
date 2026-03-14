@@ -1,111 +1,400 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+    View, Text, StyleSheet, TouchableOpacity,
+    ActivityIndicator, Alert, ScrollView, TextInput
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Picker } from '@react-native-picker/picker';
+import { WebView } from 'react-native-webview';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
-import { useUser } from '../contexts/UserContext';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { FileText, Archive, Table, ArrowLeft } from 'lucide-react-native';
-
-// Import our configured api for the base url, but we'll use fetch for binary downloads
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ArrowLeft } from 'lucide-react-native';
 import api from '../services/api';
 
-const ReportesScreen = ({ navigation }) => {
-    const { anioServicio } = useAnioServicio();
-    const { token } = useUser();
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Convert ArrayBuffer → base64 (React Native safe, no FileReader) */
+const arrayBufferToBase64 = (buffer) => {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+};
+
+/**
+ * Fetch binary resource, save to cache, return { fileUri, base64 }.
+ * Token is read from AsyncStorage directly (same as Axios interceptor).
+ * 'x-mobile-app': 'true'  bypasses JWT check in IsAuthenticated.mjs.
+ */
+const downloadToCache = async (endpoint, method, body, filename) => {
+    const token = await AsyncStorage.getItem('@auth_token');
+    const url = `${api.defaults.baseURL}${endpoint}`;
+    const options = {
+        method,
+        headers: {
+            'x-mobile-app': 'true',
+            'Authorization': `Bearer ${token}`,
+        }
+    };
+    if (body) {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`El servidor respondió con error ${response.status}`);
+
+    const buffer = await response.arrayBuffer();
+    const base64 = arrayBufferToBase64(buffer);
+    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+    await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: 'base64' });
+    return { fileUri, base64 };
+};
+
+/** Build an HTML page that renders a PDF using PDF.js (works on Android WebView) */
+const buildPdfHtml = (base64) => `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #525659; font-family: sans-serif; }
+    #loading {
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      height: 100vh; color: #fff; gap: 14px;
+    }
+    #loading p { font-size: 15px; }
+    #error { display: none; color: #f87171; padding: 24px; text-align: center; }
+    canvas {
+      display: block; margin: 8px auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading"><p>Cargando PDF…</p></div>
+  <div id="error"></div>
+  <div id="container"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const base64 = "${base64}";
+
+    // Decode base64 → Uint8Array
+    const raw = atob(base64);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+
+    pdfjsLib.getDocument({ data: bytes.buffer }).promise
+      .then(function(pdf) {
+        document.getElementById('loading').style.display = 'none';
+        const container = document.getElementById('container');
+
+        const renderPage = function(num) {
+          pdf.getPage(num).then(function(page) {
+            const scale = window.innerWidth / page.getViewport({ scale: 1 }).width;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width  = viewport.width;
+            canvas.height = viewport.height;
+            container.appendChild(canvas);
+            page.render({ canvasContext: canvas.getContext('2d'), viewport });
+          });
+        };
+        for (let i = 1; i <= pdf.numPages; i++) renderPage(i);
+      })
+      .catch(function(err) {
+        document.getElementById('loading').style.display = 'none';
+        const el = document.getElementById('error');
+        el.style.display = 'block';
+        el.textContent = 'Error al renderizar: ' + err.message;
+      });
+  </script>
+</body>
+</html>`;
+
+
+const shareFileUri = async (fileUri) => {
+    if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+    } else {
+        Alert.alert('Compartir no disponible', 'La función de compartir no está disponible en este dispositivo.');
+    }
+};
+
+// ─── Tab: Descargas ───────────────────────────────────────────────────────────
+
+const DescargasTab = ({ anioServicio }) => {
     const [loading, setLoading] = useState(null);
 
-    const downloadAndShareFile = async (endpoint, method = 'GET', body = null, filename) => {
-        setLoading(filename);
+    const handleAction = async (key, endpoint, method, body, filename) => {
+        setLoading(key);
         try {
-            const url = `${api.defaults.baseURL}${endpoint}`;
-            const options = {
-                method,
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            };
-            
-            if (body) {
-                options.headers['Content-Type'] = 'application/json';
-                options.body = JSON.stringify(body);
-            }
-
-            const response = await fetch(url, options);
-
-            if (!response.ok) {
-                throw new Error('Error al descargar el archivo desde el servidor');
-            }
-
-            const contentType = response.headers.get('content-type') || '';
-            const blob = await response.blob();
-
-            // If server returned a PDF, save and open preview screen
-            if (contentType.includes('application/pdf')) {
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = async () => {
-                    try {
-                        const base64data = reader.result.split(',')[1];
-                        const fileUri = `${FileSystem.documentDirectory}${filename}`;
-
-                        await FileSystem.writeAsStringAsync(fileUri, base64data, {
-                            encoding: FileSystem.EncodingType.Base64
-                        });
-
-                        navigation.navigate('PDFViewer', { fileUri, filename });
-                    } catch (e) {
-                        Alert.alert('Error', 'No se pudo guardar ni abrir el PDF.');
-                    } finally {
-                        setLoading(null);
-                    }
-                };
-                return;
-            }
-
-            // Fallback: treat as other file types (zip, xlsx) and share
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = async () => {
-                try {
-                    const base64data = reader.result.split(',')[1];
-                    const fileUri = `${FileSystem.documentDirectory}${filename}`;
-
-                    await FileSystem.writeAsStringAsync(fileUri, base64data, {
-                        encoding: FileSystem.EncodingType.Base64
-                    });
-
-                    if (await Sharing.isAvailableAsync()) {
-                        await Sharing.shareAsync(fileUri);
-                    } else {
-                        Alert.alert('Éxito', 'Archivo guardado en el dispositivo, pero la opción de compartir no está disponible.');
-                    }
-                } catch (e) {
-                    Alert.alert('Error', 'No se pudo guardar ni compartir el archivo.');
-                } finally {
-                    setLoading(null);
-                }
-            };
-            
-        } catch (error) {
-            Alert.alert('Error', error.message);
+            const { fileUri } = await downloadToCache(endpoint, method, body, filename);
+            await shareFileUri(fileUri);
+        } catch (e) {
+            Alert.alert('Error', e.message);
+        } finally {
             setLoading(null);
         }
     };
 
-    const handleS21 = () => {
-        downloadAndShareFile('/reportes/get-s21', 'POST', { anio: null }, 'S21_Por_Publicador.zip');
+    const cards = [
+        {
+            key: 'S21',
+            title: 'Tarjetas S-21 (todos)',
+            subtitle: 'ZIP con informes de todos los publicadores',
+            icon: '🗂️',
+            color: '#3b82f6',
+            endpoint: '/reportes/get-s21',
+            method: 'POST',
+            body: { anio: null },
+            filename: 'S21_Por_Publicador.zip',
+        },
+        {
+            key: 'S88',
+            title: `Reporte Anual S-88 (${anioServicio})`,
+            subtitle: 'Archivo PDF del año de servicio',
+            icon: '📄',
+            color: '#ef4444',
+            endpoint: `/reportes/get-s88/${anioServicio}`,
+            method: 'GET',
+            body: null,
+            filename: `S88_${anioServicio}.pdf`,
+        },
+        {
+            key: 'GENERAL',
+            title: 'Reporte General',
+            subtitle: 'Exportar todos los datos a Excel',
+            icon: '📊',
+            color: '#10b981',
+            endpoint: '/secretario/export/template',
+            method: 'GET',
+            body: null,
+            filename: `Reporte_General_${new Date().toISOString().slice(0, 10)}.xlsx`,
+        },
+    ];
+
+    return (
+        <ScrollView contentContainerStyle={s.tabContent}>
+            {cards.map((c) => (
+                <View key={c.key} style={s.card}>
+                    <View style={s.cardRow}>
+                        <Text style={s.cardIcon}>{c.icon}</Text>
+                        <View style={{ flex: 1 }}>
+                            <Text style={s.cardTitle}>{c.title}</Text>
+                            <Text style={s.cardSubtitle}>{c.subtitle}</Text>
+                        </View>
+                    </View>
+                    <TouchableOpacity
+                        style={[s.btn, { backgroundColor: c.color }, loading !== null && s.btnDisabled]}
+                        onPress={() => handleAction(c.key, c.endpoint, c.method, c.body, c.filename)}
+                        disabled={loading !== null}
+                    >
+                        {loading === c.key
+                            ? <ActivityIndicator color="#fff" />
+                            : <Text style={s.btnText}>Descargar / Compartir</Text>
+                        }
+                    </TouchableOpacity>
+                </View>
+            ))}
+        </ScrollView>
+    );
+};
+
+// ─── Tab: Visualizador ────────────────────────────────────────────────────────
+
+const VisualizadorTab = ({ anioServicio }) => {
+    const [reportType, setReportType] = useState('S21I');
+    const [year, setYear] = useState(String(anioServicio || new Date().getFullYear()));
+    const [publicadores, setPublicadores] = useState([]);
+    const [tiposPublicador, setTiposPublicador] = useState([]);
+    const [selectedPublicadorId, setSelectedPublicadorId] = useState('');
+    const [selectedTipoId, setSelectedTipoId] = useState('');
+    const [loadingPdf, setLoadingPdf] = useState(false);
+    const [pdfState, setPdfState] = useState(null); // { fileUri, base64, filename }
+
+    useEffect(() => {
+        const loadLists = async () => {
+            try {
+                const [pubs, tipos] = await Promise.all([
+                    api.get('/publicador/all'),
+                    api.get('/publicador/tipos-publicador'),
+                ]);
+                const pubData = pubs.data?.data || [];
+                const tipoData = tipos.data?.data || [];
+                setPublicadores(pubData);
+                setTiposPublicador(tipoData);
+                if (pubData.length > 0) setSelectedPublicadorId(String(pubData[0].id));
+                if (tipoData.length > 0) setSelectedTipoId(String(tipoData[0].id));
+            } catch (e) {
+                console.error('Error cargando listas', e);
+            }
+        };
+        loadLists();
+    }, []);
+
+    const handleGenerarPDF = async () => {
+        if (!year) { Alert.alert('Aviso', 'Ingresa un año de servicio'); return; }
+
+        let endpoint = '', method = 'GET', body = null, filename = '';
+
+        if (reportType === 'S21I') {
+            if (!selectedPublicadorId) { Alert.alert('Aviso', 'Selecciona un publicador'); return; }
+            const pub = publicadores.find(p => String(p.id) === selectedPublicadorId);
+            endpoint = '/reportes/get-s21';
+            method = 'POST';
+            body = { anio: parseInt(year), id_publicador: parseInt(selectedPublicadorId) };
+            filename = pub ? `S21_${year}_${pub.nombre}_${pub.apellidos}.pdf` : `S21_${year}.pdf`;
+        } else if (reportType === 'S21T') {
+            if (!selectedTipoId) { Alert.alert('Aviso', 'Selecciona un tipo de publicador'); return; }
+            const tipo = tiposPublicador.find(t => String(t.id) === selectedTipoId);
+            endpoint = '/reportes/get-s21-totales';
+            method = 'POST';
+            body = { anio: parseInt(year), id_tipo_publicador: parseInt(selectedTipoId) };
+            filename = tipo ? `S21_Totales_${year}_${tipo.descripcion}.pdf` : `S21_Totales_${year}.pdf`;
+        } else {
+            endpoint = `/reportes/get-s88/${year}`;
+            filename = `S88_${year}.pdf`;
+        }
+
+        setLoadingPdf(true);
+        setPdfState(null);
+        try {
+            const { fileUri, base64 } = await downloadToCache(endpoint, method, body, filename);
+            setPdfState({ fileUri, base64, filename });
+        } catch (e) {
+            Alert.alert('Error', e.message);
+        } finally {
+            setLoadingPdf(false);
+        }
     };
 
-    const handleS88 = () => {
-        const year = anioServicio || new Date().getFullYear();
-        const fullUrl = `${api.defaults.baseURL}/reportes/get-s88/${year}`;
-        navigation.navigate('PDFViewer', { endpoint: fullUrl, method: 'GET', filename: `S88_${year}.pdf` });
-    };
+    return (
+        <View style={{ flex: 1 }}>
+            {/* Show the WebView PDF viewer when PDF is loaded, otherwise show the form */}
+            {pdfState ? (
+                <View style={{ flex: 1 }}>
+                    {/* Toolbar */}
+                    <View style={s.pdfToolbar}>
+                        <TouchableOpacity onPress={() => setPdfState(null)} style={s.pdfBackBtn}>
+                            <Text style={s.pdfBackBtnText}>← Volver</Text>
+                        </TouchableOpacity>
+                        <Text style={s.pdfToolbarTitle} numberOfLines={1}>
+                            {pdfState.filename}
+                        </Text>
+                        <TouchableOpacity onPress={() => shareFileUri(pdfState.fileUri)} style={s.pdfShareBtn}>
+                            <Text style={s.pdfShareBtnText}>⬆️ Compartir</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {/* Inline PDF WebView – PDF.js renders pages as canvases */}
+                    <WebView
+                        style={{ flex: 1 }}
+                        originWhitelist={['*']}
+                        source={{ html: buildPdfHtml(pdfState.base64) }}
+                        javaScriptEnabled={true}
+                        domStorageEnabled={true}
+                        mixedContentMode="always"
+                        allowUniversalAccessFromFileURLs={true}
+                        startInLoadingState={true}
+                        renderLoading={() => (
+                            <View style={s.webviewLoading}>
+                                <ActivityIndicator size="large" color="#3b82f6" />
+                                <Text style={{ marginTop: 12, color: '#6b7280' }}>Cargando PDF…</Text>
+                            </View>
+                        )}
+                    />
+                </View>
+            ) : (
+                <ScrollView contentContainerStyle={s.tabContent}>
+                    {/* Tipo de Reporte */}
+                    <View style={s.card}>
+                        <Text style={s.sectionLabel}>Tipo de Reporte</Text>
+                        <View style={s.pickerContainer}>
+                            <Picker selectedValue={reportType} onValueChange={v => setReportType(v)} style={s.picker}>
+                                <Picker.Item label="S-21 (por Publicador)" value="S21I" />
+                                <Picker.Item label="S-21 Totales (por Tipo)" value="S21T" />
+                                <Picker.Item label="S-88 (Anual)" value="S88" />
+                            </Picker>
+                        </View>
+                    </View>
 
-    const handleReporteGeneral = () => {
-        downloadAndShareFile('/secretario/export/template', 'GET', null, `Reporte_General_${new Date().toISOString().slice(0,10)}.xlsx`);
-    };
+                    {/* Año */}
+                    <View style={s.card}>
+                        <Text style={s.sectionLabel}>Año de Servicio</Text>
+                        <TextInput
+                            style={s.input}
+                            value={year}
+                            onChangeText={setYear}
+                            keyboardType="numeric"
+                            placeholder="Ej. 2025"
+                            maxLength={4}
+                        />
+                    </View>
+
+                    {/* Selector Publicador */}
+                    {reportType === 'S21I' && (
+                        <View style={s.card}>
+                            <Text style={s.sectionLabel}>Publicador</Text>
+                            {publicadores.length === 0
+                                ? <ActivityIndicator color="#3b82f6" />
+                                : <View style={s.pickerContainer}>
+                                    <Picker selectedValue={selectedPublicadorId} onValueChange={setSelectedPublicadorId} style={s.picker}>
+                                        {publicadores.map(p => (
+                                            <Picker.Item key={p.id} label={`${p.nombre} ${p.apellidos}`} value={String(p.id)} />
+                                        ))}
+                                    </Picker>
+                                </View>
+                            }
+                        </View>
+                    )}
+
+                    {/* Selector Tipo Publicador */}
+                    {reportType === 'S21T' && (
+                        <View style={s.card}>
+                            <Text style={s.sectionLabel}>Tipo de Publicador</Text>
+                            {tiposPublicador.length === 0
+                                ? <ActivityIndicator color="#3b82f6" />
+                                : <View style={s.pickerContainer}>
+                                    <Picker selectedValue={selectedTipoId} onValueChange={setSelectedTipoId} style={s.picker}>
+                                        {tiposPublicador.map(t => (
+                                            <Picker.Item key={t.id} label={t.descripcion} value={String(t.id)} />
+                                        ))}
+                                    </Picker>
+                                </View>
+                            }
+                        </View>
+                    )}
+
+                    {/* Botón generar */}
+                    <TouchableOpacity style={[s.btn, loadingPdf && s.btnDisabled]} onPress={handleGenerarPDF} disabled={loadingPdf}>
+                        {loadingPdf ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>👁️  Generar y Ver PDF</Text>}
+                    </TouchableOpacity>
+                </ScrollView>
+            )}
+        </View>
+    );
+};
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
+const TABS = [
+    { key: 'descargas', label: '⬇️  Descargas' },
+    { key: 'visualizador', label: '👁️  Visualizador' },
+];
+
+const ReportesScreen = ({ navigation }) => {
+    const { anioServicio } = useAnioServicio();
+    const [activeTab, setActiveTab] = useState('descargas');
 
     return (
         <SafeAreaView style={s.safeArea}>
@@ -113,67 +402,36 @@ const ReportesScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
                     <ArrowLeft size={24} color="#1f2937" />
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Reportes en PDF / Excel</Text>
+                <Text style={s.headerTitle}>Reportes</Text>
                 <View style={{ width: 32 }} />
             </View>
 
-            <ScrollView contentContainerStyle={s.content}>
-                
-                <View style={s.card}>
-                    <View style={s.cardHeader}>
-                        <Archive size={24} color="#3b82f6" style={s.icon} />
-                        <View>
-                            <Text style={s.cardTitle}>Tarjetas S-21</Text>
-                            <Text style={s.cardSubtitle}>Descargar todos los informes en ZIP</Text>
-                        </View>
-                    </View>
-                    <TouchableOpacity 
-                        style={[s.btn, loading === 'S21_Por_Publicador.zip' && s.btnDisabled]} 
-                        onPress={handleS21}
-                        disabled={loading !== null}
+            <View style={s.tabBar}>
+                {TABS.map(tab => (
+                    <TouchableOpacity
+                        key={tab.key}
+                        style={[s.tabItem, activeTab === tab.key && s.tabItemActive]}
+                        onPress={() => setActiveTab(tab.key)}
                     >
-                        {loading === 'S21_Por_Publicador.zip' ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Descargar S-21 (ZIP)</Text>}
+                        <Text style={[s.tabLabel, activeTab === tab.key && s.tabLabelActive]}>
+                            {tab.label}
+                        </Text>
                     </TouchableOpacity>
-                </View>
+                ))}
+            </View>
 
-                <View style={s.card}>
-                    <View style={s.cardHeader}>
-                        <FileText size={24} color="#ef4444" style={s.icon} />
-                        <View>
-                            <Text style={s.cardTitle}>Reporte Anual S-88</Text>
-                            <Text style={s.cardSubtitle}>Año de Servicio: {anioServicio}</Text>
-                        </View>
-                    </View>
-                    <TouchableOpacity 
-                        style={[s.btn, loading && loading.includes('S88') && s.btnDisabled]} 
-                        onPress={handleS88}
-                        disabled={loading !== null}
-                    >
-                        {loading && loading.includes('S88') ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Descargar S-88 (PDF)</Text>}
-                    </TouchableOpacity>
-                </View>
-
-                <View style={s.card}>
-                    <View style={s.cardHeader}>
-                        <Table size={24} color="#10b981" style={s.icon} />
-                        <View>
-                            <Text style={s.cardTitle}>Reporte General</Text>
-                            <Text style={s.cardSubtitle}>Exportar datos del sistema a Excel</Text>
-                        </View>
-                    </View>
-                    <TouchableOpacity 
-                        style={[s.btn, { backgroundColor: '#10b981' }, loading && loading.includes('Reporte_General') && s.btnDisabled]} 
-                        onPress={handleReporteGeneral}
-                        disabled={loading !== null}
-                    >
-                        {loading && loading.includes('Reporte_General') ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Descargar Reporte (XLSX)</Text>}
-                    </TouchableOpacity>
-                </View>
-                
-            </ScrollView>
+            {/* flex: 1 so WebView fills remaining space */}
+            <View style={{ flex: 1 }}>
+                {activeTab === 'descargas'
+                    ? <DescargasTab anioServicio={anioServicio} />
+                    : <VisualizadorTab anioServicio={anioServicio} />
+                }
+            </View>
         </SafeAreaView>
     );
 };
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#f3f4f6' },
@@ -184,38 +442,48 @@ const s = StyleSheet.create({
     },
     backBtn: { padding: 4 },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
-    content: { padding: 16 },
+    tabBar: {
+        flexDirection: 'row', backgroundColor: '#fff',
+        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+    },
+    tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    tabItemActive: { borderBottomColor: '#3b82f6' },
+    tabLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
+    tabLabelActive: { color: '#3b82f6', fontWeight: '700' },
+    tabContent: { padding: 16, paddingBottom: 40 },
     card: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16,
+        elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1, shadowRadius: 2,
     },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
+    cardRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+    cardIcon: { fontSize: 28, marginRight: 12 },
+    cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
+    cardSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+    sectionLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
+    pickerContainer: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#f9fafb', overflow: 'hidden' },
+    picker: { height: 50 },
+    input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#f9fafb', color: '#1f2937' },
+    btn: { backgroundColor: '#3b82f6', paddingVertical: 13, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+    btnDisabled: { opacity: 0.65 },
+    btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+    // PDF toolbar
+    pdfToolbar: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: '#1f2937', paddingHorizontal: 12, paddingVertical: 10,
     },
-    icon: { marginRight: 12 },
-    cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#1f2937' },
-    cardSubtitle: { fontSize: 14, color: '#6b7280', marginTop: 2 },
-    btn: {
-        backgroundColor: '#3b82f6',
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
+    pdfBackBtn: { padding: 4 },
+    pdfBackBtnText: { color: '#60a5fa', fontSize: 14, fontWeight: '600' },
+    pdfToolbarTitle: { flex: 1, color: '#f9fafb', fontSize: 13, marginHorizontal: 10, textAlign: 'center' },
+    pdfShareBtn: { padding: 4 },
+    pdfShareBtnText: { color: '#60a5fa', fontSize: 14, fontWeight: '600' },
+
+    // Loading overlay inside WebView
+    webviewLoading: {
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6',
     },
-    btnDisabled: {
-        opacity: 0.7,
-    },
-    btnText: { color: '#fff', fontSize: 16, fontWeight: '600' }
 });
 
 export default ReportesScreen;

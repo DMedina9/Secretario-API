@@ -4,11 +4,12 @@ import {
     Alert, ActivityIndicator, Modal, TextInput
 } from 'react-native';
 import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight } from 'lucide-react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io as ioClient } from 'socket.io-client';
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
@@ -112,10 +113,8 @@ const ConfiguracionesSection = () => {
     );
 };
 
-// ─── Sub-section: Gestión de Datos ────────────────────────────────────────────
 const GestionDatosSection = () => {
     const [loading, setLoading] = useState(null);
-    const { token } = useUser();
 
     const handleExport = async (tableKey, tableName) => {
         Alert.alert(
@@ -133,47 +132,44 @@ const GestionDatosSection = () => {
     const downloadAndShare = async (tableKey, format, extension) => {
         setLoading(tableKey);
         try {
+            // Read token from AsyncStorage directly (avoids React state timing issues)
+            const token = await AsyncStorage.getItem('@auth_token');
             const url = `${api.defaults.baseURL}/${tableKey}/export?format=${format}`;
-            const options = {
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
+                    'x-mobile-app': 'true',
                     'Authorization': `Bearer ${token}`
                 }
-            };
-
-            const response = await fetch(url, options);
+            });
 
             if (!response.ok) {
-                throw new Error('Error al descargar el archivo desde el servidor');
+                throw new Error(`Error del servidor: ${response.status}`);
             }
 
-            const blob = await response.blob();
-            
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = async () => {
-                try {
-                    const base64data = reader.result.split(',')[1];
-                    const filename = `${tableKey}_export.${extension}`;
-                    const fileUri = `${FileSystem.documentDirectory}${filename}`;
-                    
-                    await FileSystem.writeAsStringAsync(fileUri, base64data, {
-                        encoding: FileSystem.EncodingType.Base64
-                    });
-                    
-                    if (await Sharing.isAvailableAsync()) {
-                        await Sharing.shareAsync(fileUri);
-                    } else {
-                        Alert.alert('Éxito', 'Archivo guardado, pero la opción de compartir no está disponible.');
-                    }
-                } catch (e) {
-                    Alert.alert('Error', 'No se pudo guardar ni compartir el archivo.');
-                } finally {
-                    setLoading(null);
-                }
-            };
+            // arrayBuffer + manual base64 (no FileReader — React Native safe)
+            const buffer = await response.arrayBuffer();
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            const base64data = btoa(binary);
+
+            const filename = `${tableKey}_export.${extension}`;
+            const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+
+            // 'base64' as string literal — avoids FileSystem.EncodingType being undefined
+            await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: 'base64' });
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(fileUri);
+            } else {
+                Alert.alert('Éxito', 'Archivo guardado, pero la opción de compartir no está disponible.');
+            }
         } catch (error) {
             Alert.alert('Error', error.message);
+        } finally {
             setLoading(null);
         }
     };

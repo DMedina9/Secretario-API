@@ -16,7 +16,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
     const prevIsRP = index > 0 && data[index - 1].id_tipo_publicador === 2;
     const showRPHeader = index === 0 && isRP;
     const showPubHeader = (index === 0 && !isRP) || (index > 0 && !isRP && prevIsRP);
-
+    //console.log(item);
     return (
         <>
             {showRPHeader && <Text style={s.groupHeader}>⭐ Precursores Regulares</Text>}
@@ -31,6 +31,9 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
                             <Text style={s.waText}>{item.telefono}</Text>
                         </TouchableOpacity>
                     ) : null}
+                </View>
+                <View style={[s.statusBadge, item.Estatus === 'Activo' ? s.statusActive : s.statusInactive]}>
+                    <Text style={[s.statusText, item.Estatus === 'Activo' ? s.statusTextActive : s.statusTextInactive]}>{item.Estatus}</Text>
                 </View>
                 <View style={s.informeRow}>
                     <Text style={s.rowLabel}>Predicó</Text>
@@ -72,7 +75,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
                                         onChangeText={v => onChange(index, 'horas', parseInt(v) || 0)}
                                     />
                                 </View>
-                                <View style={s.informeRow}>
+                                {isRP && <View style={s.informeRow}>
                                     <Text style={s.rowLabel}>Horas S.S.</Text>
                                     <TextInput
                                         style={s.numInput}
@@ -80,7 +83,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
                                         value={item.horas_SS?.toString() ?? ''}
                                         onChangeText={v => onChange(index, 'horas_SS', parseInt(v) || 0)}
                                     />
-                                </View>
+                                </View>}
                             </>
                         )}
                         <View style={s.informeRow}>
@@ -106,6 +109,7 @@ const InformesScreen = ({ navigation }) => {
     const [bulkData, setBulkData] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const mes_envio = dayjs().subtract(1, 'month').format('YYYY-MM');
     useEffect(() => { loadGroups(); }, []);
 
     const loadGroups = async () => {
@@ -159,13 +163,15 @@ const InformesScreen = ({ navigation }) => {
                     sexo: pub.sexo,
                     telefono: pub.telefono_movil,
                     mes: month + '-01',
+                    mes_envio: mes_envio + '-01',
                     predico_en_el_mes: ex ? ex.predico_en_el_mes : 0,
                     horas: ex ? ex.horas : 0,
                     horas_SS: ex ? ex.horas_SS : 0,
                     cursos_biblicos: ex ? ex.cursos_biblicos : 0,
                     id_base_tipo: pub.id_tipo_publicador,
                     id_tipo_publicador: ex ? ex.id_tipo_publicador : (pub.id_tipo_publicador || 1),
-                    notas: ex ? ex.notas : ''
+                    notas: ex ? ex.notas : '',
+                    Estatus: pub.Estatus
                 };
             }));
         } catch (e) {
@@ -248,6 +254,26 @@ const InformesScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
 
+                {bulkData.length > 0 && (
+                    <View style={{ marginTop: 8, marginBottom: 8, padding: 8, backgroundColor: '#fff', borderRadius: 12 }}>
+                        <View style={s.totalRow}>
+                            <Text style={s.totalLabel}>Publicadores (total): </Text>
+                            <Text style={s.totalValue}>{bulkData.length}</Text>
+                        </View>
+                        <View style={s.totalRow}>
+                            <Text style={s.totalLabel}>Precursores regulares:</Text>
+                            <Text style={s.totalValue}>{bulkData.reduce((acc, item) => acc + (item.id_tipo_publicador === 2 ? 1 : 0), 0)}</Text>
+                        </View>
+                        <View style={s.totalRow}>
+                            <Text style={s.totalLabel}>Informes:</Text>
+                            <Text style={s.totalValue}>{bulkData.reduce((acc, item) => acc + (item.predico_en_el_mes ? 1 : 0), 0)}</Text>
+                        </View>
+                        <View style={s.totalRow}>
+                            <Text style={s.totalLabel}>Cursos biblicos:</Text>
+                            <Text style={s.totalValue}>{bulkData.reduce((acc, item) => acc + (item.cursos_biblicos), 0)}</Text>
+                        </View>
+                    </View>
+                )}
                 {bulkData.map((item, index) => (
                     <InformeRow key={item.id_publicador} item={item} index={index} data={bulkData} onChange={handleFieldChange} month={month} />
                 ))}
@@ -270,6 +296,12 @@ const s = StyleSheet.create({
         borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
     },
     headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1f2937', flex: 1, textAlign: 'center' },
+    statusBadge: { alignSelf: 'flex-end', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+    statusActive: { backgroundColor: '#d1fae5' },
+    statusInactive: { backgroundColor: '#fee2e2' },
+    statusText: { fontSize: 12, fontWeight: '600' },
+    statusTextActive: { color: '#065f46' },
+    statusTextInactive: { color: '#991b1b' },
     filterCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
     monthNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
     monthLabel: { fontSize: 18, fontWeight: 'bold', color: '#1f2937', width: 180, textAlign: 'center', textTransform: 'capitalize' },
@@ -299,6 +331,9 @@ const s = StyleSheet.create({
         borderWidth: 1, borderColor: '#d1d5db', borderRadius: 6, padding: 6,
         width: 80, fontSize: 15, textAlign: 'center', color: '#1f2937', backgroundColor: '#f9fafb',
     },
+    totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    totalLabel: { fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
+    totalValue: { fontSize: 16, color: '#1f2937', alignSelf: 'flex-end', textAlign: 'right' },
 });
 
 export default InformesScreen;
