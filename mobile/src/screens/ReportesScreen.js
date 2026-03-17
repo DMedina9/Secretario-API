@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { WebView } from 'react-native-webview';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft } from 'lucide-react-native';
@@ -50,9 +50,9 @@ const downloadToCache = async (endpoint, method, body, filename) => {
 
     const buffer = await response.arrayBuffer();
     const base64 = arrayBufferToBase64(buffer);
-    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-    await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: 'base64' });
-    return { fileUri, base64 };
+    const file = new FileSystem.File(FileSystem.Paths.cache, filename);
+    file.write(base64, { encoding: 'base64' });
+    return { fileUri: file.uri, base64 };
 };
 
 /** Build an HTML page that renders a PDF using PDF.js (works on Android WebView) */
@@ -326,9 +326,9 @@ const VisualizadorTab = ({ anioServicio }) => {
                             open={openReportType}
                             value={reportType}
                             items={[
-                                {label: 'S-21 (por Publicador)', value: 'S21I'},
-                                {label: 'S-21 Totales (por Tipo)', value: 'S21T'},
-                                {label: 'S-88 (Anual)', value: 'S88'}
+                                { label: 'S-21 (por Publicador)', value: 'S21I' },
+                                { label: 'S-21 Totales (por Tipo)', value: 'S21T' },
+                                { label: 'S-88 (Anual)', value: 'S88' }
                             ]}
                             setOpen={setOpenReportType}
                             setValue={setReportType}
@@ -336,6 +336,10 @@ const VisualizadorTab = ({ anioServicio }) => {
                             placeholder="Seleccionar tipo de reporte"
                             style={s.pickerContainer}
                             dropDownContainerStyle={s.dropDownContainer}
+                            modalContentContainerStyle={{
+                                marginTop: 50, // Adds margin top to the modal list
+                                paddingHorizontal: 20,
+                            }}
                             listMode="MODAL"
                         />
                     </View>
@@ -362,13 +366,17 @@ const VisualizadorTab = ({ anioServicio }) => {
                                 : <DropDownPicker
                                     open={openPublicador}
                                     value={selectedPublicadorId}
-                                    items={publicadores.map(p => ({label: `${p.nombre} ${p.apellidos}`, value: String(p.id)}))}
+                                    items={publicadores.map(p => ({ label: `${p.nombre} ${p.apellidos}`, value: String(p.id) }))}
                                     setOpen={setOpenPublicador}
                                     setValue={setSelectedPublicadorId}
                                     searchable={true}
                                     placeholder="Seleccionar publicador"
                                     style={s.pickerContainer}
                                     dropDownContainerStyle={s.dropDownContainer}
+                                    modalContentContainerStyle={{
+                                        marginTop: 50, // Adds margin top to the modal list
+                                        paddingHorizontal: 20,
+                                    }}
                                     listMode="MODAL"
                                 />
                             }
@@ -384,13 +392,17 @@ const VisualizadorTab = ({ anioServicio }) => {
                                 : <DropDownPicker
                                     open={openTipo}
                                     value={selectedTipoId}
-                                    items={tiposPublicador.map(t => ({label: t.descripcion, value: String(t.id)}))}
+                                    items={tiposPublicador.map(t => ({ label: t.descripcion, value: String(t.id) }))}
                                     setOpen={setOpenTipo}
                                     setValue={setSelectedTipoId}
                                     searchable={true}
                                     placeholder="Seleccionar tipo"
                                     style={s.pickerContainer}
                                     dropDownContainerStyle={s.dropDownContainer}
+                                    modalContentContainerStyle={{
+                                        marginTop: 50, // Adds margin top to the modal list
+                                        paddingHorizontal: 20,
+                                    }}
                                     listMode="MODAL"
                                 />
                             }

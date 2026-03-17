@@ -69,6 +69,8 @@ const Navbar = () => {
                         <li><NavLink to="/" className={({ isActive }) => isActive ? "active" : ""}>Inicio</NavLink></li>
                         <li><NavLink to="/publicadores" className={({ isActive }) => isActive ? "active" : ""}>Publicadores</NavLink></li>
                         <li><NavLink to="/precursores-auxiliares" className={({ isActive }) => isActive ? "active" : ""}>P. Auxiliares</NavLink></li>
+                        <li><NavLink to="/precursores-regulares" className={({ isActive }) => isActive ? "active" : ""}>P. Regulares</NavLink></li>
+                        <li><NavLink to="/irregulares" className={({ isActive }) => isActive ? "active" : ""}>Irregulares</NavLink></li>
                         <li><NavLink to="/asistencias" className={({ isActive }) => isActive ? "active" : ""}>Asistencias</NavLink></li>
                         <li><NavLink to="/informes" className={({ isActive }) => isActive ? "active" : ""}>Informes</NavLink></li>
                         <li><NavLink to="/secretario" className={({ isActive }) => isActive ? "active" : ""}>Servicios</NavLink></li>

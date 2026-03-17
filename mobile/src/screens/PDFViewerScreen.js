@@ -61,11 +61,9 @@ const PDFViewerScreen = ({ route, navigation }) => {
       reader.onloadend = async () => {
         try {
           const base64data = reader.result.split(',')[1];
-          const filePath = `${FileSystem.documentDirectory}${filename}`;
-          await FileSystem.writeAsStringAsync(filePath, base64data, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          setFileUri(filePath);
+          const file = new FileSystem.File(FileSystem.Paths.document, filename);
+          file.write(base64data, { encoding: 'base64' });
+          setFileUri(file.uri);
         } catch (err) {
           Alert.alert('Error', 'No se pudo guardar el PDF.');
         } finally {

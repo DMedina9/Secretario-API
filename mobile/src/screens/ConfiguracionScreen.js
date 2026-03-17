@@ -4,7 +4,7 @@ import {
     Alert, ActivityIndicator, Modal, TextInput
 } from 'react-native';
 import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight } from 'lucide-react-native';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import api from '../services/api';
@@ -122,9 +122,22 @@ const GestionDatosSection = () => {
             'Selecciona el formato de exportación',
             [
                 { text: 'Cancelar', style: 'cancel' },
-                { text: 'Excel (.xlsx)', onPress: () => downloadAndShare(tableKey, 'excel', 'xlsx') },
+                { text: 'XLSX', onPress: () => downloadAndShare(tableKey, 'excel', 'xlsx') },
                 { text: 'JSON', onPress: () => downloadAndShare(tableKey, 'json', 'json') },
                 { text: 'XML', onPress: () => downloadAndShare(tableKey, 'xml', 'xml') }
+            ]
+        );
+    };
+
+    const handleImport = async (tableKey, tableName) => {
+        Alert.alert(
+            `Importar ${tableName}`,
+            'Selecciona el formato de importación',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'XLSX', onPress: () => importFromFile(tableKey, 'excel') },
+                { text: 'JSON', onPress: () => importFromFile(tableKey, 'json') },
+                { text: 'XML', onPress: () => importFromFile(tableKey, 'xml') }
             ]
         );
     };
@@ -157,16 +170,71 @@ const GestionDatosSection = () => {
             const base64data = btoa(binary);
 
             const filename = `${tableKey}_export.${extension}`;
-            const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-
-            // 'base64' as string literal — avoids FileSystem.EncodingType being undefined
-            await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: 'base64' });
+            const file = new FileSystem.File(FileSystem.Paths.cache, filename);
+            file.write(base64data, { encoding: 'base64' });
 
             if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri);
+                await Sharing.shareAsync(file.uri);
             } else {
                 Alert.alert('Éxito', 'Archivo guardado, pero la opción de compartir no está disponible.');
             }
+        } catch (error) {
+            Alert.alert('Error', error.message);
+        } finally {
+            setLoading(null);
+        }
+    };
+
+    const importFromFile = async (tableKey, format) => {
+        try {
+            let mimeType = '*/*';
+            if (format === 'json') mimeType = 'application/json';
+            else if (format === 'excel') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            else if (format === 'xml') mimeType = 'application/xml';
+
+            const result = await DocumentPicker.getDocumentAsync({ type: mimeType });
+            if (result.canceled) return;
+
+            setLoading(`import_${tableKey}`);
+
+            const token = await AsyncStorage.getItem('@auth_token');
+            let response;
+            if (format === 'json') {
+                // For JSON, read and parse
+                const fileContent = await new FileSystem.File(result.assets[0].uri).text();
+                const data = JSON.parse(fileContent);
+                response = await fetch(`${api.defaults.baseURL}/${tableKey}/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'x-mobile-app': 'true'
+                    },
+                    body: JSON.stringify({ format, data })
+                });
+                if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+            } else {
+                // For Excel and XML, send as file
+                const formData = new FormData();
+                formData.append('file', {
+                    uri: result.assets[0].uri,
+                    name: result.assets[0].name,
+                    type: result.assets[0].mimeType || 'application/octet-stream'
+                });
+
+                response = await fetch(`${api.defaults.baseURL}/${tableKey}/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'x-mobile-app': 'true'
+                    },
+                    body: formData
+                });
+                if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+            }
+
+            const resultData = await response.json();
+            Alert.alert('Éxito', 'Datos importados correctamente.');
         } catch (error) {
             Alert.alert('Error', error.message);
         } finally {
@@ -199,10 +267,10 @@ const GestionDatosSection = () => {
                 try {
                     const base64data = reader.result.split(',')[1];
                     const filename = `backup-${Date.now()}.db`;
-                    const fileUri = `${FileSystem.documentDirectory}${filename}`;
-                    await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: FileSystem.EncodingType.Base64 });
+                    const file = new FileSystem.File(FileSystem.Paths.document, filename);
+                    file.write(base64data, { encoding: 'base64' });
                     if (await Sharing.isAvailableAsync()) {
-                        await Sharing.shareAsync(fileUri);
+                        await Sharing.shareAsync(file.uri);
                     } else {
                         Alert.alert('Éxito', 'Respaldo guardado, pero compartir no está disponible.');
                     }
@@ -221,7 +289,7 @@ const GestionDatosSection = () => {
     const restoreBackup = async () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
-            if (result.type !== 'success') return;
+            if (result.canceled) return;
             // Pedir confirmación antes de proceder
             Alert.alert(
                 'Confirmar restauración',
@@ -232,11 +300,12 @@ const GestionDatosSection = () => {
                         text: 'Restaurar', style: 'destructive', onPress: async () => {
                             setLoading('restore');
                             try {
-                                const fetched = await fetch(result.uri);
-                                const blob = await fetched.blob();
-
                                 const form = new FormData();
-                                form.append('backup', blob, result.name || 'backup.db');
+                                form.append('backup', {
+                                    uri: result.assets[0].uri,
+                                    name: result.assets[0].name || 'backup.db',
+                                    type: result.assets[0].mimeType || 'application/octet-stream'
+                                });
 
                                 const resp = await fetch(`${api.defaults.baseURL}/backup/restore`, {
                                     method: 'POST',
@@ -272,10 +341,16 @@ const GestionDatosSection = () => {
         { key: 'informe', label: 'Exportar Informes', icon: '📈' },
     ];
 
+    const importActions = [
+        { key: 'publicador', label: 'Importar Publicadores', icon: '📥' },
+        { key: 'asistencias', label: 'Importar Asistencias', icon: '📥' },
+        { key: 'informe', label: 'Importar Informes', icon: '📥' },
+    ];
+
     return (
         <View style={s.card}>
             <Text style={s.cardTitle}>📊 Gestión de Datos</Text>
-            <Text style={s.cardSubtitle}>Exporta datos desde la aplicación móvil. La importación de Excel está disponible en la versión web.</Text>
+            <Text style={s.cardSubtitle}>Exporta e importa datos desde la aplicación móvil.</Text>
             <Modal
                 visible={loading === 'restore' || loading === 'backup'}
                 transparent
@@ -297,6 +372,23 @@ const GestionDatosSection = () => {
                 >
                     <Text style={s.actionIcon}>{a.icon}</Text>
                     {loading === a.key ? (
+                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                    ) : (
+                        <Text style={s.actionLabel}>{a.label}</Text>
+                    )}
+                    <ChevronRight size={18} color="#9ca3af" />
+                </TouchableOpacity>
+            ))}
+
+            {importActions.map(a => (
+                <TouchableOpacity
+                    key={`import_${a.key}`}
+                    style={[s.actionRow, loading === `import_${a.key}` && { opacity: 0.5 }]}
+                    onPress={() => handleImport(a.key, a.label)}
+                    disabled={loading !== null}
+                >
+                    <Text style={s.actionIcon}>{a.icon}</Text>
+                    {loading === `import_${a.key}` ? (
                         <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
                     ) : (
                         <Text style={s.actionLabel}>{a.label}</Text>

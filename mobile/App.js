@@ -16,6 +16,8 @@ import InformesScreen from './src/screens/InformesScreen';
 import SecretarioScreen from './src/screens/SecretarioScreen';
 import ConfiguracionScreen from './src/screens/ConfiguracionScreen';
 import PrecursoresAuxiliaresScreen from './src/screens/PrecursoresAuxiliaresScreen';
+import PrecursoresRegularesScreen from './src/screens/PrecursoresRegularesScreen';
+import IrregularesScreen from './src/screens/IrregularesScreen';
 import ReportesScreen from './src/screens/ReportesScreen';
 import PDFViewerScreen from './src/screens/PDFViewerScreen';
 
@@ -39,6 +41,8 @@ const AppNavigator = () => {
               <Stack.Screen name="Asistencias" component={AsistenciasScreen} />
               <Stack.Screen name="Informes" component={InformesScreen} />
               <Stack.Screen name="PrecursoresAuxiliares" component={PrecursoresAuxiliaresScreen} />
+              <Stack.Screen name="PrecursoresRegulares" component={PrecursoresRegularesScreen} />
+              <Stack.Screen name="Irregulares" component={IrregularesScreen} />
               <Stack.Screen name="Reportes" component={ReportesScreen} />
               <Stack.Screen name="PDFViewer" component={PDFViewerScreen} />
               <Stack.Screen name="Secretario" component={SecretarioScreen} />

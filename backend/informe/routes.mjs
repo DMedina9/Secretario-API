@@ -13,6 +13,8 @@ router.delete('/maintenance/old', check, has('admin'), InformeController.deleteO
 router.delete('/:id', check, has('admin'), InformeController.deleteInforme);
 router.post('/bulk', check, has('admin'), InformeController.upsertInformesBulk);
 router.get('/export', check, has('admin'), InformeController.exportInformes);
+router.get('/precursoresRegulares/:anio_servicio', check, InformeController.getPrecursoresRegulares);
+router.get('/irregulares/:mes_final', check, InformeController.getIrregulares);
 router.get('/:id_publicador/:anio_servicio', check, InformeController.getInformes);
 router.get('/:id_publicador/:anio_servicio/:mes', check, InformeController.getInformes);
 

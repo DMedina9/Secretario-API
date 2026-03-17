@@ -1,0 +1,20 @@
+diff --git a/node_modules/react-native-dropdown-picker/src/components/Picker.js b/node_modules/react-native-dropdown-picker/src/components/Picker.js
+index e3fb93b..b948366 100644
+--- a/node_modules/react-native-dropdown-picker/src/components/Picker.js
++++ b/node_modules/react-native-dropdown-picker/src/components/Picker.js
+@@ -10,7 +10,6 @@ import React, {
+ 
+ import {
+     View,
+-    SafeAreaView,
+     TouchableOpacity,
+     Text,
+     Image,
+@@ -24,6 +23,7 @@ import {
+     Platform,
+     StyleSheet,
+ } from 'react-native';
++import { SafeAreaView } from 'react-native-safe-area-context';
+ 
+ const { height: WINDOW_HEIGHT } = Dimensions.get('window');
+ 

@@ -158,8 +158,8 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                             open={openPublicador}
                             value={selectedPublicadorId}
                             items={[
-                                {label: 'Seleccionar publicador...', value: ''},
-                                ...publicadores.map(p => ({label: `${p.apellidos}, ${p.nombre}`, value: p.id.toString()}))
+                                { label: 'Seleccionar publicador...', value: '' },
+                                ...publicadores.map(p => ({ label: `${p.apellidos}, ${p.nombre}`, value: p.id.toString() }))
                             ]}
                             setOpen={setOpenPublicador}
                             setValue={setSelectedPublicadorId}

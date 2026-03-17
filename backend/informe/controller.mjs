@@ -1,4 +1,5 @@
-import { Publicadores, Informes, sequelize, Configuracion } from '../common/models/Secretario.mjs';
+import dayjs from 'dayjs';
+import { Publicadores, Informes, TipoPublicador, sequelize, Configuracion } from '../common/models/Secretario.mjs';
 import { QueryTypes, Op } from 'sequelize'
 import xlsx from 'xlsx'
 import { sendEmail, createBulkReportEmailHTML } from '../common/services/emailService.mjs';
@@ -51,6 +52,172 @@ const getInformes = async (req, res) => {
     }
 }
 
+const getPrecursoresRegulares = async (req, res) => {
+    try {
+        const anio_servicio = parseInt(req.params.anio_servicio, 10);
+        if (!anio_servicio || isNaN(anio_servicio)) {
+            return res.status(400).json({ success: false, error: 'Año de servicio inválido' });
+        }
+
+        const desde = `${anio_servicio - 1}-09-01`;
+        const hasta = `${anio_servicio}-08-01`;
+
+        const rows = await sequelize.query(`
+            SELECT
+                p.id,
+                p.nombre || ' ' || p.apellidos AS publicador,
+                MIN(i.mes) AS inicio_precursorado,
+                ROUND((julianday('${hasta}') - julianday(MIN(i.mes))) / 365.25, 1) AS anios_precursorado,
+                CAST((strftime('%Y', '${hasta}') - strftime('%Y', MIN(i.mes))) * 12 + (strftime('%m', '${hasta}') - strftime('%m', MIN(i.mes))) + 1 AS INTEGER) AS meses_precursorado,
+                SUM(CASE WHEN strftime('%m', i.mes) = '09' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS sep,
+                SUM(CASE WHEN strftime('%m', i.mes) = '10' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS oct,
+                SUM(CASE WHEN strftime('%m', i.mes) = '11' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS nov,
+                SUM(CASE WHEN strftime('%m', i.mes) = '12' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS dic,
+                SUM(CASE WHEN strftime('%m', i.mes) = '01' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS ene,
+                SUM(CASE WHEN strftime('%m', i.mes) = '02' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS feb,
+                SUM(CASE WHEN strftime('%m', i.mes) = '03' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS mar,
+                SUM(CASE WHEN strftime('%m', i.mes) = '04' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS abr,
+                SUM(CASE WHEN strftime('%m', i.mes) = '05' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS may,
+                SUM(CASE WHEN strftime('%m', i.mes) = '06' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS jun,
+                SUM(CASE WHEN strftime('%m', i.mes) = '07' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS jul,
+                SUM(CASE WHEN strftime('%m', i.mes) = '08' THEN i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0))) ELSE null END) AS ago,
+                COALESCE(SUM(i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0)))), 0) AS suma,
+                COALESCE(AVG(i.horas + MAX(0, MIN(55 - i.horas, IFNULL(i.horas_SS, 0)))), 0) AS promedio,
+                count(1) AS meses
+            FROM Informes i
+            LEFT JOIN Publicadores p ON i.id_publicador = p.id
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = i.id_tipo_publicador
+            WHERE tp.descripcion = 'Precursor regular'
+              AND date(i.mes) BETWEEN date('${desde}') AND date('${hasta}')
+            GROUP BY p.id
+            ORDER BY p.apellidos, p.nombre
+        `, { type: QueryTypes.SELECT });
+
+        /*const data = rows.map((row) => ({
+            ...row,
+            promedio: parseFloat((row.suma / 6).toFixed(1)),
+            meses: 6
+        }));*/
+
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error('Error getPrecursoresRegulares:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+}
+
+const getIrregulares = async (req, res) => {
+    try {
+        const mes_final = req.params.mes_final;
+        if (!mes_final || !/^[0-9]{4}-[0-9]{2}$/.test(mes_final)) {
+            return res.status(400).json({ success: false, error: 'mes_final inválido; use YYYY-MM' });
+        }
+
+        const endMonth = dayjs(`${mes_final}-01`).startOf('month');
+        if (!endMonth.isValid()) {
+            return res.status(400).json({ success: false, error: 'mes_final inválido' });
+        }
+
+        const startMonth = endMonth.subtract(5, 'month').startOf('month');
+
+        // Si el periodo es posterior a la fecha actual, limitamos al mes anterior real
+        const now = dayjs();
+        const lastAvailable = now.subtract(1, 'month').startOf('month');
+        const actualEndMonth = endMonth.isAfter(lastAvailable) ? lastAvailable : endMonth;
+        const actualStartMonth = startMonth.isAfter(actualEndMonth) ? actualEndMonth.subtract(5, 'month').startOf('month') : startMonth;
+
+        const tipoRegular = await TipoPublicador.findOne({ where: { descripcion: 'Precursor regular' } });
+        if (!tipoRegular) {
+            return res.status(404).json({ success: false, error: 'Tipo de publicador "Precursor regular" no encontrado' });
+        }
+
+        const publicadores = await Publicadores.findAll({ where: { id_tipo_publicador: tipoRegular.id } });
+
+        // Informes en últimos 6 meses
+        const informes = await Informes.findAll({
+            where: {
+                mes: {
+                    [Op.between]: [actualStartMonth.format('YYYY-MM-01'), actualEndMonth.endOf('month').format('YYYY-MM-DD')]
+                }
+            },
+            order: [['id_publicador', 'ASC'], ['mes', 'ASC']]
+        });
+
+        // Primer mes que predicó (histórico)
+        const firstPredicacion = await Informes.findAll({
+            attributes: ['id_publicador', [sequelize.fn('MIN', sequelize.col('mes')), 'primera_mes']],
+            where: { predico_en_el_mes: 1 },
+            group: ['id_publicador']
+        });
+        const firstPredicacionMap = {};
+        for (const item of firstPredicacion) {
+            firstPredicacionMap[item.id_publicador] = item.get('primera_mes');
+        }
+
+        const months = [];
+        for (let i = 0; i < 6; i++) {
+            months.push(actualStartMonth.add(i, 'month').format('YYYY-MM'));
+        }
+
+        const rows = [];
+        for (const pub of publicadores) {
+            const started = firstPredicacionMap[pub.id] ? dayjs(firstPredicacionMap[pub.id]).startOf('month') : null;
+            const effectiveStartMonth = started && started.isAfter(actualStartMonth) ? started : actualStartMonth;
+
+            const expectedMonths = started
+                ? Math.min(6, actualEndMonth.diff(started.startOf('month'), 'month') + 1)
+                : 6;
+
+            if (expectedMonths <= 0) continue;
+
+            const monthInfos = months
+                .filter((m) => {
+                    const mday = dayjs(`${m}-01`);
+                    return !started || !mday.isBefore(started);
+                })
+                .map((m) => {
+                    const informe = informes.find((inf) => inf.id_publicador === pub.id && dayjs(inf.mes).format('YYYY-MM') === m);
+                    return {
+                        mes: m,
+                        predico: informe ? !!informe.predico_en_el_mes : false
+                    };
+                });
+
+            const predicados = monthInfos.filter((item) => item.predico).length;
+            const faltantes = expectedMonths - predicados;
+
+            let maxConsecutivos = 0;
+            let current = 0;
+            for (const item of monthInfos) {
+                if (!item.predico) {
+                    current += 1;
+                } else {
+                    maxConsecutivos = Math.max(maxConsecutivos, current);
+                    current = 0;
+                }
+            }
+            maxConsecutivos = Math.max(maxConsecutivos, current);
+
+            if (predicados < expectedMonths) {
+                rows.push({
+                    id: pub.id,
+                    publicador: `${pub.nombre} ${pub.apellidos}`,
+                    inicio_predicacion: started ? started.format('YYYY-MM-DD') : null,
+                    meses_a_predicar: expectedMonths,
+                    meses_predicados: predicados,
+                    meses_faltantes: faltantes,
+                    consecutivos_sin_predicar: maxConsecutivos,
+                    detalle_meses: monthInfos
+                });
+            }
+        }
+
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error('Error getIrregulares:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
 
 const exportInformes = async (req, res) => {
     try {
@@ -320,6 +487,8 @@ const deleteOldInformes = async (req, res) => {
 
 export default {
     getInformes,
+    getIrregulares,
+    getPrecursoresRegulares,
     addInforme,
     importInformes,
     updateInforme,

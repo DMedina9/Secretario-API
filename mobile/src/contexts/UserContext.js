@@ -44,7 +44,7 @@ export const UserProvider = ({ children }) => {
     const login = async (username, password) => {
         try {
             // Note: Update to use api.js when we refactor it
-            const response = await fetch('http://localhost:3000/api/account/login', {
+            const response = await fetch('https://secretario-api.onrender.com/api/account/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })

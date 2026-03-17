@@ -10,7 +10,8 @@
     "tunnel": "expo start --tunnel",
     "lan": "expo start --lan",
     "dev": "expo start",
-    "build:apk": "eas build --platform android --profile preview"
+    "build:apk": "eas build --platform android --profile preview",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -41,6 +42,10 @@
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.16.0",
     "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0"
   },
   "private": true
 }

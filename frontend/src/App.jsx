@@ -16,6 +16,8 @@ import Reportes from './pages/Reportes';
 import Territorios from './pages/Territorios';
 import Configuracion from './pages/Configuracion';
 import PrecursoresAuxiliares from './pages/PrecursoresAuxiliares';
+import PrecursoresRegulares from './pages/PrecursoresRegulares';
+import Irregulares from './pages/Irregulares';
 
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -36,6 +38,8 @@ const AppContent = () => {
             <Route element={<ProtectedRoute />}>
               <Route path="/publicadores" element={<Publicadores />} />
               <Route path="/precursores-auxiliares" element={<PrecursoresAuxiliares />} />
+              <Route path="/precursores-regulares" element={<PrecursoresRegulares />} />
+              <Route path="/irregulares" element={<Irregulares />} />
               <Route path="/asistencias" element={<Asistencias />} />
               <Route path="/informes" element={<Informes />} />
               <Route path="/secretario" element={<Secretario />} />
