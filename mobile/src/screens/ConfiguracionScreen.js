@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Alert, ActivityIndicator, Modal, TextInput
+    Alert, ActivityIndicator, Modal, TextInput, Switch
 } from 'react-native';
-import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight } from 'lucide-react-native';
+import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun } from 'lucide-react-native';
+import { useTheme } from '../contexts/ThemeContext';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
@@ -14,6 +15,8 @@ import { io as ioClient } from 'socket.io-client';
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
 const ConfiguracionesSection = () => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const items = [
         { key: 'nombre_congregacion', label: 'Nombre de la Congregación', desc: 'Identidad de la congregación' },
         { key: 'correo_admin', label: 'Correo del Administrador', desc: 'Correo electrónico del administrador' },
@@ -64,15 +67,15 @@ const ConfiguracionesSection = () => {
     };
 
     return (
-        <View style={s.card}>
-            <Text style={s.cardTitle}>⚙️ Configuraciones del Sistema</Text>
+        <View style={st.card}>
+            <Text style={st.cardTitle}>⚙️ Configuraciones del Sistema</Text>
             {items.map((item, i) => (
-                <TouchableOpacity key={i} style={s.configRow} onPress={() => handleEditConfig(item.key)}>
+                <TouchableOpacity key={i} style={st.configRow} onPress={() => handleEditConfig(item.key)}>
                     <View>
-                        <Text style={s.configLabel}>{item.label}</Text>
-                        <Text style={s.configDesc}>{item.desc}</Text>
+                        <Text style={st.configLabel}>{item.label}</Text>
+                        <Text style={st.configDesc}>{item.desc}</Text>
                     </View>
-                    <ChevronRight size={18} color="#9ca3af" />
+                    <ChevronRight size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
             ))}
 
@@ -82,28 +85,28 @@ const ConfiguracionesSection = () => {
                 transparent
                 onRequestClose={() => setIsModalVisible(false)}
             >
-                <View style={s.modalOverlay}>
-                    <View style={s.modalContent}>
-                        <Text style={s.modalTitle}>Editar {selectedConfig}</Text>
+                <View style={st.modalOverlay}>
+                    <View style={st.modalContent}>
+                        <Text style={st.modalTitle}>Editar {selectedConfig}</Text>
                         <TextInput
-                            style={s.modalInput}
+                            style={st.modalInput}
                             placeholder={`Ingrese el nuevo valor para ${selectedConfig}`}
                             value={inputValue}
                             onChangeText={setInputValue}
                             keyboardType="default"
                         />
-                        <View style={s.modalButtons}>
+                        <View style={st.modalButtons}>
                             <TouchableOpacity
-                                style={[s.modalButton, s.modalButtonCancel]}
+                                style={[st.modalButton, st.modalButtonCancel]}
                                 onPress={() => setIsModalVisible(false)}
                             >
-                                <Text style={s.modalButtonText}>Cancelar</Text>
+                                <Text style={st.modalButtonText}>Cancelar</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[s.modalButton, s.modalButtonSave]}
+                                style={[st.modalButton, st.modalButtonSave]}
                                 onPress={handleSaveConfig}
                             >
-                                <Text style={s.modalButtonText}>Guardar</Text>
+                                <Text style={st.modalButtonText}>Guardar</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -113,7 +116,10 @@ const ConfiguracionesSection = () => {
     );
 };
 
+// ─── Sub-section: Gestión de Datos ───────────────────────────────────────────
 const GestionDatosSection = () => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const [loading, setLoading] = useState(null);
 
     const handleExport = async (tableKey, tableName) => {
@@ -348,81 +354,81 @@ const GestionDatosSection = () => {
     ];
 
     return (
-        <View style={s.card}>
-            <Text style={s.cardTitle}>📊 Gestión de Datos</Text>
-            <Text style={s.cardSubtitle}>Exporta e importa datos desde la aplicación móvil.</Text>
+        <View style={st.card}>
+            <Text style={st.cardTitle}>📊 Gestión de Datos</Text>
+            <Text style={st.cardSubtitle}>Exporta e importa datos desde la aplicación móvil.</Text>
             <Modal
                 visible={loading === 'restore' || loading === 'backup'}
                 transparent
                 animationType="fade"
             >
-                <View style={s.modalOverlayCentered}>
-                    <View style={s.modalProgress}>
+                <View style={st.modalOverlayCentered}>
+                    <View style={st.modalProgress}>
                         <ActivityIndicator size="large" color="#3b82f6" />
-                        <Text style={{ marginTop: 12 }}>{loading === 'backup' ? 'Descargando respaldo...' : 'Restaurando respaldo...'}</Text>
+                        <Text style={{ marginTop: 12, color: colors.text }}>{loading === 'backup' ? 'Descargando respaldo...' : 'Restaurando respaldo...'}</Text>
                     </View>
                 </View>
             </Modal>
             {actions.map(a => (
                 <TouchableOpacity
                     key={a.key}
-                    style={[s.actionRow, loading === a.key && { opacity: 0.5 }]}
+                    style={[st.actionRow, loading === a.key && { opacity: 0.5 }]}
                     onPress={() => handleExport(a.key, a.label)}
                     disabled={loading !== null}
                 >
-                    <Text style={s.actionIcon}>{a.icon}</Text>
+                    <Text style={st.actionIcon}>{a.icon}</Text>
                     {loading === a.key ? (
-                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
                     ) : (
-                        <Text style={s.actionLabel}>{a.label}</Text>
+                        <Text style={st.actionLabel}>{a.label}</Text>
                     )}
-                    <ChevronRight size={18} color="#9ca3af" />
+                    <ChevronRight size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
             ))}
 
             {importActions.map(a => (
                 <TouchableOpacity
                     key={`import_${a.key}`}
-                    style={[s.actionRow, loading === `import_${a.key}` && { opacity: 0.5 }]}
+                    style={[st.actionRow, loading === `import_${a.key}` && { opacity: 0.5 }]}
                     onPress={() => handleImport(a.key, a.label)}
                     disabled={loading !== null}
                 >
-                    <Text style={s.actionIcon}>{a.icon}</Text>
+                    <Text style={st.actionIcon}>{a.icon}</Text>
                     {loading === `import_${a.key}` ? (
-                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
                     ) : (
-                        <Text style={s.actionLabel}>{a.label}</Text>
+                        <Text style={st.actionLabel}>{a.label}</Text>
                     )}
-                    <ChevronRight size={18} color="#9ca3af" />
+                    <ChevronRight size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
             ))}
 
             <TouchableOpacity
-                style={[s.actionRow, loading === 'backup' && { opacity: 0.5 }]}
+                style={[st.actionRow, loading === 'backup' && { opacity: 0.5 }]}
                 onPress={downloadBackup}
                 disabled={!!loading}
             >
-                <Text style={s.actionIcon}>💾</Text>
+                <Text style={st.actionIcon}>💾</Text>
                 {loading === 'backup' ? (
-                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
                 ) : (
-                    <Text style={s.actionLabel}>Descargar Respaldo de la Base</Text>
+                    <Text style={st.actionLabel}>Descargar Respaldo de la Base</Text>
                 )}
-                <ChevronRight size={18} color="#9ca3af" />
+                <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
 
             <TouchableOpacity
-                style={[s.actionRow, loading === 'restore' && { opacity: 0.5 }]}
+                style={[st.actionRow, loading === 'restore' && { opacity: 0.5 }]}
                 onPress={restoreBackup}
                 disabled={!!loading}
             >
-                <Text style={s.actionIcon}>🔁</Text>
+                <Text style={st.actionIcon}>🔁</Text>
                 {loading === 'restore' ? (
-                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color="#3b82f6" />
+                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
                 ) : (
-                    <Text style={s.actionLabel}>Restaurar Respaldo desde Archivo</Text>
+                    <Text style={st.actionLabel}>Restaurar Respaldo desde Archivo</Text>
                 )}
-                <ChevronRight size={18} color="#9ca3af" />
+                <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
         </View>
     );
@@ -431,6 +437,8 @@ const GestionDatosSection = () => {
 
 // ─── Sub-section: Mantenimiento ───────────────────────────────────────────────
 const MantenimientoSection = () => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const [loading, setLoading] = useState(null);
 
     const handleClean = (type) => {
@@ -462,19 +470,19 @@ const MantenimientoSection = () => {
     ];
 
     return (
-        <View style={s.card}>
-            <Text style={s.cardTitle}>🗑️ Mantenimiento</Text>
-            <Text style={s.cardSubtitle}>Elimina registros históricos para mantener la base de datos limpia.</Text>
+        <View style={st.card}>
+            <Text style={st.cardTitle}>🗑️ Mantenimiento</Text>
+            <Text style={st.cardSubtitle}>Elimina registros históricos para mantener la base de datos limpia.</Text>
             {actions.map(a => (
                 <TouchableOpacity
                     key={a.key}
-                    style={[s.dangerRow, loading === a.key && { opacity: 0.5 }]}
+                    style={[st.dangerRow, loading === a.key && { opacity: 0.5 }]}
                     onPress={() => handleClean(a.key)}
                     disabled={!!loading}
                 >
                     {loading === a.key
                         ? <ActivityIndicator size="small" color={a.color} />
-                        : <Text style={[s.dangerLabel, { color: a.color }]}>{a.label}</Text>
+                        : <Text style={[st.dangerLabel, { color: a.color }]}>{a.label}</Text>
                     }
                 </TouchableOpacity>
             ))}
@@ -483,15 +491,47 @@ const MantenimientoSection = () => {
 };
 
 // ─── Sub-section: Usuarios ────────────────────────────────────────────────────
-const UsuariosSection = () => (
-    <View style={s.card}>
-        <Text style={s.cardTitle}>👥 Usuarios</Text>
-        <Text style={s.cardSubtitle}>La gestión de usuarios (crear, editar, eliminar cuentas) está disponible únicamente en la versión web por razones de seguridad.</Text>
-        <View style={s.infoBox}>
-            <Text style={s.infoText}>💡 Accede desde un navegador en la misma red local para gestionar cuentas de usuario.</Text>
+const UsuariosSection = () => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
+    return (
+        <View style={st.card}>
+            <Text style={st.cardTitle}>👥 Usuarios</Text>
+            <Text style={st.cardSubtitle}>La gestión de usuarios (crear, editar, eliminar cuentas) está disponible únicamente en la versión web por razones de seguridad.</Text>
+            <View style={st.infoBox}>
+                <Text style={st.infoText}>💡 Accede desde un navegador en la misma red local para gestionar cuentas de usuario.</Text>
+            </View>
         </View>
-    </View>
-);
+    );
+};
+
+// ─── Sub-section: Apariencia ──────────────────────────────────────────────────
+const AparienciaSection = () => {
+    const { colors, isDarkMode, toggleTheme } = useTheme();
+    const st = getStyles(colors);
+
+    return (
+        <View style={st.card}>
+            <Text style={st.cardTitle}>🎨 Apariencia</Text>
+            <View style={st.configRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    {isDarkMode ? <Moon size={20} color={colors.primary} /> : <Sun size={20} color={colors.primary} />}
+                    <View style={{ marginLeft: 12 }}>
+                        <Text style={st.configLabel}>Tema Oscuro</Text>
+                        <Text style={st.configDesc}>Activar o desactivar el modo nocturno</Text>
+                    </View>
+                </View>
+                <Switch
+                    trackColor={{ false: "#767577", true: colors.primary }}
+                    thumbColor={isDarkMode ? "#f4f3f4" : "#f4f3f4"}
+                    ios_backgroundColor="#3e3e3e"
+                    onValueChange={toggleTheme}
+                    value={isDarkMode}
+                />
+            </View>
+        </View>
+    );
+};
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const ConfiguracionScreen = ({ navigation }) => {
@@ -514,34 +554,39 @@ const ConfiguracionScreen = ({ navigation }) => {
 
     const sections = [
         { key: 'configuraciones', label: 'Config.', icon: <Settings size={16} color="#fff" /> },
+        { key: 'apariencia', label: 'Tema', icon: <Moon size={16} color="#fff" /> },
         { key: 'gestion', label: 'Datos', icon: <Database size={16} color="#fff" /> },
         { key: 'mantenimiento', label: 'Mant.', icon: <Wrench size={16} color="#fff" /> },
         { key: 'usuarios', label: 'Usuarios', icon: <Users size={16} color="#fff" /> },
     ];
 
+    const { colors } = useTheme();
+    const st = getStyles(colors);
+
     return (
-        <View style={s.container}>
-            <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#1f2937" /></TouchableOpacity>
-                <Text style={s.headerTitle}>Configuración</Text>
+        <View style={st.container}>
+            <View style={st.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
+                <Text style={st.headerTitle}>Configuración</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             {/* Tab bar */}
-            <View style={s.tabBar}>
+            <View style={st.tabBar}>
                 {sections.map(sec => (
                     <TouchableOpacity
                         key={sec.key}
-                        style={[s.tabItem, section === sec.key && s.tabItemActive]}
+                        style={[st.tabItem, section === sec.key && st.tabItemActive]}
                         onPress={() => setSection(sec.key)}
                     >
-                        <Text style={[s.tabLabel, section === sec.key && s.tabLabelActive]}>{sec.label}</Text>
+                        <Text style={[st.tabLabel, section === sec.key && st.tabLabelActive]}>{sec.label}</Text>
                     </TouchableOpacity>
                 ))}
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
                 {section === 'configuraciones' && <ConfiguracionesSection />}
+                {section === 'apariencia' && <AparienciaSection />}
                 {section === 'gestion' && <GestionDatosSection />}
                 {section === 'mantenimiento' && <MantenimientoSection />}
                 {section === 'usuarios' && <UsuariosSection />}
@@ -550,45 +595,45 @@ const ConfiguracionScreen = ({ navigation }) => {
     );
 };
 
-const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f3f4f6' },
+const getStyles = (colors) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: 20, paddingTop: 50, backgroundColor: '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+        padding: 20, paddingTop: 50, backgroundColor: colors.header,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
     },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
     tabBar: {
-        flexDirection: 'row', backgroundColor: '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+        flexDirection: 'row', backgroundColor: colors.header,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
     },
     tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-    tabItemActive: { borderBottomColor: '#3b82f6' },
-    tabLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
-    tabLabelActive: { color: '#3b82f6', fontWeight: '700' },
-    card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1f2937', marginBottom: 8 },
-    cardSubtitle: { fontSize: 13, color: '#6b7280', marginBottom: 16, lineHeight: 18 },
+    tabItemActive: { borderBottomColor: colors.primary },
+    tabLabel: { fontSize: 13, color: '#FFFFFF', fontWeight: '500' },
+    tabLabelActive: { color: colors.primary, fontWeight: '700' },
+    card: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
+    cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, marginBottom: 8 },
+    cardSubtitle: { fontSize: 13, color: colors.text, marginBottom: 16, lineHeight: 18 },
     configRow: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
+        paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border,
     },
-    configLabel: { fontSize: 15, color: '#1f2937', fontWeight: '500' },
-    configDesc: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
+    configLabel: { fontSize: 15, color: colors.text, fontWeight: '500' },
+    configDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
     actionRow: {
         flexDirection: 'row', alignItems: 'center',
-        paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
+        paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border,
     },
     actionIcon: { fontSize: 18, marginRight: 12 },
-    actionLabel: { flex: 1, fontSize: 15, color: '#374151' },
+    actionLabel: { flex: 1, fontSize: 15, color: colors.text },
     dangerRow: {
-        borderWidth: 1, borderColor: '#fecaca', borderRadius: 8,
+        borderWidth: 1, borderColor: colors.danger, borderRadius: 8,
         padding: 14, marginBottom: 10, alignItems: 'center',
-        backgroundColor: '#fff1f2',
+        backgroundColor: colors.isDarkMode ? '#450a0a' : '#fff1f2',
     },
     dangerLabel: { fontSize: 15, fontWeight: '600' },
-    infoBox: { backgroundColor: '#eff6ff', borderRadius: 8, padding: 14 },
-    infoText: { fontSize: 14, color: '#1d4ed8', lineHeight: 20 },
+    infoBox: { backgroundColor: colors.isDarkMode ? '#1a2a4a' : '#eff6ff', borderRadius: 8, padding: 14 },
+    infoText: { fontSize: 14, color: colors.isDarkMode ? '#60a5fa' : '#1d4ed8', lineHeight: 20 },
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -602,14 +647,14 @@ const s = StyleSheet.create({
         alignItems: 'center',
     },
     modalProgress: {
-        backgroundColor: 'white',
+        backgroundColor: colors.card,
         padding: 20,
         borderRadius: 10,
         alignItems: 'center',
         minWidth: 220,
     },
     modalContent: {
-        backgroundColor: 'white',
+        backgroundColor: colors.card,
         padding: 20,
         borderRadius: 10,
         width: '80%',
@@ -617,11 +662,13 @@ const s = StyleSheet.create({
     modalTitle: {
         fontSize: 18,
         fontWeight: 'bold',
+        color: colors.text,
         marginBottom: 15,
     },
     modalInput: {
         borderWidth: 1,
-        borderColor: '#ccc',
+        borderColor: colors.border,
+        color: colors.text,
         borderRadius: 5,
         padding: 10,
         marginBottom: 15,
@@ -641,7 +688,7 @@ const s = StyleSheet.create({
         backgroundColor: '#ccc',
     },
     modalButtonSave: {
-        backgroundColor: '#28a745',
+        backgroundColor: colors.success,
     },
     modalButtonText: {
         color: 'white',

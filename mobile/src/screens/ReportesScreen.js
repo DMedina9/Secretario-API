@@ -12,6 +12,7 @@ import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft } from 'lucide-react-native';
 import api from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,8 @@ const shareFileUri = async (fileUri) => {
 // ─── Tab: Descargas ───────────────────────────────────────────────────────────
 
 const DescargasTab = ({ anioServicio }) => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const [loading, setLoading] = useState(null);
 
     const handleAction = async (key, endpoint, method, body, filename) => {
@@ -185,24 +188,24 @@ const DescargasTab = ({ anioServicio }) => {
     ];
 
     return (
-        <ScrollView contentContainerStyle={s.tabContent}>
+        <ScrollView contentContainerStyle={st.tabContent}>
             {cards.map((c) => (
-                <View key={c.key} style={s.card}>
-                    <View style={s.cardRow}>
-                        <Text style={s.cardIcon}>{c.icon}</Text>
+                <View key={c.key} style={st.card}>
+                    <View style={st.cardRow}>
+                        <Text style={st.cardIcon}>{c.icon}</Text>
                         <View style={{ flex: 1 }}>
-                            <Text style={s.cardTitle}>{c.title}</Text>
-                            <Text style={s.cardSubtitle}>{c.subtitle}</Text>
+                            <Text style={st.cardTitle}>{c.title}</Text>
+                            <Text style={st.cardSubtitle}>{c.subtitle}</Text>
                         </View>
                     </View>
                     <TouchableOpacity
-                        style={[s.btn, { backgroundColor: c.color }, loading !== null && s.btnDisabled]}
+                        style={[st.btn, { backgroundColor: c.color }, loading !== null && st.btnDisabled]}
                         onPress={() => handleAction(c.key, c.endpoint, c.method, c.body, c.filename)}
                         disabled={loading !== null}
                     >
                         {loading === c.key
                             ? <ActivityIndicator color="#fff" />
-                            : <Text style={s.btnText}>Descargar / Compartir</Text>
+                            : <Text style={st.btnText}>Descargar / Compartir</Text>
                         }
                     </TouchableOpacity>
                 </View>
@@ -214,6 +217,8 @@ const DescargasTab = ({ anioServicio }) => {
 // ─── Tab: Visualizador ────────────────────────────────────────────────────────
 
 const VisualizadorTab = ({ anioServicio }) => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const [reportType, setReportType] = useState('S21I');
     const [year, setYear] = useState(String(anioServicio || new Date().getFullYear()));
     const [publicadores, setPublicadores] = useState([]);
@@ -288,15 +293,15 @@ const VisualizadorTab = ({ anioServicio }) => {
             {pdfState ? (
                 <View style={{ flex: 1 }}>
                     {/* Toolbar */}
-                    <View style={s.pdfToolbar}>
-                        <TouchableOpacity onPress={() => setPdfState(null)} style={s.pdfBackBtn}>
-                            <Text style={s.pdfBackBtnText}>← Volver</Text>
+                    <View style={st.pdfToolbar}>
+                        <TouchableOpacity onPress={() => setPdfState(null)} style={st.pdfBackBtn}>
+                            <Text style={st.pdfBackBtnText}>← Volver</Text>
                         </TouchableOpacity>
-                        <Text style={s.pdfToolbarTitle} numberOfLines={1}>
+                        <Text style={st.pdfToolbarTitle} numberOfLines={1}>
                             {pdfState.filename}
                         </Text>
-                        <TouchableOpacity onPress={() => shareFileUri(pdfState.fileUri)} style={s.pdfShareBtn}>
-                            <Text style={s.pdfShareBtnText}>⬆️ Compartir</Text>
+                        <TouchableOpacity onPress={() => shareFileUri(pdfState.fileUri)} style={st.pdfShareBtn}>
+                            <Text style={st.pdfShareBtnText}>⬆️ Compartir</Text>
                         </TouchableOpacity>
                     </View>
                     {/* Inline PDF WebView – PDF.js renders pages as canvases */}
@@ -310,18 +315,18 @@ const VisualizadorTab = ({ anioServicio }) => {
                         allowUniversalAccessFromFileURLs={true}
                         startInLoadingState={true}
                         renderLoading={() => (
-                            <View style={s.webviewLoading}>
-                                <ActivityIndicator size="large" color="#3b82f6" />
-                                <Text style={{ marginTop: 12, color: '#6b7280' }}>Cargando PDF…</Text>
+                            <View style={st.webviewLoading}>
+                                <ActivityIndicator size="large" color={colors.primary} />
+                                <Text style={{ marginTop: 12, color: colors.textSecondary }}>Cargando PDF…</Text>
                             </View>
                         )}
                     />
                 </View>
             ) : (
-                <ScrollView contentContainerStyle={s.tabContent}>
+                <ScrollView contentContainerStyle={st.tabContent}>
                     {/* Tipo de Reporte */}
-                    <View style={s.card}>
-                        <Text style={s.sectionLabel}>Tipo de Reporte</Text>
+                    <View style={st.card}>
+                        <Text style={st.sectionLabel}>Tipo de Reporte</Text>
                         <DropDownPicker
                             open={openReportType}
                             value={reportType}
@@ -333,9 +338,10 @@ const VisualizadorTab = ({ anioServicio }) => {
                             setOpen={setOpenReportType}
                             setValue={setReportType}
                             searchable={true}
+                            theme={colors.isDarkMode ? 'DARK' : 'LIGHT'}
                             placeholder="Seleccionar tipo de reporte"
-                            style={s.pickerContainer}
-                            dropDownContainerStyle={s.dropDownContainer}
+                            style={st.pickerContainer}
+                            dropDownContainerStyle={st.dropDownContainer}
                             modalContentContainerStyle={{
                                 marginTop: 50, // Adds margin top to the modal list
                                 paddingHorizontal: 20,
@@ -345,24 +351,25 @@ const VisualizadorTab = ({ anioServicio }) => {
                     </View>
 
                     {/* Año */}
-                    <View style={s.card}>
-                        <Text style={s.sectionLabel}>Año de Servicio</Text>
+                    <View style={st.card}>
+                        <Text style={st.sectionLabel}>Año de Servicio</Text>
                         <TextInput
-                            style={s.input}
+                            style={st.input}
                             value={year}
                             onChangeText={setYear}
                             keyboardType="numeric"
                             placeholder="Ej. 2025"
+                            placeholderTextColor={colors.textSecondary}
                             maxLength={4}
                         />
                     </View>
 
                     {/* Selector Publicador */}
                     {reportType === 'S21I' && (
-                        <View style={s.card}>
-                            <Text style={s.sectionLabel}>Publicador</Text>
+                        <View style={st.card}>
+                            <Text style={st.sectionLabel}>Publicador</Text>
                             {publicadores.length === 0
-                                ? <ActivityIndicator color="#3b82f6" />
+                                ? <ActivityIndicator color={colors.primary} />
                                 : <DropDownPicker
                                     open={openPublicador}
                                     value={selectedPublicadorId}
@@ -370,9 +377,10 @@ const VisualizadorTab = ({ anioServicio }) => {
                                     setOpen={setOpenPublicador}
                                     setValue={setSelectedPublicadorId}
                                     searchable={true}
+                                    theme={colors.isDarkMode ? 'DARK' : 'LIGHT'}
                                     placeholder="Seleccionar publicador"
-                                    style={s.pickerContainer}
-                                    dropDownContainerStyle={s.dropDownContainer}
+                                    style={st.pickerContainer}
+                                    dropDownContainerStyle={st.dropDownContainer}
                                     modalContentContainerStyle={{
                                         marginTop: 50, // Adds margin top to the modal list
                                         paddingHorizontal: 20,
@@ -385,10 +393,10 @@ const VisualizadorTab = ({ anioServicio }) => {
 
                     {/* Selector Tipo Publicador */}
                     {reportType === 'S21T' && (
-                        <View style={s.card}>
-                            <Text style={s.sectionLabel}>Tipo de Publicador</Text>
+                        <View style={st.card}>
+                            <Text style={st.sectionLabel}>Tipo de Publicador</Text>
                             {tiposPublicador.length === 0
-                                ? <ActivityIndicator color="#3b82f6" />
+                                ? <ActivityIndicator color={colors.primary} />
                                 : <DropDownPicker
                                     open={openTipo}
                                     value={selectedTipoId}
@@ -396,9 +404,10 @@ const VisualizadorTab = ({ anioServicio }) => {
                                     setOpen={setOpenTipo}
                                     setValue={setSelectedTipoId}
                                     searchable={true}
+                                    theme={colors.isDarkMode ? 'DARK' : 'LIGHT'}
                                     placeholder="Seleccionar tipo"
-                                    style={s.pickerContainer}
-                                    dropDownContainerStyle={s.dropDownContainer}
+                                    style={st.pickerContainer}
+                                    dropDownContainerStyle={st.dropDownContainer}
                                     modalContentContainerStyle={{
                                         marginTop: 50, // Adds margin top to the modal list
                                         paddingHorizontal: 20,
@@ -410,8 +419,8 @@ const VisualizadorTab = ({ anioServicio }) => {
                     )}
 
                     {/* Botón generar */}
-                    <TouchableOpacity style={[s.btn, loadingPdf && s.btnDisabled]} onPress={handleGenerarPDF} disabled={loadingPdf}>
-                        {loadingPdf ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>👁️  Generar y Ver PDF</Text>}
+                    <TouchableOpacity style={[st.btn, loadingPdf && st.btnDisabled]} onPress={handleGenerarPDF} disabled={loadingPdf}>
+                        {loadingPdf ? <ActivityIndicator color="#fff" /> : <Text style={st.btnText}>👁️  Generar y Ver PDF</Text>}
                     </TouchableOpacity>
                 </ScrollView>
             )}
@@ -427,27 +436,29 @@ const TABS = [
 ];
 
 const ReportesScreen = ({ navigation }) => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const { anioServicio } = useAnioServicio();
     const [activeTab, setActiveTab] = useState('visualizador');
 
     return (
-        <SafeAreaView style={s.safeArea}>
-            <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-                    <ArrowLeft size={24} color="#1f2937" />
+        <SafeAreaView style={st.safeArea}>
+            <View style={st.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={st.backBtn}>
+                    <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Reportes</Text>
+                <Text style={st.headerTitle}>Reportes</Text>
                 <View style={{ width: 32 }} />
             </View>
 
-            <View style={s.tabBar}>
+            <View style={st.tabBar}>
                 {TABS.map(tab => (
                     <TouchableOpacity
                         key={tab.key}
-                        style={[s.tabItem, activeTab === tab.key && s.tabItemActive]}
+                        style={[st.tabItem, activeTab === tab.key && st.tabItemActive]}
                         onPress={() => setActiveTab(tab.key)}
                     >
-                        <Text style={[s.tabLabel, activeTab === tab.key && s.tabLabelActive]}>
+                        <Text style={[st.tabLabel, activeTab === tab.key && st.tabLabelActive]}>
                             {tab.label}
                         </Text>
                     </TouchableOpacity>
@@ -467,46 +478,46 @@ const ReportesScreen = ({ navigation }) => {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: '#f3f4f6' },
+const getStyles = (colors) => StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: 20, paddingTop: 10, backgroundColor: '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+        padding: 20, paddingTop: 10, backgroundColor: colors.header,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
     tabBar: {
-        flexDirection: 'row', backgroundColor: '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+        flexDirection: 'row', backgroundColor: colors.header,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
     },
     tabItem: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-    tabItemActive: { borderBottomColor: '#3b82f6' },
-    tabLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-    tabLabelActive: { color: '#3b82f6', fontWeight: '700' },
+    tabItemActive: { borderBottomColor: colors.primary },
+    tabLabel: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
+    tabLabelActive: { color: colors.primary, fontWeight: '700' },
     tabContent: { padding: 16, paddingBottom: 40 },
     card: {
-        backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16,
+        backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16,
         elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1, shadowRadius: 2,
     },
     cardRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
     cardIcon: { fontSize: 28, marginRight: 12 },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
-    cardSubtitle: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-    sectionLabel: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 8 },
-    pickerContainer: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#f9fafb', overflow: 'hidden' },
-    dropDownContainer: { borderColor: '#d1d5db' },
-    picker: { color: '#1f2937', height: 50 },
-    input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#f9fafb', color: '#1f2937' },
-    btn: { backgroundColor: '#3b82f6', paddingVertical: 13, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+    cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text },
+    cardSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+    sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 8 },
+    pickerContainer: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: colors.inputBackground, overflow: 'hidden' },
+    dropDownContainer: { borderColor: colors.border, backgroundColor: colors.inputBackground },
+    picker: { color: colors.inputText, height: 50 },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: colors.inputBackground, color: colors.inputText },
+    btn: { backgroundColor: colors.primary, paddingVertical: 13, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
     btnDisabled: { opacity: 0.65 },
     btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 
     // PDF toolbar
     pdfToolbar: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        backgroundColor: '#1f2937', paddingHorizontal: 12, paddingVertical: 10,
+        backgroundColor: colors.isDarkMode ? '#0f172a' : '#1f2937', paddingHorizontal: 12, paddingVertical: 10,
     },
     pdfBackBtn: { padding: 4 },
     pdfBackBtnText: { color: '#60a5fa', fontSize: 14, fontWeight: '600' },
@@ -517,7 +528,7 @@ const s = StyleSheet.create({
     // Loading overlay inside WebView
     webviewLoading: {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-        justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6',
+        justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background,
     },
 });
 

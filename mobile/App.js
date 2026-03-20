@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 // Contexts
 import { UserProvider, useUser } from './src/contexts/UserContext';
 import { AnioServicioProvider } from './src/contexts/AnioServicioContext';
+import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 
 // Screens
 import LoginScreen from './src/screens/LoginScreen';
@@ -25,13 +26,14 @@ const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
   const { userProfile, loading } = useUser();
+  const { navigationTheme } = useTheme();
 
   if (loading) {
     return null;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <AnioServicioProvider>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {userProfile ? (
@@ -60,8 +62,10 @@ const AppNavigator = () => {
 export default function App() {
   return (
     <UserProvider>
-      <StatusBar style="auto" />
-      <AppNavigator />
+      <ThemeProvider>
+        <StatusBar style="auto" />
+        <AppNavigator />
+      </ThemeProvider>
     </UserProvider>
   );
 }

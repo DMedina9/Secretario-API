@@ -129,7 +129,7 @@ export const getS1 = async (month) => {
              WHERE (SELECT SUM(predico_en_el_mes)
                     FROM Informes i
                     WHERE i.id_publicador = p.id
-                      AND DATE(i.mes) BETWEEN DATE(?, '-5 months') AND DATE(?)
+                      AND DATE(i.mes) BETWEEN DATE(?, '-6 months') AND DATE(?)
                 ) > 0`,
             { replacements: [month, month], type: QueryTypes.SELECT }
         )
@@ -268,8 +268,8 @@ export const getS10 = async (anio) => {
         const activosResult = await sequelize.query(
             `WITH tmp AS (
                 SELECT *,
-                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
-                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-5 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-7 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
                 FROM Informes i
             )
             SELECT COUNT(DISTINCT id_publicador) AS cantidad
@@ -284,7 +284,7 @@ export const getS10 = async (anio) => {
             `WITH tmp AS (
                 SELECT *,
                 case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
-                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-5 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
                 FROM Informes i
             )
             SELECT COUNT(DISTINCT id_publicador) AS cantidad
@@ -301,7 +301,7 @@ export const getS10 = async (anio) => {
             `WITH tmp AS (
                 SELECT *,
                 case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
-                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-5 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
+                case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
                 FROM Informes i
             )
             SELECT COUNT(DISTINCT id_publicador) AS cantidad

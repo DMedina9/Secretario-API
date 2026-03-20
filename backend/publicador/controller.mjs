@@ -27,7 +27,6 @@ export const getTiposPublicador = async () => {
     }
 }
 
-
 // =====================================================================================
 // OBTENER PUBLICADOR
 // =====================================================================================
@@ -60,7 +59,7 @@ const getPublicadores = async (req, res) => {
                     SELECT SUM(predico_en_el_mes)
                     FROM Informes a
                     WHERE a.id_publicador = p.id
-                      AND DATE(a.mes) BETWEEN date(date('now', 'start of month'), '-5 months')
+                      AND DATE(a.mes) BETWEEN date(date('now', 'start of month'), '-6 months')
                       AND date('now', 'start of month')
                 ) > 0 THEN 'Activo' ELSE 'Inactivo' END AS Estatus
             FROM Publicadores p

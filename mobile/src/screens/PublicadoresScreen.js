@@ -10,6 +10,7 @@ import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2 } from 'lucide-react-
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import api from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
 
 dayjs.locale('es');
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -32,50 +33,64 @@ const EMPTY_FORM = {
 // ─── Small helper components ─────────────────────────────────────────────────
 
 // A labelled text input for the edit form
-const Field = ({ label, value, onChangeText, keyboardType, placeholder }) => (
-    <View style={fs.fieldGroup}>
-        <Text style={fs.fieldLabel}>{label}</Text>
-        <TextInput
-            style={fs.fieldInput}
-            value={String(value ?? '')}
-            onChangeText={onChangeText}
-            keyboardType={keyboardType || 'default'}
-            placeholder={placeholder || ''}
-            placeholderTextColor="#9ca3af"
-        />
-    </View>
-);
+const Field = ({ label, value, onChangeText, keyboardType, placeholder }) => {
+    const { colors } = useTheme();
+    const st = getFormStyles(colors);
+    return (
+        <View style={st.fieldGroup}>
+            <Text style={st.fieldLabel}>{label}</Text>
+            <TextInput
+                style={st.fieldInput}
+                value={String(value ?? '')}
+                onChangeText={onChangeText}
+                keyboardType={keyboardType || 'default'}
+                placeholder={placeholder || ''}
+                placeholderTextColor={colors.textSecondary}
+            />
+        </View>
+    );
+};
 
 // A radio-style single select row
-const SelectRow = ({ label, options, value, onChange }) => (
-    <View style={fs.fieldGroup}>
-        <Text style={fs.fieldLabel}>{label}</Text>
-        <View style={fs.selectRow}>
-            {options.map(opt => (
-                <TouchableOpacity
-                    key={opt.value}
-                    style={[fs.selectOption, value === opt.value && fs.selectOptionActive]}
-                    onPress={() => onChange(opt.value)}
-                >
-                    <Text style={[fs.selectOptionText, value === opt.value && fs.selectOptionTextActive]}>
-                        {opt.label}
-                    </Text>
-                </TouchableOpacity>
-            ))}
+const SelectRow = ({ label, options, value, onChange }) => {
+    const { colors } = useTheme();
+    const st = getFormStyles(colors);
+    return (
+        <View style={st.fieldGroup}>
+            <Text style={st.fieldLabel}>{label}</Text>
+            <View style={st.selectRow}>
+                {options.map(opt => (
+                    <TouchableOpacity
+                        key={opt.value}
+                        style={[st.selectOption, value === opt.value && st.selectOptionActive]}
+                        onPress={() => onChange(opt.value)}
+                    >
+                        <Text style={[st.selectOptionText, value === opt.value && st.selectOptionTextActive]}>
+                            {opt.label}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
         </View>
-    </View>
-);
+    );
+};
 
 // A toggle row
-const Toggle = ({ label, value, onToggle }) => (
-    <View style={fs.toggleRow}>
-        <Text style={fs.fieldLabel}>{label}</Text>
-        <Switch value={!!value} onValueChange={onToggle} trackColor={{ true: '#3b82f6' }} />
-    </View>
-);
+const Toggle = ({ label, value, onToggle }) => {
+    const { colors } = useTheme();
+    const st = getFormStyles(colors);
+    return (
+        <View style={st.toggleRow}>
+            <Text style={st.fieldLabel}>{label}</Text>
+            <Switch value={!!value} onValueChange={onToggle} trackColor={{ true: colors.primary }} />
+        </View>
+    );
+};
 
 // ─── Publisher Card ──────────────────────────────────────────────────────────
 const PublicadorCardView = ({ p }) => {
+    const { colors } = useTheme();
+    const st = getCardStyles(colors);
     const [configuraciones, setConfiguraciones] = useState([]);
     useEffect(() => {
         const fetchConfiguraciones = async () => {
@@ -91,54 +106,54 @@ const PublicadorCardView = ({ p }) => {
         return configuracion?.valor || '';
     };
     return (
-        <View style={cs.card}>
-            <View style={cs.header}>
-                <Text style={cs.name}>{p.nombre} {p.apellidos}</Text>
+        <View style={st.card}>
+            <View style={st.header}>
+                <Text style={st.name}>{p.nombre} {p.apellidos}</Text>
                 {getType(p.id_tipo_publicador) ? (
-                    <View style={cs.typeBadge}><Text style={cs.typeBadgeText}>{getType(p.id_tipo_publicador)}</Text></View>
+                    <View style={st.typeBadge}><Text style={st.typeBadgeText}>{getType(p.id_tipo_publicador)}</Text></View>
                 ) : null}
             </View>
-            <View style={cs.body}>
+            <View style={st.body}>
                 {getPrivilege(p.id_privilegio) ? (
-                    <View style={cs.row}><Text style={cs.rowLabel}>Privilegio:</Text><Text style={cs.rowValue}>{getPrivilege(p.id_privilegio)}</Text></View>
+                    <View style={st.row}><Text style={st.rowLabel}>Privilegio:</Text><Text style={st.rowValue}>{getPrivilege(p.id_privilegio)}</Text></View>
                 ) : null}
-                <View style={cs.row}>
-                    <Text style={cs.rowLabel}>Grupo:</Text>
-                    <Text style={cs.rowValue}>{p.grupo}{p.sup_grupo === 1 ? ' (Sup)' : p.sup_grupo === 2 ? ' (Aux)' : ''}</Text>
+                <View style={st.row}>
+                    <Text style={st.rowLabel}>Grupo:</Text>
+                    <Text style={st.rowValue}>{p.grupo}{p.sup_grupo === 1 ? ' (Sup)' : p.sup_grupo === 2 ? ' (Aux)' : ''}</Text>
                 </View>
-                <View style={cs.row}>
-                    <Text style={cs.rowLabel}>Estatus:</Text>
-                    <Text style={[cs.rowValue, { color: p.Estatus === 'Activo' ? '#065f46' : '#991b1b' }]}>{p.Estatus || 'N/A'}</Text>
+                <View style={st.row}>
+                    <Text style={st.rowLabel}>Estatus:</Text>
+                    <Text style={[st.rowValue, { color: p.Estatus === 'Activo' ? colors.success : colors.danger }]}>{p.Estatus || 'N/A'}</Text>
                 </View>
-                <View style={cs.row}><Text style={cs.rowLabel}>Tel. Móvil:</Text><Text style={cs.rowValue}>{p.telefono_movil || 'N/A'}</Text></View>
-                <View style={cs.row}><Text style={cs.rowLabel}>Tel. Fijo:</Text><Text style={cs.rowValue}>{p.telefono_fijo || 'N/A'}</Text></View>
+                <View style={st.row}><Text style={st.rowLabel}>Tel. Móvil:</Text><Text style={st.rowValue}>{p.telefono_movil || 'N/A'}</Text></View>
+                <View style={st.row}><Text style={st.rowLabel}>Tel. Fijo:</Text><Text style={st.rowValue}>{p.telefono_fijo || 'N/A'}</Text></View>
                 {p.fecha_nacimiento ? (
-                    <View style={cs.row}><Text style={cs.rowLabel}>Nacimiento:</Text><Text style={cs.rowValue}>{formatDate(p.fecha_nacimiento)}</Text></View>
+                    <View style={st.row}><Text style={st.rowLabel}>Nacimiento:</Text><Text style={st.rowValue}>{formatDate(p.fecha_nacimiento)}</Text></View>
                 ) : null}
                 {p.fecha_bautismo ? (
-                    <View style={cs.row}><Text style={cs.rowLabel}>Bautismo:</Text><Text style={cs.rowValue}>{formatDate(p.fecha_bautismo)}</Text></View>
+                    <View style={st.row}><Text style={st.rowLabel}>Bautismo:</Text><Text style={st.rowValue}>{formatDate(p.fecha_bautismo)}</Text></View>
                 ) : null}
                 {(p.calle || p.colonia) ? (
-                    <View style={cs.section}>
-                        <Text style={cs.sectionLabel}>Dirección:</Text>
-                        <Text style={cs.sectionValue}>{p.calle}{p.num ? ` #${p.num}` : ''}{p.colonia ? `\n${p.colonia}` : ''}</Text>
+                    <View style={st.section}>
+                        <Text style={st.sectionLabel}>Dirección:</Text>
+                        <Text style={st.sectionValue}>{p.calle}{p.num ? ` #${p.num}` : ''}{p.colonia ? `\n${p.colonia}` : ''}</Text>
                     </View>
                 ) : null}
                 {(p.contacto_emergencia || p.tel_contacto_emergencia) ? (
-                    <View style={[cs.section, { borderTopColor: '#fca5a5' }]}>
-                        <Text style={[cs.sectionLabel, { color: '#b91c1c' }]}>🚑 Emergencia:</Text>
-                        {p.contacto_emergencia ? <Text style={cs.sectionValue}>{p.contacto_emergencia}</Text> : null}
-                        {p.tel_contacto_emergencia ? <Text style={cs.sectionValue}>📞 {p.tel_contacto_emergencia}</Text> : null}
+                    <View style={[st.section, { borderTopColor: '#fca5a5' }]}>
+                        <Text style={[st.sectionLabel, { color: '#b91c1c' }]}>🚑 Emergencia:</Text>
+                        {p.contacto_emergencia ? <Text style={st.sectionValue}>{p.contacto_emergencia}</Text> : null}
+                        {p.tel_contacto_emergencia ? <Text style={st.sectionValue}>📞 {p.tel_contacto_emergencia}</Text> : null}
                     </View>
                 ) : null}
                 {getBadges(p).length > 0 ? (
-                    <View style={cs.badgeRow}>
+                    <View style={st.badgeRow}>
                         {getBadges(p).map(b => (
-                            <View key={b} style={cs.badge}><Text style={cs.badgeText}>{b}</Text></View>
+                            <View key={b} style={st.badge}><Text style={st.badgeText}>{b}</Text></View>
                         ))}
                     </View>
                 ) : null}
-                <Text style={cs.footer}>Congregación {getCongregacion()}</Text>
+                <Text style={st.footer}>Congregación {getCongregacion()}</Text>
             </View>
         </View>
     );
@@ -153,6 +168,8 @@ const strToDate = (s) => {
 const dateToStr = (d) => d.toISOString().split('T')[0];
 
 const DatePickerField = ({ label, value, onChange }) => {
+    const { colors } = useTheme();
+    const st = getFormStyles(colors);
     const [show, setShow] = useState(false);
     const handleChange = (event, selected) => {
         const current = selected || strToDate(value);
@@ -160,10 +177,10 @@ const DatePickerField = ({ label, value, onChange }) => {
         onChange(dateToStr(current));
     };
     return (
-        <View style={fs.fieldGroup}>
-            <Text style={fs.fieldLabel}>{label}</Text>
-            <TouchableOpacity style={fs.fieldInput} onPress={() => setShow(true)}>
-                <Text style={{ color: value ? '#1f2937' : '#9ca3af', fontSize: 15 }}>
+        <View style={st.fieldGroup}>
+            <Text style={st.fieldLabel}>{label}</Text>
+            <TouchableOpacity style={st.fieldInput} onPress={() => setShow(true)}>
+                <Text style={{ color: value ? colors.text : colors.textSecondary, fontSize: 15 }}>
                     {value || 'Sin fecha'}
                 </Text>
             </TouchableOpacity>
@@ -181,6 +198,9 @@ const DatePickerField = ({ label, value, onChange }) => {
 
 // ─── Edit Form Modal ─────────────────────────────────────────────────────────
 const EditModal = ({ publicador, onClose, onSaved }) => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
+    const fs = getFormStyles(colors);
     const [form, setForm] = useState(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
 
@@ -234,11 +254,11 @@ const EditModal = ({ publicador, onClose, onSaved }) => {
 
     return (
         <Modal visible={!!publicador} animationType="slide" transparent onRequestClose={onClose}>
-            <View style={styles.modalOverlay}>
-                <View style={[styles.modalContainer, { maxHeight: '95%' }]}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Editar Publicador</Text>
-                        <TouchableOpacity onPress={onClose}><X size={24} color="#6b7280" /></TouchableOpacity>
+            <View style={st.modalOverlay}>
+                <View style={[st.modalContainer, { maxHeight: '95%' }]}>
+                    <View style={st.modalHeader}>
+                        <Text style={st.modalTitle}>Editar Publicador</Text>
+                        <TouchableOpacity onPress={onClose}><X size={24} color={colors.textSecondary} /></TouchableOpacity>
                     </View>
                     <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
                         <View style={{ padding: 4 }}>
@@ -295,12 +315,12 @@ const EditModal = ({ publicador, onClose, onSaved }) => {
                             <Field label="Correo Emergencia" value={form.correo_contacto_emergencia} onChangeText={v => set('correo_contacto_emergencia', v)} keyboardType="email-address" />
                         </View>
                     </ScrollView>
-                    <View style={styles.modalFooter}>
-                        <TouchableOpacity style={styles.modalSecondaryBtn} onPress={onClose}>
-                            <Text style={styles.modalSecondaryBtnText}>Cancelar</Text>
+                    <View style={st.modalFooter}>
+                        <TouchableOpacity style={st.modalSecondaryBtn} onPress={onClose}>
+                            <Text style={st.modalSecondaryBtnText}>Cancelar</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.modalPrimaryBtn, saving && styles.disabledBtn]} onPress={handleSave} disabled={saving}>
-                            {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.modalPrimaryBtnText}>Guardar</Text>}
+                        <TouchableOpacity style={[st.modalPrimaryBtn, saving && st.disabledBtn]} onPress={handleSave} disabled={saving}>
+                            {saving ? <ActivityIndicator size="small" color="#fff" /> : <Text style={st.modalPrimaryBtnText}>Guardar</Text>}
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -311,28 +331,40 @@ const EditModal = ({ publicador, onClose, onSaved }) => {
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 const PublicadoresScreen = ({ navigation }) => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const [publicadores, setPublicadores] = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selected, setSelected] = useState(null);   // card modal
     const [editing, setEditing] = useState(null);     // edit modal
+    const [selectedGroup, setSelectedGroup] = useState('Todos');
+    const [groups, setGroups] = useState([]);
     const [sharing, setSharing] = useState(false);
     const cardRef = useRef(null);
 
     useEffect(() => { fetchPublicadores(); }, []);
 
     useEffect(() => {
-        if (!search.trim()) { setFiltered(publicadores); return; }
-        const t = search.toLowerCase();
-        setFiltered(publicadores.filter(p => `${p.nombre} ${p.apellidos}`.toLowerCase().includes(t)));
-    }, [search, publicadores]);
+        let res = publicadores;
+        if (search.trim()) {
+            const t = search.toLowerCase();
+            res = res.filter(p => `${p.nombre} ${p.apellidos}`.toLowerCase().includes(t));
+        }
+        if (selectedGroup !== 'Todos') {
+            res = res.filter(p => p.grupo == selectedGroup);
+        }
+        setFiltered(res);
+    }, [search, selectedGroup, publicadores]);
 
     const fetchPublicadores = async () => {
         try {
             const resp = await api.get('/publicador/all');
             const sorted = resp.data.data.sort((a, b) => a.nombre.localeCompare(b.nombre));
             setPublicadores(sorted);
+            const uniqueGroups = [...new Set(sorted.map(p => p.grupo).filter(g => g))].sort((a, b) => a - b);
+            setGroups(['Todos', ...uniqueGroups]);
             setFiltered(sorted);
         } catch {
             Alert.alert('Error', 'No se pudieron cargar los publicadores.');
@@ -383,14 +415,14 @@ const PublicadoresScreen = ({ navigation }) => {
     };
 
     const renderItem = ({ item }) => (
-        <TouchableOpacity style={styles.card} onPress={() => setSelected(item)}>
-            <View style={styles.cardLeft}><User size={22} color="#6b7280" /></View>
-            <View style={styles.cardInfo}>
-                <Text style={styles.name}>{item.nombre} {item.apellidos}</Text>
-                <Text style={styles.sub}>Grupo {item.grupo || '—'}{item.privilegio ? `  ·  ${item.privilegio}` : ''}</Text>
+        <TouchableOpacity style={st.card} onPress={() => setSelected(item)}>
+            <View style={st.cardLeft}><User size={22} color={colors.textSecondary} /></View>
+            <View style={st.cardInfo}>
+                <Text style={st.name}>{item.nombre} {item.apellidos}</Text>
+                <Text style={st.sub}>Grupo {item.grupo || '—'}{item.privilegio ? `  ·  ${item.privilegio}` : ''}</Text>
             </View>
-            <View style={[styles.statusBadge, item.Estatus === 'Activo' ? styles.statusActive : styles.statusInactive]}>
-                <Text style={[styles.statusText, item.Estatus === 'Activo' ? styles.statusTextActive : styles.statusTextInactive]}>
+            <View style={[st.statusBadge, item.Estatus === 'Activo' ? st.statusActive : st.statusInactive]}>
+                <Text style={[st.statusText, item.Estatus === 'Activo' ? st.statusTextActive : st.statusTextInactive]}>
                     {item.Estatus || 'N/A'}
                 </Text>
             </View>
@@ -398,54 +430,71 @@ const PublicadoresScreen = ({ navigation }) => {
     );
 
     return (
-        <View style={styles.container}>
+        <View style={st.container}>
             {/* Top bar */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <ArrowLeft size={24} color="#1f2937" />
+            <View style={st.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={st.backBtn}>
+                    <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Publicadores</Text>
+                <Text style={st.headerTitle}>Publicadores</Text>
                 <View style={{ width: 32 }} />
             </View>
 
             {filtered.length > 0 && (
-                <View style={{ marginTop: 8, marginBottom: 8, padding: 8, backgroundColor: '#fff', borderRadius: 12 }}>
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Publicadores (total): </Text>
-                        <Text style={styles.totalValue}>{filtered.length}</Text>
+                <View style={{ marginTop: 8, marginBottom: 8, padding: 12, backgroundColor: colors.card, borderRadius: 12, marginHorizontal: 16 }}>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Publicadores (total): </Text>
+                        <Text style={st.totalValue}>{filtered.length}</Text>
                     </View>
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Precursores regulares:</Text>
-                        <Text style={styles.totalValue}>{filtered.reduce((acc, item) => acc + (item.id_tipo_publicador === 2 ? 1 : 0), 0)}</Text>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Precursores regulares:</Text>
+                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.id_tipo_publicador === 2 ? 1 : 0), 0)}</Text>
                     </View>
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Activos:</Text>
-                        <Text style={styles.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Activo' ? 1 : 0), 0)}</Text>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Activos:</Text>
+                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Activo' ? 1 : 0), 0)}</Text>
                     </View>
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Inactivos:</Text>
-                        <Text style={styles.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Inactivo' ? 1 : 0), 0)}</Text>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Inactivos:</Text>
+                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Inactivo' ? 1 : 0), 0)}</Text>
                     </View>
                 </View>
             )}
 
             {/* Search */}
-            <View style={styles.searchWrapper}>
-                <Search size={18} color="#9ca3af" style={{ marginRight: 8 }} />
+            <View style={st.searchWrapper}>
+                <Search size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
                 <TextInput
-                    style={styles.searchInput}
+                    style={st.searchInput}
                     placeholder="Buscar publicador..."
                     value={search}
                     onChangeText={setSearch}
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor={colors.textSecondary}
                 />
                 {search.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearch('')}><X size={18} color="#9ca3af" /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setSearch('')}><X size={18} color={colors.textSecondary} /></TouchableOpacity>
                 )}
             </View>
 
+            {/* Group Filter */}
+            <View style={{ height: 50, marginTop: 10 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center' }}>
+                    {groups.map(g => (
+                        <TouchableOpacity
+                            key={g}
+                            style={[st.groupBtn, selectedGroup === g && st.groupBtnActive]}
+                            onPress={() => setSelectedGroup(g)}
+                        >
+                            <Text style={[st.groupBtnText, selectedGroup === g && st.groupBtnTextActive]}>
+                                {g === 'Todos' ? 'Todos' : `Grupo ${g}`}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
+
             {loading
-                ? <View style={styles.center}><ActivityIndicator size="large" color="#3b82f6" /></View>
+                ? <View style={st.center}><ActivityIndicator size="large" color={colors.primary} /></View>
                 : (
                     <FlatList
                         data={filtered}
@@ -454,8 +503,8 @@ const PublicadoresScreen = ({ navigation }) => {
                         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
                         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
                         ListEmptyComponent={
-                            <View style={styles.center}>
-                                <Text style={{ color: '#6b7280' }}>No se encontraron publicadores</Text>
+                            <View style={st.center}>
+                                <Text style={{ color: colors.textSecondary }}>No se encontraron publicadores</Text>
                             </View>
                         }
                     />
@@ -469,12 +518,12 @@ const PublicadoresScreen = ({ navigation }) => {
                 transparent
                 onRequestClose={() => setSelected(null)}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Tarjeta de Publicador</Text>
+                <View style={st.modalOverlay}>
+                    <View style={st.modalContainer}>
+                        <View style={st.modalHeader}>
+                            <Text style={st.modalTitle}>Tarjeta de Publicador</Text>
                             <TouchableOpacity onPress={() => setSelected(null)}>
-                                <X size={24} color="#6b7280" />
+                                <X size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
 
@@ -487,34 +536,34 @@ const PublicadoresScreen = ({ navigation }) => {
                         </ScrollView>
 
                         {/* Actions: Share | Edit | Delete */}
-                        <View style={[styles.modalFooter, { justifyContent: 'space-between' }]}>
+                        <View style={[st.modalFooter, { justifyContent: 'space-between' }]}>
                             <View style={{ flexDirection: 'row', gap: 8 }}>
                                 <TouchableOpacity
-                                    style={[styles.iconBtn, styles.dangerBtn]}
+                                    style={[st.iconBtn, st.dangerBtn]}
                                     onPress={() => handleDelete(selected)}
                                 >
                                     <Trash2 size={18} color="#ef4444" />
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[styles.iconBtn]}
+                                    style={[st.iconBtn]}
                                     onPress={() => { setEditing(selected); setSelected(null); }}
                                 >
-                                    <Edit2 size={18} color="#3b82f6" />
+                                    <Edit2 size={18} color={colors.primary} />
                                 </TouchableOpacity>
                             </View>
 
                             <View style={{ flexDirection: 'row', gap: 8 }}>
-                                <TouchableOpacity style={styles.modalSecondaryBtn} onPress={() => setSelected(null)}>
-                                    <Text style={styles.modalSecondaryBtnText}>Cerrar</Text>
+                                <TouchableOpacity style={st.modalSecondaryBtn} onPress={() => setSelected(null)}>
+                                    <Text style={st.modalSecondaryBtnText}>Cerrar</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[styles.modalPrimaryBtn, sharing && styles.disabledBtn]}
+                                    style={[st.modalPrimaryBtn, sharing && st.disabledBtn]}
                                     onPress={handleShare}
                                     disabled={sharing}
                                 >
                                     {sharing
                                         ? <ActivityIndicator size="small" color="#fff" />
-                                        : <><Share2 size={16} color="#fff" /><Text style={styles.modalPrimaryBtnText}>  Compartir</Text></>
+                                        : <><Share2 size={16} color="#fff" /><Text style={st.modalPrimaryBtnText}>  Compartir</Text></>
                                     }
                                 </TouchableOpacity>
                             </View>
@@ -533,79 +582,82 @@ const PublicadoresScreen = ({ navigation }) => {
     );
 };
 
-// ─── Screen Styles ────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f3f4f6' },
+// ─── Styles Creators ──────────────────────────────────────────────────────────
+const getStyles = (colors) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: 20, paddingTop: 50, backgroundColor: '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+        padding: 20, paddingTop: 50, backgroundColor: colors.header,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
     },
     backBtn: { padding: 4 },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1f2937' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFFFFF' },
     searchWrapper: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
+        flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
         margin: 16, marginBottom: 0, paddingHorizontal: 14, paddingVertical: 10,
-        borderRadius: 10, borderWidth: 1, borderColor: '#e5e7eb',
+        borderRadius: 10, borderWidth: 1, borderColor: colors.border,
     },
-    searchInput: { flex: 1, fontSize: 16, color: '#1f2937' },
+    searchInput: { flex: 1, fontSize: 16, color: colors.text },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
     card: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
+        flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
         borderRadius: 12, padding: 14,
         elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.08, shadowRadius: 2,
     },
     cardLeft: { marginRight: 12 },
     cardInfo: { flex: 1 },
-    name: { fontSize: 16, fontWeight: '700', color: '#1f2937' },
-    sub: { fontSize: 13, color: '#6b7280', marginTop: 2 },
+    name: { fontSize: 16, fontWeight: '700', color: colors.text },
+    sub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-    statusActive: { backgroundColor: '#d1fae5' },
-    statusInactive: { backgroundColor: '#fee2e2' },
+    statusActive: { backgroundColor: colors.isDarkMode ? '#064e3b' : '#d1fae5' },
+    statusInactive: { backgroundColor: colors.isDarkMode ? '#7f1d1d' : '#fee2e2' },
     statusText: { fontSize: 12, fontWeight: '600' },
-    statusTextActive: { color: '#065f46' },
-    statusTextInactive: { color: '#991b1b' },
+    statusTextActive: { color: colors.isDarkMode ? '#d1fae5' : '#065f46' },
+    statusTextInactive: { color: colors.isDarkMode ? '#fee2e2' : '#991b1b' },
 
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalOverlay: { flex: 1, backgroundColor: colors.modalOverlay, justifyContent: 'flex-end' },
     modalContainer: {
-        backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+        backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20,
         maxHeight: '90%', paddingHorizontal: 16, paddingBottom: 30,
     },
     modalHeader: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-        paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f3f4f6',
+        paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.border,
     },
-    modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#1f2937' },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', color: colors.text },
     modalFooter: {
         flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8,
-        paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f3f4f6',
+        paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border,
     },
     modalSecondaryBtn: {
         paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8,
-        borderWidth: 1, borderColor: '#d1d5db',
+        borderWidth: 1, borderColor: colors.border,
     },
-    modalSecondaryBtnText: { color: '#374151', fontWeight: '600' },
+    modalSecondaryBtnText: { color: colors.text, fontWeight: '600' },
     modalPrimaryBtn: {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#3b82f6',
+        flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary,
         paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8,
     },
     modalPrimaryBtnText: { color: '#fff', fontWeight: '600' },
-    disabledBtn: { backgroundColor: '#9ca3af' },
+    disabledBtn: { backgroundColor: colors.textSecondary },
     iconBtn: {
-        width: 44, height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb',
-        justifyContent: 'center', alignItems: 'center', backgroundColor: '#f9fafb',
+        width: 44, height: 44, borderRadius: 8, borderWidth: 1, borderColor: colors.border,
+        justifyContent: 'center', alignItems: 'center', backgroundColor: colors.inputBackground,
     },
-    dangerBtn: { borderColor: '#fecaca', backgroundColor: '#fff1f2' },
+    dangerBtn: { borderColor: '#fecaca', backgroundColor: colors.isDarkMode ? '#451a1a' : '#fff1f2' },
     totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    totalLabel: { fontSize: 16, fontWeight: 'bold', color: '#1f2937' },
-    totalValue: { fontSize: 16, color: '#1f2937', alignSelf: 'flex-end', textAlign: 'right' },
+    totalLabel: { fontSize: 16, fontWeight: 'bold', color: colors.text },
+    totalValue: { fontSize: 16, color: colors.text, alignSelf: 'flex-end', textAlign: 'right' },
+    groupBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, height: 36, justifyContent: 'center' },
+    groupBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    groupBtnText: { color: colors.text, fontSize: 13, fontWeight: '600' },
+    groupBtnTextActive: { color: '#fff' },
 });
 
-// ─── Card Styles ───────────────────────────────────────────────────────────────
-const cs = StyleSheet.create({
-    card: { margin: 16, borderRadius: 12, overflow: 'hidden', backgroundColor: '#f0f4ff' },
-    header: { backgroundColor: '#1e3a5f', padding: 20 },
+const getCardStyles = (colors) => StyleSheet.create({
+    card: { margin: 16, borderRadius: 12, overflow: 'hidden', backgroundColor: colors.isDarkMode ? '#1e293b' : '#f0f4ff' },
+    header: { backgroundColor: colors.isDarkMode ? '#0f172a' : '#1e3a5f', padding: 20 },
     name: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
     typeBadge: {
         marginTop: 8, alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)',
@@ -615,44 +667,43 @@ const cs = StyleSheet.create({
     body: { padding: 20, gap: 10 },
     row: {
         flexDirection: 'row', justifyContent: 'space-between',
-        borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.08)', paddingBottom: 8,
+        borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 8,
     },
-    rowLabel: { fontSize: 14, color: '#6b7280', fontWeight: '500' },
-    rowValue: { fontSize: 14, color: '#1f2937', fontWeight: '700' },
-    section: { marginTop: 4, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.1)', paddingTop: 10 },
-    sectionLabel: { fontSize: 13, fontWeight: '700', color: '#374151', marginBottom: 4 },
-    sectionValue: { fontSize: 14, color: '#374151' },
+    rowLabel: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
+    rowValue: { fontSize: 14, color: colors.text, fontWeight: '700' },
+    section: { marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
+    sectionLabel: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 4 },
+    sectionValue: { fontSize: 14, color: colors.textSecondary },
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
     badge: {
-        backgroundColor: '#e0e7ff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4,
-        borderWidth: 1, borderColor: '#c7d2fe',
+        backgroundColor: colors.isDarkMode ? '#312e81' : '#e0e7ff', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4,
+        borderWidth: 1, borderColor: colors.isDarkMode ? '#4338ca' : '#c7d2fe',
     },
-    badgeText: { fontSize: 12, color: '#3730a3', fontWeight: '600' },
-    footer: { marginTop: 12, fontSize: 12, color: '#9ca3af', fontStyle: 'italic', textAlign: 'center' },
+    badgeText: { fontSize: 12, color: colors.isDarkMode ? '#e0e7ff' : '#3730a3', fontWeight: '600' },
+    footer: { marginTop: 12, fontSize: 12, color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center' },
 });
 
-// ─── Form Styles ───────────────────────────────────────────────────────────────
-const fs = StyleSheet.create({
+const getFormStyles = (colors) => StyleSheet.create({
     fieldGroup: { marginBottom: 14 },
-    fieldLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 6 },
+    fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 6 },
     fieldInput: {
-        borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 10,
-        fontSize: 15, backgroundColor: '#f9fafb', color: '#1f2937',
+        borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10,
+        fontSize: 15, backgroundColor: colors.inputBackground, color: colors.inputText,
     },
     selectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     selectOption: {
         paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8,
-        borderWidth: 1, borderColor: '#d1d5db', backgroundColor: '#f9fafb',
+        borderWidth: 1, borderColor: colors.border, backgroundColor: colors.inputBackground,
     },
-    selectOptionActive: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
-    selectOptionText: { fontSize: 14, color: '#374151', fontWeight: '500' },
+    selectOptionActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    selectOptionText: { fontSize: 14, color: colors.text, fontWeight: '500' },
     selectOptionTextActive: { color: '#fff' },
     toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
     toggleGrid: { flexWrap: 'wrap', marginBottom: 12 },
     sectionTitle: {
-        fontSize: 14, fontWeight: '700', color: '#1e3a5f',
+        fontSize: 14, fontWeight: '700', color: colors.primary,
         marginTop: 8, marginBottom: 10, paddingBottom: 6,
-        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+        borderBottomWidth: 1, borderBottomColor: colors.border,
     },
 });
 

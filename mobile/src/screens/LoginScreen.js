@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const LoginScreen = ({ navigation }) => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -26,53 +29,55 @@ const LoginScreen = ({ navigation }) => {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.container}
+            style={st.container}
         >
-            <View style={styles.card}>
-                <Text style={styles.title}>Bienvenido a Secretario</Text>
-                <Text style={styles.subtitle}>Ingresa tus credenciales para acceder a la aplicación local.</Text>
+            <View style={st.card}>
+                <Text style={st.title}>Bienvenido a Secretario</Text>
+                <Text style={st.subtitle}>Ingresa tus credenciales para acceder a la aplicación local.</Text>
 
-                <Text style={styles.label}>Usuario</Text>
+                <Text style={st.label}>Usuario</Text>
                 <TextInput
-                    style={styles.input}
+                    style={st.input}
                     placeholder="ej. secretario"
                     value={username}
                     onChangeText={setUsername}
                     autoCapitalize="none"
+                    placeholderTextColor={colors.textSecondary}
                 />
 
-                <Text style={styles.label}>Contraseña</Text>
+                <Text style={st.label}>Contraseña</Text>
                 <TextInput
-                    style={styles.input}
+                    style={st.input}
                     placeholder="••••••••"
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
+                    placeholderTextColor={colors.textSecondary}
                 />
 
                 <TouchableOpacity
-                    style={[styles.button, loading && styles.buttonDisabled]}
+                    style={[st.button, loading && st.buttonDisabled]}
                     onPress={handleLogin}
                     disabled={loading}
                 >
-                    <Text style={styles.buttonText}>{loading ? 'Iniciando...' : 'Iniciar Sesión'}</Text>
+                    <Text style={st.buttonText}>{loading ? 'Iniciando...' : 'Iniciar Sesión'}</Text>
                 </TouchableOpacity>
             </View>
         </KeyboardAvoidingView>
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f3f4f6',
+        backgroundColor: colors.background,
         padding: 20,
     },
     card: {
         width: '100%',
-        backgroundColor: 'white',
+        backgroundColor: colors.card,
         padding: 24,
         borderRadius: 12,
         shadowColor: '#000',
@@ -87,27 +92,28 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#1f2937',
+        color: colors.text,
         marginBottom: 8,
         textAlign: 'center',
     },
     subtitle: {
         fontSize: 14,
-        color: '#6b7280',
+        color: colors.textSecondary,
         marginBottom: 24,
         textAlign: 'center',
     },
     input: {
         borderWidth: 1,
-        borderColor: '#d1d5db',
+        borderColor: colors.border,
         borderRadius: 8,
         padding: 12,
         fontSize: 16,
         marginBottom: 16,
-        backgroundColor: '#f9fafb',
+        backgroundColor: colors.inputBackground,
+        color: colors.inputText,
     },
     button: {
-        backgroundColor: '#3b82f6',
+        backgroundColor: colors.primary,
         padding: 14,
         borderRadius: 8,
         alignItems: 'center',
@@ -120,7 +126,7 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#374151',
+        color: colors.text,
         marginBottom: 4,
     },
     buttonDisabled: {

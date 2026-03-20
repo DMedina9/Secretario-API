@@ -31,7 +31,7 @@ const getInformes = async (req, res) => {
                     SELECT SUM(predico_en_el_mes)
                     FROM Informes a
                     WHERE a.id_publicador = i.id_publicador
-                      AND DATE(a.mes) BETWEEN DATE(i.mes, '-5 months')
+                      AND DATE(a.mes) BETWEEN DATE(i.mes, '-6 months')
                       AND DATE(i.mes)
                 ) > 0 THEN 'Activo' ELSE 'Inactivo' END AS Estatus
             FROM Informes i
@@ -108,64 +108,65 @@ const getPrecursoresRegulares = async (req, res) => {
 
 const getIrregulares = async (req, res) => {
     try {
-        const mes_final = req.params.mes_final;
-        if (!mes_final || !/^[0-9]{4}-[0-9]{2}$/.test(mes_final)) {
-            return res.status(400).json({ success: false, error: 'mes_final inválido; use YYYY-MM' });
+        const mes = req.params.mes;
+        if (!mes || !/^[0-9]{4}-[0-9]{2}-01$/.test(mes)) {
+            return res.status(400).json({ success: false, error: 'mes inválido; use YYYY-MM' });
         }
 
-        const endMonth = dayjs(`${mes_final}-01`).startOf('month');
-        if (!endMonth.isValid()) {
-            return res.status(400).json({ success: false, error: 'mes_final inválido' });
-        }
-
-        const startMonth = endMonth.subtract(5, 'month').startOf('month');
-
-        // Si el periodo es posterior a la fecha actual, limitamos al mes anterior real
-        const now = dayjs();
-        const lastAvailable = now.subtract(1, 'month').startOf('month');
-        const actualEndMonth = endMonth.isAfter(lastAvailable) ? lastAvailable : endMonth;
-        const actualStartMonth = startMonth.isAfter(actualEndMonth) ? actualEndMonth.subtract(5, 'month').startOf('month') : startMonth;
-
-        const tipoRegular = await TipoPublicador.findOne({ where: { descripcion: 'Precursor regular' } });
-        if (!tipoRegular) {
-            return res.status(404).json({ success: false, error: 'Tipo de publicador "Precursor regular" no encontrado' });
-        }
-
-        const publicadores = await Publicadores.findAll({ where: { id_tipo_publicador: tipoRegular.id } });
+        const publicadores = await sequelize.query(`
+           SELECT
+                p.id,
+                p.nombre,
+                p.apellidos,
+                p.nombre || ' ' || p.apellidos as publicador,
+                (	select min(mes)
+                	FROM Informes a
+                    WHERE a.id_publicador = p.id) AS inicio_predicacion,
+                CASE WHEN (
+                    SELECT SUM(predico_en_el_mes)
+                    FROM Informes a
+                    WHERE a.id_publicador = p.id
+                      AND DATE(a.mes) BETWEEN date(date('${mes}'), '-6 months')
+                      AND date('${mes}')
+                ) > 0 THEN 'Irregular' ELSE 'Inactivo' END AS Estatus
+            FROM Publicadores p
+            LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
+            LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador
+ 			WHERE (
+                    SELECT SUM(predico_en_el_mes)
+                    FROM Informes a
+                    WHERE a.id_publicador = p.id
+                      AND DATE(a.mes) BETWEEN date(date('${mes}'), '-6 months')
+                      AND date('${mes}')
+            ) < 6
+            ORDER BY Estatus DESC, apellidos, nombre
+        `, { type: QueryTypes.SELECT });
 
         // Informes en últimos 6 meses
         const informes = await Informes.findAll({
             where: {
                 mes: {
-                    [Op.between]: [actualStartMonth.format('YYYY-MM-01'), actualEndMonth.endOf('month').format('YYYY-MM-DD')]
+                    [Op.between]: [dayjs(mes).subtract(5, 'month').format('YYYY-MM-DD'), dayjs(mes).format('YYYY-MM-DD')]
+                },
+                id_publicador: {
+                    [Op.in]: publicadores.map(p => p.id)
                 }
             },
             order: [['id_publicador', 'ASC'], ['mes', 'ASC']]
         });
 
-        // Primer mes que predicó (histórico)
-        const firstPredicacion = await Informes.findAll({
-            attributes: ['id_publicador', [sequelize.fn('MIN', sequelize.col('mes')), 'primera_mes']],
-            where: { predico_en_el_mes: 1 },
-            group: ['id_publicador']
-        });
-        const firstPredicacionMap = {};
-        for (const item of firstPredicacion) {
-            firstPredicacionMap[item.id_publicador] = item.get('primera_mes');
-        }
-
         const months = [];
         for (let i = 0; i < 6; i++) {
-            months.push(actualStartMonth.add(i, 'month').format('YYYY-MM'));
+            months.push(dayjs(mes).subtract(5, 'month').add(i, 'month').format('YYYY-MM'));
         }
 
         const rows = [];
         for (const pub of publicadores) {
-            const started = firstPredicacionMap[pub.id] ? dayjs(firstPredicacionMap[pub.id]).startOf('month') : null;
-            const effectiveStartMonth = started && started.isAfter(actualStartMonth) ? started : actualStartMonth;
+            const started = pub.inicio_predicacion ? dayjs(pub.inicio_predicacion).startOf('month') : null;
+            const effectiveStartMonth = started && started.isAfter(dayjs(mes).subtract(5, 'month')) ? started : dayjs(mes).subtract(5, 'month');
 
             const expectedMonths = started
-                ? Math.min(6, actualEndMonth.diff(started.startOf('month'), 'month') + 1)
+                ? Math.min(6, dayjs(mes).diff(started.startOf('month'), 'month') + 1)
                 : 6;
 
             if (expectedMonths <= 0) continue;
@@ -187,13 +188,10 @@ const getIrregulares = async (req, res) => {
             const faltantes = expectedMonths - predicados;
 
             let maxConsecutivos = 0;
-            let current = 0;
-            for (const item of monthInfos) {
-                if (!item.predico) {
-                    current += 1;
-                } else {
-                    maxConsecutivos = Math.max(maxConsecutivos, current);
-                    current = 0;
+            let current = 6;
+            for (const index in monthInfos) {
+                if (monthInfos[index].predico) {
+                    current = 5 - index;
                 }
             }
             maxConsecutivos = Math.max(maxConsecutivos, current);
@@ -201,6 +199,8 @@ const getIrregulares = async (req, res) => {
             if (predicados < expectedMonths) {
                 rows.push({
                     id: pub.id,
+                    nombre: pub.nombre,
+                    apellidos: pub.apellidos,
                     publicador: `${pub.nombre} ${pub.apellidos}`,
                     inicio_predicacion: started ? started.format('YYYY-MM-DD') : null,
                     meses_a_predicar: expectedMonths,

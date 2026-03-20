@@ -3,11 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Pla
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Share2 } from 'lucide-react-native';
 import { useUser } from '../contexts/UserContext';
+import { useTheme } from '../contexts/ThemeContext';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Dimensions } from 'react-native';
 
 const PDFViewerScreen = ({ route, navigation }) => {
+  const { colors } = useTheme();
+  const st = getStyles(colors);
   const { endpoint, method = 'GET', body = null, filename = 'document.pdf', fileUri: initialFileUri = null } = route.params || {};
   const { token } = useUser();
   const [loading, setLoading] = useState(true);
@@ -108,24 +111,24 @@ const PDFViewerScreen = ({ route, navigation }) => {
   }
 
   return (
-    <SafeAreaView style={s.safeArea}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <ArrowLeft size={20} color="#111827" />
+    <SafeAreaView style={st.safeArea}>
+      <View style={st.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={st.backBtn}>
+          <ArrowLeft size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={s.title}>{filename}</Text>
+          <Text style={st.title}>{filename}</Text>
         </View>
-        <TouchableOpacity onPress={handleShare} style={s.shareBtn}>
-          <Share2 size={20} color="#111827" />
+        <TouchableOpacity onPress={handleShare} style={st.shareBtn}>
+          <Share2 size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
-      <View style={s.container}>
+      <View style={st.container}>
         {loading && (
-          <View style={s.center}>
-            <ActivityIndicator size="large" />
-            <Text style={{ marginTop: 12 }}>Descargando PDF…</Text>
+          <View style={st.center}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={{ marginTop: 12, color: colors.textSecondary }}>Descargando PDF…</Text>
           </View>
         )}
 
@@ -149,10 +152,10 @@ const PDFViewerScreen = ({ route, navigation }) => {
         )}
 
         {!loading && fileUri && !PdfComponent && !WebViewComponent && (
-          <View style={s.center}>
-            <Text>No se puede previsualizar dentro de la app porque faltan paquetes nativos (react-native-pdf o react-native-webview).</Text>
-            <TouchableOpacity style={[s.btn, { marginTop: 12 }]} onPress={handleShare}>
-              <Text style={s.btnText}>Abrir PDF</Text>
+          <View style={st.center}>
+            <Text style={{ color: colors.text }}>No se puede previsualizar dentro de la app porque faltan paquetes nativos (react-native-pdf o react-native-webview).</Text>
+            <TouchableOpacity style={[st.btn, { marginTop: 12 }]} onPress={handleShare}>
+              <Text style={st.btnText}>Abrir PDF</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -161,17 +164,17 @@ const PDFViewerScreen = ({ route, navigation }) => {
   );
 };
 
-const s = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#fff' },
+const getStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   header: {
-    flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#e5e7eb'
+    flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.header
   },
   backBtn: { padding: 6 },
   shareBtn: { padding: 6 },
-  title: { fontSize: 16, fontWeight: '600', color: '#111827' },
-  container: { flex: 1 },
+  title: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 },
-  btn: { backgroundColor: '#3b82f6', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 },
+  btn: { backgroundColor: colors.primary, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8 },
   btnText: { color: '#fff', fontWeight: '600' }
 });
 

@@ -8,16 +8,18 @@ import 'dayjs/locale/es';
 import api from '../services/api';
 import DropDownPicker from 'react-native-dropdown-picker'; // Assumes this is available, if not we'll use a simpler selection or rely on it being installed
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 dayjs.locale('es');
 
 const PrecursoresAuxiliaresScreen = ({ navigation }) => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
     const [month, setMonth] = useState(dayjs().format('YYYY-MM'));
     const [precursores, setPrecursores] = useState([]);
     const [publicadores, setPublicadores] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // Form Modal Equivalent State
     const [showForm, setShowForm] = useState(false);
     const [selectedPublicadorId, setSelectedPublicadorId] = useState('');
     const [notas, setNotas] = useState('');
@@ -32,7 +34,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
         try {
             const resp = await api.get('/publicador/all');
             const pubs = resp.data?.data ?? [];
-            setPublicadores(pubs.sort((a, b) => a.apellidos.localeCompare(b.apellidos)));
+            setPublicadores(pubs.filter(p => p.id_tipo_publicador === 1 && p.Estatus == 'Activo').sort((a, b) => a.apellidos.localeCompare(b.apellidos)));
         } catch (e) {
             console.error(e);
         }
@@ -126,34 +128,34 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
     };
 
     return (
-        <View style={s.container}>
-            <View style={s.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#1f2937" /></TouchableOpacity>
-                <Text style={s.headerTitle}>Precursores Auxiliares</Text>
+        <View style={st.container}>
+            <View style={st.header}>
+                <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
+                <Text style={st.headerTitle}>Precursores Auxiliares</Text>
                 <TouchableOpacity onPress={() => setShowForm(!showForm)}>
-                    <Plus size={22} color="#6b7280" />
+                    <Plus size={22} color={colors.textSecondary} />
                 </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
                 {/* Filters */}
-                <View style={s.filterCard}>
-                    <View style={s.monthNavRow}>
+                <View style={st.filterCard}>
+                    <View style={st.monthNavRow}>
                         <TouchableOpacity onPress={() => handleMonthChange(-1)}>
-                            <ChevronLeft size={24} color="#1f2937" />
+                            <ChevronLeft size={24} color={colors.text} />
                         </TouchableOpacity>
-                        <Text style={s.monthLabel}>{dayjs(month + '-01').format('MMMM YYYY')}</Text>
+                        <Text style={st.monthLabel}>{dayjs(month + '-01').format('MMMM YYYY')}</Text>
                         <TouchableOpacity onPress={() => handleMonthChange(1)}>
-                            <ChevronRight size={24} color="#1f2937" />
+                            <ChevronRight size={24} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {showForm && (
-                    <View style={s.formCard}>
-                        <Text style={s.cardTitle}>Nuevo Registro</Text>
+                    <View style={st.formCard}>
+                        <Text style={st.cardTitle}>Nuevo Registro</Text>
 
-                        <Text style={s.label}>Publicador</Text>
+                        <Text style={st.label}>Publicador</Text>
                         <DropDownPicker
                             open={openPublicador}
                             value={selectedPublicadorId}
@@ -164,47 +166,53 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                             setOpen={setOpenPublicador}
                             setValue={setSelectedPublicadorId}
                             searchable={true}
+                            theme={colors.isDarkMode ? 'DARK' : 'LIGHT'}
                             placeholder="Seleccionar publicador"
-                            style={s.pickerContainer}
-                            dropDownContainerStyle={s.dropDownContainer}
+                            style={st.pickerContainer}
+                            dropDownContainerStyle={st.dropDownContainer}
+                            modalContentContainerStyle={{
+                                marginTop: 50,
+                                paddingHorizontal: 20,
+                            }}
                             listMode="MODAL"
                         />
 
-                        <Text style={s.label}>Notas (Opcional)</Text>
+                        <Text style={st.label}>Notas (Opcional)</Text>
                         <TextInput
-                            style={s.input}
+                            style={st.input}
                             value={notas}
                             onChangeText={setNotas}
                             placeholder="Ej. P. Aux Continuo"
+                            placeholderTextColor={colors.textSecondary}
                         />
 
-                        <View style={s.formActions}>
-                            <TouchableOpacity style={[s.btn, s.btnSecondary]} onPress={() => setShowForm(false)}>
-                                <Text style={s.btnTextDark}>Cancelar</Text>
+                        <View style={st.formActions}>
+                            <TouchableOpacity style={[st.btn, st.btnSecondary]} onPress={() => setShowForm(false)}>
+                                <Text style={st.btnTextDark}>Cancelar</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[s.btn, s.btnPrimary, loading && s.disabled]} onPress={handleSave} disabled={loading}>
-                                <Text style={s.btnText}>Guardar</Text>
+                            <TouchableOpacity style={[st.btn, st.btnPrimary, loading && st.disabled]} onPress={handleSave} disabled={loading}>
+                                <Text style={st.btnText}>Guardar</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 )}
 
                 {loading && !showForm ? (
-                    <ActivityIndicator size="large" color="#3b82f6" style={{ marginTop: 20 }} />
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
                 ) : (
                     precursores.length === 0 ? (
-                        <Text style={s.emptyText}>No hay precursores auxiliares registrados en este mes.</Text>
+                        <Text style={st.emptyText}>No hay precursores auxiliares registrados en este mes.</Text>
                     ) : (
                         precursores.map(p => (
-                            <View key={p.id} style={s.itemCard}>
-                                <View style={s.itemInfo}>
-                                    <Text style={s.itemName}>{p.publicador}</Text>
+                            <View key={p.id} style={st.itemCard}>
+                                <View style={st.itemInfo}>
+                                    <Text style={st.itemName}>{p.publicador}</Text>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                                        <Text style={s.itemGroup}>Grupo {p.grupo}</Text>
-                                        {p.notas ? <Text style={s.itemNotes}> • {p.notas}</Text> : null}
+                                        <Text style={st.itemGroup}>Grupo {p.grupo}</Text>
+                                        {p.notas ? <Text style={st.itemNotes}> • {p.notas}</Text> : null}
                                     </View>
                                 </View>
-                                <TouchableOpacity onPress={() => handleDelete(p.id)} style={s.deleteBtn}>
+                                <TouchableOpacity onPress={() => handleDelete(p.id)} style={st.deleteBtn}>
                                     <Trash2 size={18} color="#ef4444" />
                                 </TouchableOpacity>
                             </View>
@@ -216,42 +224,42 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
     );
 };
 
-const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f3f4f6' },
+const getStyles = (colors) => StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: 20, paddingTop: 50, backgroundColor: '#fff',
-        borderBottomWidth: 1, borderBottomColor: '#e5e7eb',
+        padding: 20, paddingTop: 50, backgroundColor: colors.header,
+        borderBottomWidth: 1, borderBottomColor: colors.border,
     },
-    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1f2937', flex: 1, textAlign: 'center' },
-    filterCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
+    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF', flex: 1, textAlign: 'center' },
+    filterCard: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
     monthNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    navArrow: { fontSize: 24, color: '#4b5563', paddingHorizontal: 10 },
-    monthLabel: { fontSize: 18, fontWeight: 'bold', color: '#1f2937', textTransform: 'capitalize' },
+    navArrow: { fontSize: 24, color: colors.textSecondary, paddingHorizontal: 10 },
+    monthLabel: { fontSize: 18, fontWeight: 'bold', color: colors.text, textTransform: 'capitalize' },
 
-    formCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2, borderWidth: 1, borderColor: '#bfdbfe' },
-    cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#1e40af', marginBottom: 12 },
-    label: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 6, marginTop: 8 },
-    pickerContainer: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#f9fafb', marginBottom: 8 },
-    dropDownContainer: { borderColor: '#d1d5db' },
+    formCard: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2, borderWidth: 1, borderColor: colors.isDarkMode ? colors.primary : '#bfdbfe' },
+    cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.primary, marginBottom: 12 },
+    label: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 6, marginTop: 8 },
+    pickerContainer: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, backgroundColor: colors.inputBackground, marginBottom: 8 },
+    dropDownContainer: { borderColor: colors.border, backgroundColor: colors.inputBackground },
     picker: { height: 50 },
-    input: { borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: '#f9fafb', color: '#1f2937' },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 12, fontSize: 16, backgroundColor: colors.inputBackground, color: colors.inputText },
     formActions: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 16, gap: 10 },
     btn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-    btnPrimary: { backgroundColor: '#3b82f6' },
-    btnSecondary: { backgroundColor: '#e5e7eb' },
+    btnPrimary: { backgroundColor: colors.primary },
+    btnSecondary: { backgroundColor: colors.isDarkMode ? '#334155' : '#e5e7eb' },
     btnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-    btnTextDark: { color: '#374151', fontWeight: 'bold', fontSize: 14 },
+    btnTextDark: { color: colors.text, fontWeight: 'bold', fontSize: 14 },
     disabled: { opacity: 0.5 },
 
-    emptyText: { textAlign: 'center', color: '#6b7280', marginTop: 20, fontStyle: 'italic' },
+    emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 20, fontStyle: 'italic' },
 
-    itemCard: { backgroundColor: '#fff', borderRadius: 10, padding: 14, marginBottom: 8, elevation: 1, flexDirection: 'row', alignItems: 'center' },
+    itemCard: { backgroundColor: colors.card, borderRadius: 10, padding: 14, marginBottom: 8, elevation: 1, flexDirection: 'row', alignItems: 'center' },
     itemInfo: { flex: 1 },
-    itemName: { fontSize: 16, fontWeight: '700', color: '#1f2937' },
-    itemGroup: { fontSize: 13, color: '#3b82f6', fontWeight: '600' },
-    itemNotes: { fontSize: 13, color: '#6b7280' },
-    deleteBtn: { padding: 8, backgroundColor: '#fee2e2', borderRadius: 8 },
+    itemName: { fontSize: 16, fontWeight: '700', color: colors.text },
+    itemGroup: { fontSize: 13, color: colors.primary, fontWeight: '600' },
+    itemNotes: { fontSize: 13, color: colors.textSecondary },
+    deleteBtn: { padding: 8, backgroundColor: colors.isDarkMode ? '#451a1a' : '#fee2e2', borderRadius: 8 },
 });
 
 export default PrecursoresAuxiliaresScreen;
