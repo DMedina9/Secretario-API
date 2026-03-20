@@ -1,4 +1,4 @@
-import { Publicadores, Informes, Asistencias, Configuracion, PrecursoresAuxiliares, Privilegio, TipoPublicador, sequelize } from '../common/models/Secretario.mjs';
+import { Publicadores, Informes, Asistencias, Configuracion, PrecursoresAuxiliares, Privilegio, TipoPublicador, sequelize } from '../models/Secretario.mjs';
 import { QueryTypes } from 'sequelize';
 
 const getAllData = async (req, res) => {
