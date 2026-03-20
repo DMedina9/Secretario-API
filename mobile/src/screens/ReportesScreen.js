@@ -10,7 +10,9 @@ import { useAnioServicio } from '../contexts/AnioServicioContext';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, RefreshCcw } from 'lucide-react-native';
+import { getAllPublicadores, getTiposPublicador } from '../services/repositories/PublicadorRepo';
+import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -234,22 +236,33 @@ const VisualizadorTab = ({ anioServicio }) => {
     useEffect(() => {
         const loadLists = async () => {
             try {
-                const [pubs, tipos] = await Promise.all([
-                    api.get('/publicador/all'),
-                    api.get('/publicador/tipos-publicador'),
+                const [pubData, tipoData] = await Promise.all([
+                    getAllPublicadores(),
+                    getTiposPublicador(),
                 ]);
-                const pubData = pubs.data?.data || [];
-                const tipoData = tipos.data?.data || [];
                 setPublicadores(pubData);
                 setTiposPublicador(tipoData);
                 if (pubData.length > 0) setSelectedPublicadorId(String(pubData[0].id));
                 if (tipoData.length > 0) setSelectedTipoId(String(tipoData[0].id));
             } catch (e) {
-                console.error('Error cargando listas', e);
+                console.error('Error cargando listas locales', e);
             }
         };
         loadLists();
     }, []);
+
+    const handleSync = async () => {
+        setLoadingPdf(true); // Reuse loading or add new
+        await syncAllData();
+        // Reload lists
+        const [pubData, tipoData] = await Promise.all([
+            getAllPublicadores(),
+            getTiposPublicador(),
+        ]);
+        setPublicadores(pubData);
+        setTiposPublicador(tipoData);
+        setLoadingPdf(false);
+    };
 
     const handleGenerarPDF = async () => {
         if (!year) { Alert.alert('Aviso', 'Ingresa un año de servicio'); return; }
@@ -448,7 +461,9 @@ const ReportesScreen = ({ navigation }) => {
                     <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={st.headerTitle}>Reportes</Text>
-                <View style={{ width: 32 }} />
+                <TouchableOpacity onPress={() => (activeTab === 'visualizador' ? handleSync() : Alert.alert('Aviso', 'Sincronizar no disponible en esta pestaña'))}>
+                    <RefreshCcw size={22} color="#FFFFFF" />
+                </TouchableOpacity>
             </View>
 
             <View style={st.tabBar}>

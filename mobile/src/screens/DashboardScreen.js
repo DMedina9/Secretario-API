@@ -3,7 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Tex
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { LogOut, Calendar, Send } from 'lucide-react-native';
+import { LogOut, Calendar, Send, RefreshCcw } from 'lucide-react-native';
+import { syncAllData } from '../services/SyncService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
 const DashboardScreen = ({ navigation }) => {
@@ -11,6 +13,28 @@ const DashboardScreen = ({ navigation }) => {
     const { colors } = useTheme();
     const st = getStyles(colors);
     const [loading, setLoading] = useState(false);
+    const [syncing, setSyncing] = useState(false);
+    const [lastSync, setLastSync] = useState('');
+
+    React.useEffect(() => {
+        loadLastSync();
+        // Initial sync if online
+        handleSync();
+    }, []);
+
+    const loadLastSync = async () => {
+        const ls = await AsyncStorage.getItem('@last_sync');
+        if (ls) setLastSync(new Date(ls).toLocaleString());
+    };
+
+    const handleSync = async () => {
+        setSyncing(true);
+        const success = await syncAllData();
+        setSyncing(false);
+        if (success) {
+            loadLastSync();
+        }
+    };
 
     return (
         <KeyboardAvoidingView
@@ -24,10 +48,24 @@ const DashboardScreen = ({ navigation }) => {
                         <Text style={st.headerGreeting}>Hola,</Text>
                         <Text style={st.headerName}>{userProfile?.firstName}</Text>
                     </View>
-                    <TouchableOpacity onPress={clearProfile} style={st.logoutBtn}>
-                        <LogOut size={24} color={colors.danger} />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
+                        <TouchableOpacity onPress={handleSync} disabled={syncing} style={st.actionBtn}>
+                            {syncing 
+                                ? <ActivityIndicator size="small" color={colors.primary} />
+                                : <RefreshCcw size={24} color={colors.primary} />
+                            }
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={clearProfile} style={st.logoutBtn}>
+                            <LogOut size={24} color={colors.danger} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
+
+                {lastSync ? (
+                    <Text style={{ textAlign: 'center', fontSize: 12, color: colors.textSecondary, marginBottom: 10 }}>
+                        Última sincronización: {lastSync}
+                    </Text>
+                ) : null}
 
                 {/* Navigation Cards */}
                 <View style={st.navGrid}>
@@ -82,6 +120,9 @@ const getStyles = (colors) => StyleSheet.create({
         color: colors.success,
     },
     logoutBtn: {
+        padding: 8,
+    },
+    actionBtn: {
         padding: 8,
     },
     navGrid: {

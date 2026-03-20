@@ -3,7 +3,9 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Alert, ActivityIndicator, Modal, TextInput, Switch
 } from 'react-native';
-import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun } from 'lucide-react-native';
+import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun, RefreshCcw } from 'lucide-react-native';
+import { getAllConfiguraciones } from '../services/repositories/ConfiguracionesRepo';
+import { syncAllData } from '../services/SyncService';
 import { useTheme } from '../contexts/ThemeContext';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -31,15 +33,16 @@ const ConfiguracionesSection = () => {
 
     const [configuraciones, setConfiguraciones] = useState([]);
 
+    const fetchConfiguraciones = async () => {
+        try {
+            const data = await getAllConfiguraciones();
+            setConfiguraciones(data);
+        } catch (error) {
+            console.error('Error al obtener configuraciones locales:', error);
+        }
+    };
+
     useEffect(() => {
-        const fetchConfiguraciones = async () => {
-            try {
-                const response = await api.get('/configuraciones');
-                setConfiguraciones(response.data.data);
-            } catch (error) {
-                console.error('Error al obtener configuraciones:', error);
-            }
-        };
         fetchConfiguraciones();
     }, []);
 
@@ -58,9 +61,10 @@ const ConfiguracionesSection = () => {
 
         try {
             await api.put(`/configuraciones/${selectedConfig}`, { value: inputValue });
+            await syncAllData(); // Refresh local DB
             Alert.alert('Éxito', 'Configuración actualizada correctamente.');
             setIsModalVisible(false);
-            // Aquí podrías recargar los datos si es necesario
+            fetchConfiguraciones();
         } catch (error) {
             Alert.alert('Error', 'No se pudo actualizar la configuración.');
         }

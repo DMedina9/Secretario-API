@@ -12,6 +12,8 @@ import territoriosRoutes from './territorios/routes.mjs';
 import configuracionesRoutes from './configuraciones/routes.mjs';
 import precursoresAuxiliaresRoutes from './precursoresAuxiliares/routes.mjs';
 import backupRoutes from './backup/routes.mjs';
+import SyncController from './common/controllers/SyncController.mjs';
+import { check } from './common/middlewares/IsAuthenticated.mjs';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -47,6 +49,7 @@ app.use('/api/territorios', territoriosRoutes);
 app.use('/api/configuraciones', configuracionesRoutes);
 app.use('/api/precursoresAuxiliares', precursoresAuxiliaresRoutes);
 app.use('/api/backup', backupRoutes);
+app.get('/api/sync/all', check, SyncController.getAllData);
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'Running',

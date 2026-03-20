@@ -7,7 +7,10 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import api from '../services/api';
 import DropDownPicker from 'react-native-dropdown-picker'; // Assumes this is available, if not we'll use a simpler selection or rely on it being installed
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, RefreshCcw } from 'lucide-react-native';
+import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
+import { getPrecursoresAuxiliaresByMonth } from '../services/repositories/InformeRepo';
+import { syncAllData } from '../services/SyncService';
 import { useTheme } from '../contexts/ThemeContext';
 
 dayjs.locale('es');
@@ -32,8 +35,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
 
     const loadPublicadores = async () => {
         try {
-            const resp = await api.get('/publicador/all');
-            const pubs = resp.data?.data ?? [];
+            const pubs = await getAllPublicadores();
             setPublicadores(pubs.filter(p => p.id_tipo_publicador === 1 && p.Estatus == 'Activo').sort((a, b) => a.apellidos.localeCompare(b.apellidos)));
         } catch (e) {
             console.error(e);
@@ -47,18 +49,21 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
             let serviceYear = date.year();
             if (date.month() >= 8) serviceYear++;
 
-            const resp = await api.get(`/precursoresAuxiliares/${serviceYear}/${date.format('MM')}`);
-            if (resp.data && resp.data.success) {
-                setPrecursores(resp.data.data);
-            } else {
-                setPrecursores([]);
-            }
+            const data = await getPrecursoresAuxiliaresByMonth(serviceYear, date.format('MM'));
+            setPrecursores(data);
         } catch (e) {
-            console.error('Error loading PA:', e);
-            Alert.alert('Error', 'No se pudieron cargar los precursores auxiliares.');
+            console.error('Error loading PA locally:', e);
+            Alert.alert('Error', 'No se pudieron cargar los precursores auxiliares locales.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSync = async () => {
+        setLoading(true);
+        await syncAllData();
+        loadPublicadores();
+        loadPrecursores(month);
     };
 
     const handleMonthChange = (direction) => {
@@ -84,6 +89,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
             const resp = await api.post('/precursoresAuxiliares/add', payload);
             if (resp.data?.success) {
                 Alert.alert('✅ Éxito', 'Precursor auxiliar registrado.');
+                await syncAllData(); // Refresh local DB
                 setShowForm(false);
                 setSelectedPublicadorId('');
                 setNotas('');
@@ -112,6 +118,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                         try {
                             const resp = await api.delete(`/precursoresAuxiliares/${id}`);
                             if (resp.data?.success) {
+                                await syncAllData(); // Refresh local DB
                                 loadPrecursores(month);
                             } else {
                                 Alert.alert('Error', 'No se pudo eliminar.');
@@ -132,9 +139,12 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Precursores Auxiliares</Text>
-                <TouchableOpacity onPress={() => setShowForm(!showForm)}>
-                    <Plus size={22} color={colors.textSecondary} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={handleSync}><RefreshCcw size={22} color={colors.textSecondary} /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowForm(!showForm)}>
+                        <Plus size={22} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>

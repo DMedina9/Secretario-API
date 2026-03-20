@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, FlatList } from 'react-native';
-import { ArrowLeft, ChevronLeft, ChevronRight, Share as ShareIcon } from 'lucide-react-native';
-import dayjs from 'dayjs';
-import 'dayjs/locale/es';
-import ViewShot, { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import { Share as ShareIcon, ArrowLeft, ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react-native';
+import { getPrecursoresRegulares } from '../services/repositories/InformeRepo';
+import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -71,15 +69,20 @@ const PrecursoresRegularesScreen = ({ navigation }) => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const resp = await api.get(`/informe/precursoresRegulares/${currentYear}`);
-            const rows = resp.data?.data || [];
+            const rows = await getPrecursoresRegulares(currentYear);
             setData(rows);
         } catch (error) {
-            console.error('Error loading precursores regulares:', error);
+            console.error('Error loading precursores regulares locally:', error);
             setData([]);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSync = async () => {
+        setLoading(true);
+        await syncAllData();
+        loadData();
     };
 
     const handleYearChange = (newYear) => {
@@ -108,6 +111,9 @@ const PrecursoresRegularesScreen = ({ navigation }) => {
                 <Text style={st.headerTitle}>Precursores Regulares</Text>
                 <TouchableOpacity onPress={onShare} disabled={loading || data.length === 0}>
                     <ShareIcon size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleSync} style={{ marginLeft: 15 }}>
+                    <RefreshCcw size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 

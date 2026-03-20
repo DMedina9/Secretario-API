@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
-import { ArrowLeft, ChevronLeft, ChevronRight, Share as ShareIcon } from 'lucide-react-native';
-import dayjs from 'dayjs';
-import 'dayjs/locale/es';
-import ViewShot, { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import { ArrowLeft, ChevronLeft, ChevronRight, Share as ShareIcon, RefreshCcw } from 'lucide-react-native';
+import { getIrregulares } from '../services/repositories/InformeRepo';
+import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
@@ -35,24 +33,27 @@ const IrregularesScreen = ({ navigation }) => {
     const viewShotRef = useRef();
 
     const loadData = async (month) => {
-        if (!month) {
-            return;
-        }
+        if (!month) return;
         setLoading(true);
         try {
-            const resp = await api.get(`/informe/irregulares/${month}`);
-            setData(resp.data?.data || []);
+            const data = await getIrregulares(month);
+            setData(data);
         } catch (error) {
-            console.error('Error Irregulares:', error);
+            console.error('Error Irregulares locally:', error);
             setData([]);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSync = async () => {
+        setLoading(true);
+        await syncAllData();
+        loadData(currentMonth.format('YYYY-MM-01'));
+    };
+
     const handleMonthChange = (newMonth) => {
         setCurrentMonth(newMonth);
-        loadData(newMonth.format('YYYY-MM-01'));
     };
 
     const onShare = async () => {
@@ -84,9 +85,14 @@ const IrregularesScreen = ({ navigation }) => {
                     <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={st.title}>Irregulares</Text>
-                <TouchableOpacity onPress={onShare} disabled={loading || data.length === 0}>
-                    <ShareIcon size={24} color="#FFFFFF" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity onPress={onShare} disabled={loading || data.length === 0} style={{ padding: 8 }}>
+                        <ShareIcon size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSync} style={{ padding: 8, marginLeft: 8 }}>
+                        <RefreshCcw size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>

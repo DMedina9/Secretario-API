@@ -6,7 +6,9 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es'; // Spanish
-import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2 } from 'lucide-react-native';
+import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2, RefreshCcw } from 'lucide-react-native';
+import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
+import { syncAllData } from '../services/SyncService';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import api from '../services/api';
@@ -360,17 +362,24 @@ const PublicadoresScreen = ({ navigation }) => {
 
     const fetchPublicadores = async () => {
         try {
-            const resp = await api.get('/publicador/all');
-            const sorted = resp.data.data.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            setLoading(true);
+            const data = await getAllPublicadores();
+            const sorted = data.sort((a, b) => a.nombre.localeCompare(b.nombre));
             setPublicadores(sorted);
             const uniqueGroups = [...new Set(sorted.map(p => p.grupo).filter(g => g))].sort((a, b) => a - b);
             setGroups(['Todos', ...uniqueGroups]);
             setFiltered(sorted);
         } catch {
-            Alert.alert('Error', 'No se pudieron cargar los publicadores.');
+            Alert.alert('Error', 'No se pudieron cargar los publicadores locales.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSync = async () => {
+        setLoading(true);
+        await syncAllData();
+        fetchPublicadores();
     };
 
     const handleDelete = (p) => {
@@ -437,7 +446,9 @@ const PublicadoresScreen = ({ navigation }) => {
                     <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={st.headerTitle}>Publicadores</Text>
-                <View style={{ width: 32 }} />
+                <TouchableOpacity onPress={handleSync} style={{ padding: 8 }}>
+                    <RefreshCcw size={24} color="#FFFFFF" />
+                </TouchableOpacity>
             </View>
 
             {filtered.length > 0 && (

@@ -6,7 +6,9 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, RefreshCcw } from 'lucide-react-native';
+import { getAllAsistencias } from '../services/repositories/AsistenciaRepo';
+import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -44,8 +46,6 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
             } else {
                 resp = await api.post('/asistencias/add', payload);
             }
-            if (resp.data.success) onSave();
-            else Alert.alert('Error', resp.data.error || 'No se pudo guardar.');
         } catch {
             Alert.alert('Error', 'Error de conexión.');
         } finally {
@@ -151,19 +151,26 @@ const AsistenciasScreen = ({ navigation }) => {
     const load = async () => {
         setLoading(true);
         try {
-            const resp = await api.get('/asistencias/all');
-            setAsistencias(resp.data?.data ?? []);
+            const data = await getAllAsistencias();
+            setAsistencias(data);
         } catch {
-            Alert.alert('Error', 'No se pudieron cargar las asistencias.');
+            Alert.alert('Error', 'No se pudieron cargar las asistencias locales.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSync = async () => {
+        setLoading(true);
+        await syncAllData();
+        load();
     };
 
     const handleDelete = async () => {
         if (!selected?.id) return;
         try {
             await api.delete(`/asistencias/${selected.id}`);
+            await syncAllData(); // Refresh local DB
             setModalVisible(false);
             setSelected(null);
             load();
@@ -198,9 +205,12 @@ const AsistenciasScreen = ({ navigation }) => {
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Asistencias</Text>
-                <TouchableOpacity onPress={() => { setSelected(null); setModalVisible(true); }}>
-                    <Plus size={24} color={colors.primary} />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={handleSync}><RefreshCcw size={24} color="#FFFFFF" /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => { setSelected(null); setModalVisible(true); }}>
+                        <Plus size={24} color={colors.primary} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {loading ? (
@@ -267,7 +277,12 @@ const AsistenciasScreen = ({ navigation }) => {
                 visible={modalVisible}
                 asistencia={selected}
                 onClose={() => { setModalVisible(false); setSelected(null); }}
-                onSave={() => { setModalVisible(false); setSelected(null); load(); }}
+                onSave={async () => { 
+                    setModalVisible(false); 
+                    setSelected(null); 
+                    await syncAllData(); // Refresh local DB
+                    load(); 
+                }}
                 onDelete={handleDelete}
             />
         </View>

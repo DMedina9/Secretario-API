@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import { initDatabase } from './src/services/Database';
 
 // Contexts
 import { UserProvider, useUser } from './src/contexts/UserContext';
@@ -60,6 +61,10 @@ const AppNavigator = () => {
 };
 
 export default function App() {
+  React.useEffect(() => {
+    initDatabase().then(() => console.log('SQLite Initialized'));
+  }, []);
+
   return (
     <UserProvider>
       <ThemeProvider>

@@ -5,7 +5,10 @@ import {
 } from 'react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle, RefreshCcw } from 'lucide-react-native';
+import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
+import { getInformesByPublicadorAndAnio, getPrecursoresAuxiliaresByMonth } from '../services/repositories/InformeRepo';
+import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -131,8 +134,7 @@ const InformesScreen = ({ navigation }) => {
 
     const loadGroups = async () => {
         try {
-            const resp = await api.get('/publicador/all');
-            const pubs = resp.data?.data ?? [];
+            const pubs = await getAllPublicadores();
             const unique = [...new Set(pubs.map(p => p.grupo).filter(Boolean))].sort((a, b) => a - b);
             setGroups(unique);
         } catch (e) {
@@ -147,43 +149,34 @@ const InformesScreen = ({ navigation }) => {
         }
         setLoading(true);
         try {
-            const pubResp = await api.get(`/publicador/grupo/${selectedGroup}`);
-            const publicadores = pubResp.data?.data ?? [];
-            if (!publicadores.length) { Alert.alert('Aviso', 'No hay publicadores en este grupo.'); setBulkData([]); return; }
+            const allPubs = await getAllPublicadores();
+            const publicadores = allPubs.filter(p => p.grupo == selectedGroup);
+            
+            if (!publicadores.length) { 
+                Alert.alert('Aviso', 'No hay publicadores en este grupo.'); 
+                setBulkData([]); 
+                return; 
+            }
 
             const monthDate = dayjs(month + '-01');
             let serviceYear = monthDate.year();
             if (monthDate.month() >= 8) serviceYear++;
             const monthStr = month.substring(5, 7);
 
-            const existingInformes = {};
-            await Promise.all(publicadores.map(async pub => {
-                try {
-                    const resp = await api.get(`/informe/${pub.id}/${serviceYear}/${monthStr}`);
-                    const list = resp.data?.data ?? [];
-                    const found = list.find(i => dayjs(i.mes).format('YYYY-MM') === month);
-                    if (found) existingInformes[pub.id] = found;
-                } catch (_) { }
-            }));
-
             const sorted = publicadores.sort((a, b) => {
                 const va = a.id_tipo_publicador % 2, vb = b.id_tipo_publicador % 2;
                 if (va !== vb) return va - vb;
                 return `${a.apellidos} ${a.nombre}`.localeCompare(`${b.apellidos} ${b.nombre}`);
             });
-            let aux = [];
-            try {
-                const auxResp = await api.get(`/precursoresAuxiliares/${serviceYear}/${monthStr}`);
-                if (auxResp.data && auxResp.data.success) aux = auxResp.data.data;
-                else aux = [];
-            } catch (e) {
-                console.error('Error loading PA:', e);
-                Alert.alert('Error', 'No se pudieron cargar los precursores auxiliares.');
-            }
 
-            setBulkData(sorted.map(pub => {
-                const ex = existingInformes[pub.id];
+            // Fetch auxiliares and existing informes locally
+            const aux = await getPrecursoresAuxiliaresByMonth(serviceYear, monthStr);
+            
+            const results = await Promise.all(sorted.map(async pub => {
+                const informes = await getInformesByPublicadorAndAnio(pub.id, serviceYear);
+                const ex = informes.find(i => i.mes.startsWith(month));
                 const isAux = aux.some(a => a.id_publicador === pub.id);
+                
                 return {
                     id_publicador: pub.id,
                     nombre: `${pub.apellidos}, ${pub.nombre}`,
@@ -198,14 +191,25 @@ const InformesScreen = ({ navigation }) => {
                     id_base_tipo: pub.id_tipo_publicador,
                     id_tipo_publicador: ex ? ex.id_tipo_publicador : (isAux ? 3 : (pub.id_tipo_publicador || 1)),
                     notas: ex ? ex.notas : '',
-                    Estatus: pub.Estatus
+                    Estatus: pub.Estatus // Read from the pre-calculated field in SQLite
                 };
             }));
+
+            setBulkData(results);
         } catch (e) {
-            Alert.alert('Error', 'Error al cargar datos.');
+            console.error(e);
+            Alert.alert('Error', 'Error al cargar datos locales.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSync = async () => {
+        setLoading(true);
+        await syncAllData();
+        loadGroups();
+        if (bulkData.length) loadBulkData();
+        else setLoading(false);
     };
 
     const handleFieldChange = (index, field, value) => {
@@ -233,6 +237,7 @@ const InformesScreen = ({ navigation }) => {
             const resp = await api.post('/informe/bulk', payload);
             if (resp.data?.success) {
                 Alert.alert('✅ Guardado', `${bulkData.length} informes guardados.`);
+                await syncAllData(); // Refresh local DB after save
                 setBulkData([]);
             }
         } catch {
@@ -247,9 +252,12 @@ const InformesScreen = ({ navigation }) => {
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Informes de Predicación</Text>
-                {bulkData.length > 0 ? (
-                    <TouchableOpacity onPress={handleSave}><Save size={24} color={colors.primary} /></TouchableOpacity>
-                ) : <View style={{ width: 24 }} />}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={handleSync}><RefreshCcw size={24} color="#FFFFFF" /></TouchableOpacity>
+                    {bulkData.length > 0 ? (
+                        <TouchableOpacity onPress={handleSave}><Save size={24} color={colors.primary} /></TouchableOpacity>
+                    ) : null}
+                </View>
             </View>
 
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
