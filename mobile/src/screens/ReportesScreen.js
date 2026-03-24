@@ -359,6 +359,12 @@ const VisualizadorTab = ({ anioServicio }) => {
                                 marginTop: 50, // Adds margin top to the modal list
                                 paddingHorizontal: 20,
                             }}
+                            labelStyle={{
+                                color: colors.text, // Changes the color of the selected item when closed
+                            }}
+                            itemTextStyle={{
+                                color: colors.text, // Changes the color of the items in the dropdown list
+                            }}
                             listMode="MODAL"
                         />
                     </View>
@@ -398,6 +404,12 @@ const VisualizadorTab = ({ anioServicio }) => {
                                         marginTop: 50, // Adds margin top to the modal list
                                         paddingHorizontal: 20,
                                     }}
+                                    labelStyle={{
+                                        color: colors.text, // Changes the color of the selected item when closed
+                                    }}
+                                    itemTextStyle={{
+                                        color: colors.text, // Changes the color of the items in the dropdown list
+                                    }}
                                     listMode="MODAL"
                                 />
                             }
@@ -417,13 +429,19 @@ const VisualizadorTab = ({ anioServicio }) => {
                                     setOpen={setOpenTipo}
                                     setValue={setSelectedTipoId}
                                     searchable={true}
-                                    theme={colors.isDarkMode ? 'DARK' : 'LIGHT'}
+                                    //theme={colors.isDarkMode ? 'DARK' : 'LIGHT'}
                                     placeholder="Seleccionar tipo"
                                     style={st.pickerContainer}
                                     dropDownContainerStyle={st.dropDownContainer}
                                     modalContentContainerStyle={{
                                         marginTop: 50, // Adds margin top to the modal list
                                         paddingHorizontal: 20,
+                                    }}
+                                    labelStyle={{
+                                        color: colors.text, // Changes the color of the selected item when closed
+                                    }}
+                                    itemTextStyle={{
+                                        color: colors.text, // Changes the color of the items in the dropdown list
                                     }}
                                     listMode="MODAL"
                                 />

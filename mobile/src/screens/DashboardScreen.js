@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { LogOut, Calendar, Send, RefreshCcw } from 'lucide-react-native';
+import { LogOut, RefreshCcw } from 'lucide-react-native';
 import { syncAllData } from '../services/SyncService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../services/api';
 
 const DashboardScreen = ({ navigation }) => {
     const { userProfile, clearProfile } = useUser();
     const { colors } = useTheme();
     const st = getStyles(colors);
-    const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [lastSync, setLastSync] = useState('');
 
@@ -50,7 +47,7 @@ const DashboardScreen = ({ navigation }) => {
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
                         <TouchableOpacity onPress={handleSync} disabled={syncing} style={st.actionBtn}>
-                            {syncing 
+                            {syncing
                                 ? <ActivityIndicator size="small" color={colors.primary} />
                                 : <RefreshCcw size={24} color={colors.primary} />
                             }
@@ -70,13 +67,13 @@ const DashboardScreen = ({ navigation }) => {
                 {/* Navigation Cards */}
                 <View style={st.navGrid}>
                     {[
-                        { screen: 'Publicadores', icon: '👥', label: 'Publicadores', color: colors.primary },
-                        { screen: 'PrecursoresAuxiliares', icon: '⭐', label: 'P. Auxiliares', color: colors.primary },
-                        { screen: 'PrecursoresRegulares', icon: '📈', label: 'P. Regulares', color: colors.success },
-                        { screen: 'Irregulares', icon: '⚠️', label: 'Irregulares', color: colors.warning },
                         { screen: 'Asistencias', icon: '📅', label: 'Asistencias', color: colors.primary },
+                        { screen: 'Publicadores', icon: '👥', label: 'Publicadores', color: colors.primary },
+                        { screen: 'PrecursoresRegulares', icon: '📈', label: 'P. Regulares', color: colors.success },
+                        { screen: 'PrecursoresAuxiliares', icon: '⭐', label: 'P. Auxiliares', color: colors.primary },
+                        { screen: 'Irregulares', icon: '⚠️', label: 'Irregulares', color: colors.warning },
                         { screen: 'Informes', icon: '📋', label: 'Informes', color: colors.primary },
-                        { screen: 'Secretario', icon: '📊', label: 'Secretario', color: colors.warning },
+                        { screen: 'Secretario', icon: '📊', label: 'Formularios', color: colors.warning },
                         { screen: 'Reportes', icon: '📑', label: 'Reportes PDF', color: colors.primary },
                         { screen: 'Configuracion', icon: '⚙️', label: 'Configuración', color: colors.textSecondary },
                     ].map(item => (

@@ -6,6 +6,10 @@ import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
 
 dayjs.locale('es');
 

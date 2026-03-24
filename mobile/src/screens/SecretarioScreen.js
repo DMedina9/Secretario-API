@@ -82,7 +82,7 @@ const ReporteS1View = () => {
     return (
         <View style={st.card}>
             <Text style={st.cardTitle}>Estadísticas Mensuales</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.subHeader, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
                 <TouchableOpacity onPress={() => handleMonthChange(currentMonth.subtract(1, 'month'))}><ChevronLeft size={24} color={colors.text} /></TouchableOpacity>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{currentMonth.format('MMMM YYYY')}</Text>
                 <TouchableOpacity onPress={() => handleMonthChange(currentMonth.add(1, 'month'))}><ChevronRight size={24} color={colors.text} /></TouchableOpacity>
@@ -116,7 +116,7 @@ const ReporteS3View = () => {
     const renderData = (data, type) => (
         data && data.length > 0 && (
             <SafeAreaView style={st.card} edges={['top', 'left', 'right']}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.subHeader, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
                     <Text style={st.cardTitle}>{type === 'ES' ? 'Entre Semana' : 'Fin de Semana'} - Año {currentYear}</Text>
                 </View>
                 <View style={[st.row, st.headerStyle]}>
@@ -149,7 +149,7 @@ const ReporteS3View = () => {
     return (
         <View style={st.card}>
             <Text style={st.cardTitle}>Asistencia Anual</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.subHeader, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
                 <TouchableOpacity onPress={() => handleYearChange(currentYear - 1)}><ChevronLeft size={24} color={colors.text} /></TouchableOpacity>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{currentYear}</Text>
                 <TouchableOpacity onPress={() => handleYearChange(currentYear + 1)}><ChevronRight size={24} color={colors.text} /></TouchableOpacity>
@@ -182,7 +182,7 @@ const ReporteS10View = () => {
     return (
         <View style={st.card}>
             <Text style={st.cardTitle}>Análisis de la Congregación</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.subHeader, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
                 <TouchableOpacity onPress={() => handleYearChange(currentYear - 1)}><ChevronLeft size={24} color={colors.text} /></TouchableOpacity>
                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{currentYear}</Text>
                 <TouchableOpacity onPress={() => handleYearChange(currentYear + 1)}><ChevronRight size={24} color={colors.text} /></TouchableOpacity>
@@ -343,7 +343,7 @@ const getStyles = (colors) => StyleSheet.create({
     reporteValue: { fontSize: 15, fontWeight: '700', color: colors.text },
     tableContainer: { flex: 1, backgroundColor: colors.card, borderRadius: 12, marginBottom: 16, elevation: 2 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border },
-    headerStyle: { backgroundColor: colors.header },
+    headerStyle: { backgroundColor: colors.subHeader },
     cell: { flex: 1, textAlign: 'center', fontSize: 14, color: colors.text },
     headerText: { fontWeight: 'bold', color: colors.text },
     flexRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },

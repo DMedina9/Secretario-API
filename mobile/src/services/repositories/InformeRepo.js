@@ -1,4 +1,7 @@
 import { getDb } from '../Database';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
+dayjs.locale('es');
 
 export const getInformesByPublicadorAndAnio = async (id_publicador, anio_servicio) => {
     const db = await getDb();
@@ -71,14 +74,14 @@ export const getIrregulares = async (mes) => {
     const reports = await db.getAllAsync(`
         SELECT id_publicador, mes, predico_en_el_mes
         FROM informes
-        WHERE mes BETWEEN date(?, '-6 months') AND ?
+        WHERE mes BETWEEN date(?, '-5 months') AND ?
     `, [mes, mes]);
 
     const result = [];
     rows.forEach(p => {
         const pubReports = reports.filter(r => r.id_publicador === p.id);
         const predicados = pubReports.filter(r => r.predico_en_el_mes === 1).length;
-        
+
         if (predicados < 6) {
             const detailMeses = months.map(m => {
                 const inf = pubReports.find(r => r.mes.startsWith(m));

@@ -237,7 +237,7 @@ async function getS21(anio = null, id_publicador = null, zip = null) {
 				(cast(strftime('%m', mes) as integer) + 3) % 12 + 1 as iNumMes,
 				case when tp.descripcion = 'Precursor regular' then max(0, min(55 - horas, ifnull(horas_SS, 0))) else null end as horas_Acred,
 				case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes, '-1 months')) > 0 then 'Activo' else 'Inactivo' end as EstatusAnterior,
-				case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-6 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
+				case when (select sum(predico_en_el_mes) from Informes a where id_publicador = i.id_publicador and date(mes) between date(i.mes, '-5 months') and date(i.mes)) > 0 then 'Activo' else 'Inactivo' end as Estatus
 			from Informes i
 			left join Publicadores p
 				on i.id_Publicador = p.id

@@ -10,17 +10,37 @@ export const syncAllData = async () => {
         return false;
     }
 
+    console.log('Starting sync process...');
     try {
         const resp = await api.get('/sync/all');
-        if (!resp.data.success) return false;
+        if (!resp.data.success) {
+            console.error('Sync API failed:', resp.data.error);
+            return false;
+        }
 
-        const { publicadores, informes, asistencias, configuraciones, precursoresAuxiliares } = resp.data.data;
+        const raw = resp.data.data || {};
+        const clean = (list) => (Array.isArray(list) ? list.filter(item => item && typeof item === 'object') : []);
+
+        const publicadores = clean(raw.publicadores);
+        const informes = clean(raw.informes);
+        const asistencias = clean(raw.asistencias);
+        const configuraciones = clean(raw.configuraciones);
+        const precursoresAuxiliares = clean(raw.precursoresAuxiliares);
+        const privilegios = clean(raw.privilegios);
+        const tiposPublicador = clean(raw.tiposPublicador);
+        
+        console.log(`Data to sync: ${publicadores.length} pubs, ${informes.length} infs, ${asistencias.length} asists`);
+        
         const db = await getDb();
+        const sanitize = (val) => (val === undefined ? null : val);
 
-        await db.withTransactionAsync(async () => {
-            // Clear and reload Publicadores
+        try {
+            await db.execAsync('BEGIN TRANSACTION');
+
+            // Publicadores
             await db.runAsync('DELETE FROM publicadores');
             for (const p of publicadores) {
+                if (p.id === undefined || p.id === null) continue;
                 await db.runAsync(`
                     INSERT INTO publicadores (
                         id, nombre, apellidos, fecha_nacimiento, fecha_bautismo, grupo, sup_grupo, sexo,
@@ -29,56 +49,93 @@ export const syncAllData = async () => {
                         privilegio, tipo_publicador, Estatus
                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 `, [
-                    p.id, p.nombre, p.apellidos, p.fecha_nacimiento, p.fecha_bautismo, p.grupo, p.sup_grupo, p.sexo,
-                    p.id_privilegio, p.id_tipo_publicador, p.ungido, p.calle, p.num, p.colonia, p.telefono_fijo,
-                    p.telefono_movil, p.contacto_emergencia, p.tel_contacto_emergencia, p.correo_contacto_emergencia,
-                    p.privilegio, p.tipo_publicador, p.Estatus
+                    sanitize(p.id), sanitize(p.nombre), sanitize(p.apellidos), sanitize(p.fecha_nacimiento), 
+                    sanitize(p.fecha_bautismo), sanitize(p.grupo), sanitize(p.sup_grupo), sanitize(p.sexo),
+                    sanitize(p.id_privilegio), sanitize(p.id_tipo_publicador), sanitize(p.ungido), sanitize(p.calle), 
+                    sanitize(p.num), sanitize(p.colonia), sanitize(p.telefono_fijo), sanitize(p.telefono_movil), 
+                    sanitize(p.contacto_emergencia), sanitize(p.tel_contacto_emergencia), sanitize(p.correo_contacto_emergencia),
+                    sanitize(p.privilegio), sanitize(p.tipo_publicador), sanitize(p.Estatus)
                 ]);
             }
 
-            // Clear and reload Informes
+            // Informes
             await db.runAsync('DELETE FROM informes');
             for (const i of informes) {
+                if (i.id === undefined || i.id === null) continue;
                 await db.runAsync(`
                     INSERT INTO informes (
                         id, id_publicador, mes, horas, minutos, publicaciones, videos, revisitas,
                         cursos_biblicos, predico_en_el_mes, horas_SS, notas
                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 `, [
-                    i.id, i.id_publicador, i.mes, i.horas, i.minutos, i.publicaciones, i.videos, i.revisitas,
-                    i.cursos_biblicos, i.predico_en_el_mes, i.horas_SS, i.notas
+                    sanitize(i.id), sanitize(i.id_publicador), sanitize(i.mes), sanitize(i.horas), 
+                    sanitize(i.minutos), sanitize(i.publicaciones), sanitize(i.videos), sanitize(i.revisitas),
+                    sanitize(i.cursos_biblicos), sanitize(i.predico_en_el_mes), sanitize(i.horas_SS), sanitize(i.notas)
                 ]);
             }
 
-            // Clear and reload Asistencias
+            // Asistencias
             await db.runAsync('DELETE FROM asistencias');
             for (const a of asistencias) {
+                if (a.id === undefined || a.id === null) continue;
                 await db.runAsync(`
                     INSERT INTO asistencias (id, fecha, asistentes, notas, tipo_asistencia) VALUES (?,?,?,?,?)
-                `, [a.id, a.fecha, a.asistentes, a.notas, a.tipo_asistencia]);
+                `, [
+                    sanitize(a.id), sanitize(a.fecha), sanitize(a.asistentes), sanitize(a.notas), sanitize(a.tipo_asistencia)
+                ]);
             }
 
-            // Clear and reload Configuraciones
+            // Configuraciones
             await db.runAsync('DELETE FROM configuraciones');
             for (const c of configuraciones) {
+                if (c.id === undefined || c.id === null) continue;
                 await db.runAsync(`
                     INSERT INTO configuraciones (id, clave, valor) VALUES (?,?,?)
-                `, [c.id, c.clave, c.valor]);
+                `, [sanitize(c.id), sanitize(c.clave), sanitize(c.valor)]);
             }
 
-            // Clear and reload Precursores Auxiliares
+            // Precursores Auxiliares
             await db.runAsync('DELETE FROM precursores_auxiliares');
             for (const pa of precursoresAuxiliares) {
+                if (pa.id === undefined || pa.id === null) continue;
                 await db.runAsync(`
-                    INSERT INTO precursores_auxiliares (id, id_publicador, anio_servicio, mes) VALUES (?,?,?,?)
-                `, [pa.id, pa.id_publicador, pa.anio_servicio, pa.mes]);
+                    INSERT INTO precursores_auxiliares (id, id_publicador, anio_servicio, mes, notas) VALUES (?,?,?,?,?)
+                `, [
+                    sanitize(pa.id), sanitize(pa.id_publicador), sanitize(pa.anio_servicio), 
+                    sanitize(pa.mes), sanitize(pa.notas)
+                ]);
             }
-        });
+
+            // Privilegios
+            await db.runAsync('DELETE FROM privilegios');
+            for (const pr of privilegios) {
+                if (pr.id === undefined || pr.id === null) continue;
+                await db.runAsync(`
+                    INSERT INTO privilegios (id, descripcion) VALUES (?,?)
+                `, [sanitize(pr.id), sanitize(pr.descripcion)]);
+            }
+
+            // Tipos Publicador
+            await db.runAsync('DELETE FROM tipos_publicador');
+            for (const tp of tiposPublicador) {
+                if (tp.id === undefined || tp.id === null) continue;
+                await db.runAsync(`
+                    INSERT INTO tipos_publicador (id, descripcion) VALUES (?,?)
+                `, [sanitize(tp.id), sanitize(tp.descripcion)]);
+            }
+
+            await db.execAsync('COMMIT');
+            console.log('Sync completed and committed');
+        } catch (txnError) {
+            console.error('Transaction failed:', txnError);
+            try { await db.execAsync('ROLLBACK'); } catch (e) { /* ignore rollback error */ }
+            throw txnError;
+        }
 
         await AsyncStorage.setItem('@last_sync', new Date().toISOString());
         return true;
     } catch (error) {
-        console.error('Error syncing data:', error);
+        console.error('Sync failed finally:', error);
         return false;
     }
 };

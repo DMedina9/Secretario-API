@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { Share as ShareIcon, ArrowLeft, ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react-native';
 import { getPrecursoresRegulares } from '../services/repositories/InformeRepo';
 import { syncAllData } from '../services/SyncService';
-import api from '../services/api';
+import ViewShot from 'react-native-view-shot';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useTheme } from '../contexts/ThemeContext';
+import dayjs from 'dayjs';
+import 'dayjs/locale/es';
 
 dayjs.locale('es');
 
@@ -30,7 +32,7 @@ const MonthlyBarChart = ({ item, colors, st }) => {
             {months.map((m) => {
                 const value = item[m.key];
                 if (value === undefined || value === null) return null;
-                
+
                 const numValue = parseFloat(value) || 0;
                 const barWidth = Math.min((numValue / 90) * 100, 100) + '%';
                 const barColor = numValue < 45 ? colors.danger : numValue < 50 ? colors.warning : colors.success;

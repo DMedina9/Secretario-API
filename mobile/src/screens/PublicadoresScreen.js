@@ -451,27 +451,6 @@ const PublicadoresScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {filtered.length > 0 && (
-                <View style={{ marginTop: 8, marginBottom: 8, padding: 12, backgroundColor: colors.card, borderRadius: 12, marginHorizontal: 16 }}>
-                    <View style={st.totalRow}>
-                        <Text style={st.totalLabel}>Publicadores (total): </Text>
-                        <Text style={st.totalValue}>{filtered.length}</Text>
-                    </View>
-                    <View style={st.totalRow}>
-                        <Text style={st.totalLabel}>Precursores regulares:</Text>
-                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.id_tipo_publicador === 2 ? 1 : 0), 0)}</Text>
-                    </View>
-                    <View style={st.totalRow}>
-                        <Text style={st.totalLabel}>Activos:</Text>
-                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Activo' ? 1 : 0), 0)}</Text>
-                    </View>
-                    <View style={st.totalRow}>
-                        <Text style={st.totalLabel}>Inactivos:</Text>
-                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Inactivo' ? 1 : 0), 0)}</Text>
-                    </View>
-                </View>
-            )}
-
             {/* Search */}
             <View style={st.searchWrapper}>
                 <Search size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
@@ -503,6 +482,27 @@ const PublicadoresScreen = ({ navigation }) => {
                     ))}
                 </ScrollView>
             </View>
+
+            {filtered.length > 0 && (
+                <View style={{ marginTop: 8, marginBottom: 8, padding: 12, backgroundColor: colors.card, borderRadius: 12, marginHorizontal: 16 }}>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Publicadores (total): </Text>
+                        <Text style={st.totalValue}>{filtered.length}</Text>
+                    </View>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Precursores regulares:</Text>
+                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.id_tipo_publicador === 2 ? 1 : 0), 0)}</Text>
+                    </View>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Activos:</Text>
+                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Activo' ? 1 : 0), 0)}</Text>
+                    </View>
+                    <View style={st.totalRow}>
+                        <Text style={st.totalLabel}>Inactivos:</Text>
+                        <Text style={st.totalValue}>{filtered.reduce((acc, item) => acc + (item.Estatus === 'Inactivo' ? 1 : 0), 0)}</Text>
+                    </View>
+                </View>
+            )}
 
             {loading
                 ? <View style={st.center}><ActivityIndicator size="large" color={colors.primary} /></View>
@@ -680,8 +680,8 @@ const getCardStyles = (colors) => StyleSheet.create({
         flexDirection: 'row', justifyContent: 'space-between',
         borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 8,
     },
-    rowLabel: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
-    rowValue: { fontSize: 14, color: colors.text, fontWeight: '700' },
+    rowLabel: { fontSize: 14, color: '#4B5563', fontWeight: '500' },
+    rowValue: { fontSize: 14, color: '#000000', fontWeight: '700' },
     section: { marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
     sectionLabel: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 4 },
     sectionValue: { fontSize: 14, color: colors.textSecondary },

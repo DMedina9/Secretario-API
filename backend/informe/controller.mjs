@@ -24,14 +24,14 @@ const getInformes = async (req, res) => {
                     SELECT SUM(predico_en_el_mes)
                     FROM Informes a
                     WHERE a.id_publicador = i.id_publicador
-                      AND DATE(a.mes) BETWEEN DATE(i.mes, '-6 months')
+                      AND DATE(a.mes) BETWEEN DATE(i.mes, '-5 months')
                       AND DATE(i.mes, '-1 months')
                 ) > 0 THEN 'Activo' ELSE 'Inactivo' END AS EstatusAnterior,
                 CASE WHEN (
                     SELECT SUM(predico_en_el_mes)
                     FROM Informes a
                     WHERE a.id_publicador = i.id_publicador
-                      AND DATE(a.mes) BETWEEN DATE(i.mes, '-6 months')
+                      AND DATE(a.mes) BETWEEN DATE(i.mes, '-5 months')
                       AND DATE(i.mes)
                 ) > 0 THEN 'Activo' ELSE 'Inactivo' END AS Estatus
             FROM Informes i
@@ -126,7 +126,7 @@ const getIrregulares = async (req, res) => {
                     SELECT SUM(predico_en_el_mes)
                     FROM Informes a
                     WHERE a.id_publicador = p.id
-                      AND DATE(a.mes) BETWEEN date(date('${mes}'), '-6 months')
+                      AND DATE(a.mes) BETWEEN date(date('${mes}'), '-5 months')
                       AND date('${mes}')
                 ) > 0 THEN 'Irregular' ELSE 'Inactivo' END AS Estatus
             FROM Publicadores p
@@ -136,7 +136,7 @@ const getIrregulares = async (req, res) => {
                     SELECT SUM(predico_en_el_mes)
                     FROM Informes a
                     WHERE a.id_publicador = p.id
-                      AND DATE(a.mes) BETWEEN date(date('${mes}'), '-6 months')
+                      AND DATE(a.mes) BETWEEN date(date('${mes}'), '-5 months')
                       AND date('${mes}')
             ) < 6
             ORDER BY Estatus DESC, apellidos, nombre

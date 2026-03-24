@@ -2,11 +2,20 @@ import * as SQLite from 'expo-sqlite';
 
 const databaseName = 'secretario.db';
 
+let dbInstance = null;
+
+export const getDb = async () => {
+    if (!dbInstance) {
+        dbInstance = await SQLite.openDatabaseAsync(databaseName);
+    }
+    return dbInstance;
+};
+
 export const initDatabase = async () => {
-    const db = await SQLite.openDatabaseAsync(databaseName);
-    
-    // Publicadores
-    await db.execAsync(`
+    const db = await getDb();
+
+    // Consolidate all schema creation into one batch
+    const schema = `
         CREATE TABLE IF NOT EXISTS publicadores (
             id INTEGER PRIMARY KEY NOT NULL,
             nombre TEXT,
@@ -31,10 +40,7 @@ export const initDatabase = async () => {
             tipo_publicador TEXT,
             Estatus TEXT
         );
-    `);
 
-    // Informes
-    await db.execAsync(`
         CREATE TABLE IF NOT EXISTS informes (
             id INTEGER PRIMARY KEY NOT NULL,
             id_publicador INTEGER,
@@ -49,10 +55,7 @@ export const initDatabase = async () => {
             horas_SS INTEGER,
             notas TEXT
         );
-    `);
 
-    // Asistencias
-    await db.execAsync(`
         CREATE TABLE IF NOT EXISTS asistencias (
             id INTEGER PRIMARY KEY NOT NULL,
             fecha TEXT,
@@ -60,30 +63,39 @@ export const initDatabase = async () => {
             notas TEXT,
             tipo_asistencia TEXT
         );
-    `);
 
-    // Configuraciones
-    await db.execAsync(`
         CREATE TABLE IF NOT EXISTS configuraciones (
             id INTEGER PRIMARY KEY NOT NULL,
             clave TEXT UNIQUE,
             valor TEXT
         );
-    `);
 
-    // Precursores Auxiliares
-    await db.execAsync(`
         CREATE TABLE IF NOT EXISTS precursores_auxiliares (
             id INTEGER PRIMARY KEY NOT NULL,
             id_publicador INTEGER,
             anio_servicio INTEGER,
-            mes TEXT
+            mes TEXT,
+            notas TEXT
         );
-    `);
+
+        CREATE TABLE IF NOT EXISTS privilegios (
+            id INTEGER PRIMARY KEY NOT NULL,
+            descripcion TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS tipos_publicador (
+            id INTEGER PRIMARY KEY NOT NULL,
+            descripcion TEXT
+        );
+    `;
+
+    try {
+        await db.execAsync(schema);
+        console.log('Database schema initialized');
+    } catch (error) {
+        console.error('Error initializing database schema:', error);
+        throw error;
+    }
 
     return db;
-};
-
-export const getDb = async () => {
-    return await SQLite.openDatabaseAsync(databaseName);
 };
