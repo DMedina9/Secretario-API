@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { WebView } from 'react-native-webview';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft, RefreshCcw } from 'lucide-react-native';
@@ -15,6 +15,7 @@ import { getAllPublicadores, getTiposPublicador } from '../services/repositories
 import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
+import FileService from '../services/FileService';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,9 +54,9 @@ const downloadToCache = async (endpoint, method, body, filename) => {
 
     const buffer = await response.arrayBuffer();
     const base64 = arrayBufferToBase64(buffer);
-    const file = new FileSystem.File(FileSystem.Paths.cache, filename);
-    file.write(base64, { encoding: 'base64' });
-    return { fileUri: file.uri, base64 };
+    const fileUri = FileSystem.cacheDirectory + filename;
+    await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+    return { fileUri, base64 };
 };
 
 /** Build an HTML page that renders a PDF using PDF.js (works on Android WebView) */
@@ -126,12 +127,8 @@ const buildPdfHtml = (base64) => `<!DOCTYPE html>
 </html>`;
 
 
-const shareFileUri = async (fileUri) => {
-    if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri);
-    } else {
-        Alert.alert('Compartir no disponible', 'La función de compartir no está disponible en este dispositivo.');
-    }
+const shareFileUri = async (fileUri, filename) => {
+    await FileService.saveAndShareFile(fileUri, filename);
 };
 
 // ─── Tab: Descargas ───────────────────────────────────────────────────────────
@@ -313,7 +310,7 @@ const VisualizadorTab = ({ anioServicio }) => {
                         <Text style={st.pdfToolbarTitle} numberOfLines={1}>
                             {pdfState.filename}
                         </Text>
-                        <TouchableOpacity onPress={() => shareFileUri(pdfState.fileUri)} style={st.pdfShareBtn}>
+                        <TouchableOpacity onPress={() => shareFileUri(pdfState.fileUri, pdfState.filename)} style={st.pdfShareBtn}>
                             <Text style={st.pdfShareBtnText}>⬆️ Compartir</Text>
                         </TouchableOpacity>
                     </View>

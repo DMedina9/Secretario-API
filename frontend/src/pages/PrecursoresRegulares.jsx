@@ -84,8 +84,6 @@ const PrecursoresRegulares = () => {
                                     <thead>
                                         <tr>
                                             <th>Nombre</th>
-                                            <th>Inicio (mes)</th>
-                                            <th>Años</th>
                                             <th>Meses</th>
                                             <th>Sep</th>
                                             <th>Oct</th>
@@ -107,8 +105,6 @@ const PrecursoresRegulares = () => {
                                         {data.map((item) => (
                                             <tr key={`${item.id}-${item.publicador}`}>
                                                 <td data-label="Nombre">{item.publicador}</td>
-                                                <td data-label="Inicio">{item.inicio_precursorado ? dayjs(item.inicio_precursorado).format('DD/MM/YYYY') : '-'}</td>
-                                                <td data-label="Años">{item.anios_precursorado ?? '-'}</td>
                                                 <td data-label="Meses">{item.meses ?? '-'}</td>
                                                 <td data-label="Sep">{item.sep}</td>
                                                 <td data-label="Oct">{item.oct}</td>
@@ -123,7 +119,7 @@ const PrecursoresRegulares = () => {
                                                 <td data-label="Jul">{item.jul}</td>
                                                 <td data-label="Ago">{item.ago}</td>
                                                 <td data-label="Suma">{item.suma}</td>
-                                                <td data-label="Promedio">{item.promedio}</td>
+                                                <td data-label="Promedio">{item.promedio.toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

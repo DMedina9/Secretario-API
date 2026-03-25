@@ -46,6 +46,11 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
             } else {
                 resp = await api.post('/asistencias/add', payload);
             }
+            if (resp.data.success) {
+                onSave();
+            } else {
+                Alert.alert('Error', resp.data.error || 'No se pudo guardar.');
+            }
         } catch {
             Alert.alert('Error', 'Error de conexión.');
         } finally {

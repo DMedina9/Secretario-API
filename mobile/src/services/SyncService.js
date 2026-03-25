@@ -139,3 +139,29 @@ export const syncAllData = async () => {
         return false;
     }
 };
+export const syncIfNeeded = async () => {
+    try {
+        const lastSync = await AsyncStorage.getItem('@last_sync');
+        if (!lastSync) {
+            console.log('No previous sync found, triggering sync...');
+            return await syncAllData();
+        }
+
+        const lastDate = new Date(lastSync);
+        const now = new Date();
+
+        // Sync if it's a different month or year
+        const needsSync = lastDate.getMonth() !== now.getMonth() || lastDate.getFullYear() !== now.getFullYear();
+
+        if (needsSync) {
+            console.log('New month detected, triggering automatic sync...');
+            return await syncAllData();
+        }
+
+        console.log('Sync not needed yet (already synced this month)');
+        return true;
+    } catch (error) {
+        console.error('Error in syncIfNeeded:', error);
+        return false;
+    }
+};

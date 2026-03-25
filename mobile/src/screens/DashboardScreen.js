@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAv
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { LogOut, RefreshCcw } from 'lucide-react-native';
-import { syncAllData } from '../services/SyncService';
+import { syncAllData, syncIfNeeded } from '../services/SyncService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DashboardScreen = ({ navigation }) => {
@@ -15,13 +15,20 @@ const DashboardScreen = ({ navigation }) => {
 
     React.useEffect(() => {
         loadLastSync();
-        // Initial sync if online
-        handleSync();
+        // Automatic sync only if needed (once a month)
+        handleInitialSync();
     }, []);
 
     const loadLastSync = async () => {
         const ls = await AsyncStorage.getItem('@last_sync');
         if (ls) setLastSync(new Date(ls).toLocaleString());
+    };
+
+    const handleInitialSync = async () => {
+        setSyncing(true);
+        await syncIfNeeded();
+        setSyncing(false);
+        loadLastSync();
     };
 
     const handleSync = async () => {

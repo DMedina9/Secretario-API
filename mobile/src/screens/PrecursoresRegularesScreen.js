@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { Share as ShareIcon, ArrowLeft, ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react-native';
 import { getPrecursoresRegulares } from '../services/repositories/InformeRepo';
 import { syncAllData } from '../services/SyncService';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { captureRef } from 'react-native-view-shot';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useTheme } from '../contexts/ThemeContext';
+import FileService from '../services/FileService';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 
@@ -98,7 +99,8 @@ const PrecursoresRegularesScreen = ({ navigation }) => {
                 format: 'png',
                 quality: 0.8,
             });
-            await Sharing.shareAsync(uri);
+            const filename = `Precursores_Regulares_${currentYear}.png`;
+            await FileService.saveAndShareFile(uri, filename);
         } catch (error) {
             console.error('Error sharing image:', error);
         }

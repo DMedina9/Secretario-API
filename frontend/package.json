@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "start": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -18,8 +18,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-leaflet": "^5.0.0",
-    "react-router-dom": "^7.13.0"
-    ,
+    "react-router-dom": "^7.13.0",
     "socket.io-client": "^4.7.2"
   },
   "devDependencies": {

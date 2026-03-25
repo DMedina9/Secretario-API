@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { ArrowLeft, ChevronLeft, ChevronRight, Share as ShareIcon, RefreshCcw } from 'lucide-react-native';
 import { getIrregulares } from '../services/repositories/InformeRepo';
 import { syncAllData } from '../services/SyncService';
-import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
-import ViewShot from 'react-native-view-shot';
+import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import FileService from '../services/FileService';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 
@@ -66,7 +66,8 @@ const IrregularesScreen = ({ navigation }) => {
                 format: 'png',
                 quality: 0.8,
             });
-            await Sharing.shareAsync(uri);
+            const filename = `Irregulares_${currentMonth.format('YYYY-MM')}.png`;
+            await FileService.saveAndShareFile(uri, filename);
         } catch (error) {
             console.error('Error sharing image:', error);
         }

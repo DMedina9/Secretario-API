@@ -7,19 +7,19 @@ import Loading from '../components/Common/Loading';
 const Irregulares = () => {
     const { showToast } = useToast();
 
-    const [filterMesFinal, setFilterMesFinal] = useState(dayjs().subtract(1, 'month').format('YYYY-MM'));
+    const [filterMes, setFilterMes] = useState(dayjs().subtract(1, 'month').format('YYYY-MM'));
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState([]);
 
     const loadIrregulares = async () => {
-        if (!filterMesFinal || !/^\d{4}-\d{2}$/.test(filterMesFinal)) {
-            showToast('Selecciona un mes final válido (YYYY-MM)', 'warning');
+        if (!filterMes || !/^\d{4}-\d{2}$/.test(filterMes)) {
+            showToast('Selecciona un mes válido', 'warning');
             return;
         }
 
         setLoading(true);
         try {
-            const response = await apiRequest(`/informe/irregulares/${filterMesFinal}`);
+            const response = await apiRequest(`/informe/irregulares/${filterMes}-01`);
             setData(response.data || []);
         } catch (error) {
             console.error(error);
@@ -30,7 +30,7 @@ const Irregulares = () => {
     };
 
     const clear = () => {
-        setFilterMesFinal(dayjs().subtract(1, 'month').format('YYYY-MM'));
+        setFilterMes(dayjs().subtract(1, 'month').format('YYYY-MM'));
         setData([]);
     };
 
@@ -52,8 +52,8 @@ const Irregulares = () => {
                             <input
                                 type="month"
                                 className="form-input"
-                                value={filterMesFinal}
-                                onChange={(e) => setFilterMesFinal(e.target.value)}
+                                value={filterMes}
+                                onChange={(e) => setFilterMes(e.target.value)}
                             />
                         </div>
                     </div>

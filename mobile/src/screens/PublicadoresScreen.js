@@ -10,9 +10,9 @@ import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2, RefreshCcw } from 'l
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
 import { syncAllData } from '../services/SyncService';
 import ViewShot from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
+import FileService from '../services/FileService';
 
 dayjs.locale('es');
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -352,7 +352,7 @@ const PublicadoresScreen = ({ navigation }) => {
         let res = publicadores;
         if (search.trim()) {
             const t = search.toLowerCase();
-            res = res.filter(p => `${p.nombre} ${p.apellidos}`.toLowerCase().includes(t));
+            res = res.filter(p => `${p.apellidos}, ${p.nombre}`.toLowerCase().includes(t));
         }
         if (selectedGroup !== 'Todos') {
             res = res.filter(p => p.grupo == selectedGroup);
@@ -364,7 +364,7 @@ const PublicadoresScreen = ({ navigation }) => {
         try {
             setLoading(true);
             const data = await getAllPublicadores();
-            const sorted = data.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            const sorted = data.sort((a, b) => `${a.Estatus} ${a.apellidos}, ${a.nombre}`.localeCompare(`${b.Estatus} ${b.apellidos}, ${b.nombre}`));
             setPublicadores(sorted);
             const uniqueGroups = [...new Set(sorted.map(p => p.grupo).filter(g => g))].sort((a, b) => a - b);
             setGroups(['Todos', ...uniqueGroups]);
@@ -412,10 +412,8 @@ const PublicadoresScreen = ({ navigation }) => {
         setSharing(true);
         try {
             const uri = await cardRef.current.capture();
-            await Sharing.shareAsync(uri, {
-                mimeType: 'image/png',
-                dialogTitle: `Tarjeta de ${selected.nombre} ${selected.apellidos}`
-            });
+            const filename = `Tarjeta_${selected.nombre}_${selected.apellidos}.png`;
+            await FileService.saveAndShareFile(uri, filename);
         } catch {
             Alert.alert('Error', 'No se pudo compartir la tarjeta.');
         } finally {
@@ -427,7 +425,7 @@ const PublicadoresScreen = ({ navigation }) => {
         <TouchableOpacity style={st.card} onPress={() => setSelected(item)}>
             <View style={st.cardLeft}><User size={22} color={colors.textSecondary} /></View>
             <View style={st.cardInfo}>
-                <Text style={st.name}>{item.nombre} {item.apellidos}</Text>
+                <Text style={st.name}>{item.apellidos}, {item.nombre}</Text>
                 <Text style={st.sub}>Grupo {item.grupo || '—'}{item.privilegio ? `  ·  ${item.privilegio}` : ''}</Text>
             </View>
             <View style={[st.statusBadge, item.Estatus === 'Activo' ? st.statusActive : st.statusInactive]}>
@@ -484,7 +482,7 @@ const PublicadoresScreen = ({ navigation }) => {
             </View>
 
             {filtered.length > 0 && (
-                <View style={{ marginTop: 8, marginBottom: 8, padding: 12, backgroundColor: colors.card, borderRadius: 12, marginHorizontal: 16 }}>
+                <View style={st.summaryContainer}>
                     <View style={st.totalRow}>
                         <Text style={st.totalLabel}>Publicadores (total): </Text>
                         <Text style={st.totalValue}>{filtered.length}</Text>
@@ -564,9 +562,6 @@ const PublicadoresScreen = ({ navigation }) => {
                             </View>
 
                             <View style={{ flexDirection: 'row', gap: 8 }}>
-                                <TouchableOpacity style={st.modalSecondaryBtn} onPress={() => setSelected(null)}>
-                                    <Text style={st.modalSecondaryBtnText}>Cerrar</Text>
-                                </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[st.modalPrimaryBtn, sharing && st.disabledBtn]}
                                     onPress={handleShare}
@@ -574,7 +569,12 @@ const PublicadoresScreen = ({ navigation }) => {
                                 >
                                     {sharing
                                         ? <ActivityIndicator size="small" color="#fff" />
-                                        : <><Share2 size={16} color="#fff" /><Text style={st.modalPrimaryBtnText}>  Compartir</Text></>
+                                        : (
+                                            <>
+                                                <Share2 size={16} color="#fff" />
+                                                <Text style={st.modalPrimaryBtnText} />
+                                            </>
+                                        )
                                     }
                                 </TouchableOpacity>
                             </View>
@@ -610,6 +610,30 @@ const getStyles = (colors) => StyleSheet.create({
     },
     searchInput: { flex: 1, fontSize: 16, color: colors.text },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+    summaryContainer: {
+        marginTop: 8,
+        marginBottom: 8,
+        padding: 12,
+        backgroundColor: colors.card,
+        borderRadius: 12,
+        marginHorizontal: 16,
+    },
+    totalRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 4,
+    },
+    totalLabel: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        fontWeight: '500',
+    },
+    totalValue: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colors.primary,
+    },
     card: {
         flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
         borderRadius: 12, padding: 14,
@@ -657,9 +681,6 @@ const getStyles = (colors) => StyleSheet.create({
         justifyContent: 'center', alignItems: 'center', backgroundColor: colors.inputBackground,
     },
     dangerBtn: { borderColor: '#fecaca', backgroundColor: colors.isDarkMode ? '#451a1a' : '#fff1f2' },
-    totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    totalLabel: { fontSize: 16, fontWeight: 'bold', color: colors.text },
-    totalValue: { fontSize: 16, color: colors.text, alignSelf: 'flex-end', textAlign: 'right' },
     groupBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, height: 36, justifyContent: 'center' },
     groupBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
     groupBtnText: { color: colors.text, fontSize: 13, fontWeight: '600' },

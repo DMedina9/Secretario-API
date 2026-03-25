@@ -7,13 +7,14 @@ import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun, 
 import { getAllConfiguraciones } from '../services/repositories/ConfiguracionesRepo';
 import { syncAllData } from '../services/SyncService';
 import { useTheme } from '../contexts/ThemeContext';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
 import api from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { io as ioClient } from 'socket.io-client';
+import FileService from '../services/FileService';
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
 const ConfiguracionesSection = () => {
@@ -155,7 +156,6 @@ const GestionDatosSection = () => {
     const downloadAndShare = async (tableKey, format, extension) => {
         setLoading(tableKey);
         try {
-            // Read token from AsyncStorage directly (avoids React state timing issues)
             const token = await AsyncStorage.getItem('@auth_token');
             const url = `${api.defaults.baseURL}/${tableKey}/export?format=${format}`;
             const response = await fetch(url, {
@@ -170,7 +170,6 @@ const GestionDatosSection = () => {
                 throw new Error(`Error del servidor: ${response.status}`);
             }
 
-            // arrayBuffer + manual base64 (no FileReader — React Native safe)
             const buffer = await response.arrayBuffer();
             let binary = '';
             const bytes = new Uint8Array(buffer);
@@ -180,14 +179,10 @@ const GestionDatosSection = () => {
             const base64data = btoa(binary);
 
             const filename = `${tableKey}_export.${extension}`;
-            const file = new FileSystem.File(FileSystem.Paths.cache, filename);
-            file.write(base64data, { encoding: 'base64' });
+            const fileUri = FileSystem.cacheDirectory + filename;
+            await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: FileSystem.EncodingType.Base64 });
 
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(file.uri);
-            } else {
-                Alert.alert('Éxito', 'Archivo guardado, pero la opción de compartir no está disponible.');
-            }
+            await FileService.saveAndShareFile(fileUri, filename);
         } catch (error) {
             Alert.alert('Error', error.message);
         } finally {
@@ -211,7 +206,7 @@ const GestionDatosSection = () => {
             let response;
             if (format === 'json') {
                 // For JSON, read and parse
-                const fileContent = await new FileSystem.File(result.assets[0].uri).text();
+                const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
                 const data = JSON.parse(fileContent);
                 response = await fetch(`${api.defaults.baseURL}/${tableKey}/import`, {
                     method: 'POST',
@@ -277,13 +272,10 @@ const GestionDatosSection = () => {
                 try {
                     const base64data = reader.result.split(',')[1];
                     const filename = `backup-${Date.now()}.db`;
-                    const file = new FileSystem.File(FileSystem.Paths.document, filename);
-                    file.write(base64data, { encoding: 'base64' });
-                    if (await Sharing.isAvailableAsync()) {
-                        await Sharing.shareAsync(file.uri);
-                    } else {
-                        Alert.alert('Éxito', 'Respaldo guardado, pero compartir no está disponible.');
-                    }
+                    const fileUri = FileSystem.cacheDirectory + filename;
+                    await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: FileSystem.EncodingType.Base64 });
+                    
+                    await FileService.saveAndShareFile(fileUri, filename);
                 } catch (e) {
                     Alert.alert('Error', 'No se pudo guardar el respaldo.');
                 } finally {
@@ -438,6 +430,65 @@ const GestionDatosSection = () => {
     );
 };
 
+// ─── Sub-section: Archivos ────────────────────────────────────────────────────
+const ArchivosSection = () => {
+    const { colors } = useTheme();
+    const st = getStyles(colors);
+    const [folderUri, setFolderUri] = useState(null);
+
+    useEffect(() => {
+        const loadFolderUri = async () => {
+            const uri = await AsyncStorage.getItem('@download_folder_uri');
+            setFolderUri(uri);
+        };
+        loadFolderUri();
+    }, []);
+
+    const handleSelectFolder = async () => {
+        try {
+            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+            if (permissions.granted) {
+                await AsyncStorage.setItem('@download_folder_uri', permissions.directoryUri);
+                setFolderUri(permissions.directoryUri);
+                Alert.alert('✅ Éxito', 'Carpeta de descargas configurada correctamente.');
+            }
+        } catch (e) {
+            Alert.alert('Error', 'No se pudo seleccionar la carpeta.');
+        }
+    };
+
+    const handleClearFolder = async () => {
+        await AsyncStorage.removeItem('@download_folder_uri');
+        setFolderUri(null);
+        Alert.alert('Aviso', 'Se usará la carpeta interna de la aplicación (directorio del proyecto).');
+    };
+
+    return (
+        <View style={st.card}>
+            <Text style={st.cardTitle}>📁 Archivos y Descargas</Text>
+            <Text style={st.cardSubtitle}>Configura dónde se guardarán los reportes y respaldos antes de compartirlos.</Text>
+            
+            <View style={st.configRow}>
+                <View style={{ flex: 1 }}>
+                    <Text style={st.configLabel}>Carpeta de Descargas</Text>
+                    <Text style={st.configDesc} numberOfLines={1} ellipsizeMode="middle">
+                        {folderUri ? folderUri : 'No configurada (usar directorio del proyecto)'}
+                    </Text>
+                </View>
+                <TouchableOpacity onPress={handleSelectFolder} style={st.folderBtn}>
+                    <Text style={st.folderBtnText}>{folderUri ? 'Cambiar' : 'Seleccionar'}</Text>
+                </TouchableOpacity>
+            </View>
+
+            {folderUri && (
+                <TouchableOpacity onPress={handleClearFolder} style={{ marginTop: 12 }}>
+                    <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '600' }}>Restablecer a valores por defecto</Text>
+                </TouchableOpacity>
+            )}
+        </View>
+    );
+};
+
 
 // ─── Sub-section: Mantenimiento ───────────────────────────────────────────────
 const MantenimientoSection = () => {
@@ -559,6 +610,7 @@ const ConfiguracionScreen = ({ navigation }) => {
     const sections = [
         { key: 'configuraciones', label: 'Config.', icon: <Settings size={16} color="#fff" /> },
         { key: 'apariencia', label: 'Tema', icon: <Moon size={16} color="#fff" /> },
+        { key: 'archivos', label: 'Archivos', icon: <Database size={16} color="#fff" /> },
         { key: 'gestion', label: 'Datos', icon: <Database size={16} color="#fff" /> },
         { key: 'mantenimiento', label: 'Mant.', icon: <Wrench size={16} color="#fff" /> },
         { key: 'usuarios', label: 'Usuarios', icon: <Users size={16} color="#fff" /> },
@@ -591,6 +643,7 @@ const ConfiguracionScreen = ({ navigation }) => {
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
                 {section === 'configuraciones' && <ConfiguracionesSection />}
                 {section === 'apariencia' && <AparienciaSection />}
+                {section === 'archivos' && <ArchivosSection />}
                 {section === 'gestion' && <GestionDatosSection />}
                 {section === 'mantenimiento' && <MantenimientoSection />}
                 {section === 'usuarios' && <UsuariosSection />}
@@ -696,6 +749,17 @@ const getStyles = (colors) => StyleSheet.create({
     },
     modalButtonText: {
         color: 'white',
+        fontWeight: 'bold',
+    },
+    folderBtn: {
+        backgroundColor: colors.primary,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+    },
+    folderBtnText: {
+        color: '#fff',
+        fontSize: 13,
         fontWeight: 'bold',
     },
 });

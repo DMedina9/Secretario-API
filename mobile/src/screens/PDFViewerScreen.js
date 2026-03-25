@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Share2 } from 'lucide-react-native';
 import { useUser } from '../contexts/UserContext';
 import { useTheme } from '../contexts/ThemeContext';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Dimensions } from 'react-native';
+import FileService from '../services/FileService';
 
 const PDFViewerScreen = ({ route, navigation }) => {
   const { colors } = useTheme();
@@ -64,9 +65,9 @@ const PDFViewerScreen = ({ route, navigation }) => {
       reader.onloadend = async () => {
         try {
           const base64data = reader.result.split(',')[1];
-          const file = new FileSystem.File(FileSystem.Paths.document, filename);
-          file.write(base64data, { encoding: 'base64' });
-          setFileUri(file.uri);
+          const uri = FileSystem.cacheDirectory + filename;
+          await FileSystem.writeAsStringAsync(uri, base64data, { encoding: FileSystem.EncodingType.Base64 });
+          setFileUri(uri);
         } catch (err) {
           Alert.alert('Error', 'No se pudo guardar el PDF.');
         } finally {
@@ -82,11 +83,7 @@ const PDFViewerScreen = ({ route, navigation }) => {
 
   const handleShare = async () => {
     if (!fileUri) return;
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(fileUri);
-    } else {
-      Alert.alert('Compartir', 'La opción de compartir no está disponible en este dispositivo.');
-    }
+    await FileService.saveAndShareFile(fileUri, filename);
   };
 
   let WebViewComponent = null;
