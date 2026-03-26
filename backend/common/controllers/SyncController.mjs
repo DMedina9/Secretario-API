@@ -25,7 +25,14 @@ const getAllData = async (req, res) => {
         const informes = await Informes.findAll();
         const asistencias = await Asistencias.findAll();
         const configuraciones = await Configuracion.findAll();
-        const precursoresAuxiliares = await PrecursoresAuxiliares.findAll();
+        const precursoresAuxiliares = await sequelize.query(`
+            SELECT *,
+                (CASE WHEN CAST(STRFTIME('%m', mes) AS INTEGER) >= 9 
+                      THEN CAST(STRFTIME('%Y', mes) AS INTEGER) + 1 
+                      ELSE CAST(STRFTIME('%Y', mes) AS INTEGER) 
+                 END) AS anio_servicio
+            FROM PrecursoresAuxiliares
+        `, { type: QueryTypes.SELECT });
         const privilegios = await Privilegio.findAll();
         const tiposPublicador = await TipoPublicador.findAll();
 

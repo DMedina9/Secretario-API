@@ -28,9 +28,9 @@ export const syncAllData = async () => {
         const precursoresAuxiliares = clean(raw.precursoresAuxiliares);
         const privilegios = clean(raw.privilegios);
         const tiposPublicador = clean(raw.tiposPublicador);
-        
+
         console.log(`Data to sync: ${publicadores.length} pubs, ${informes.length} infs, ${asistencias.length} asists`);
-        
+
         const db = await getDb();
         const sanitize = (val) => (val === undefined ? null : val);
 
@@ -49,10 +49,10 @@ export const syncAllData = async () => {
                         privilegio, tipo_publicador, Estatus
                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 `, [
-                    sanitize(p.id), sanitize(p.nombre), sanitize(p.apellidos), sanitize(p.fecha_nacimiento), 
+                    sanitize(p.id), sanitize(p.nombre), sanitize(p.apellidos), sanitize(p.fecha_nacimiento),
                     sanitize(p.fecha_bautismo), sanitize(p.grupo), sanitize(p.sup_grupo), sanitize(p.sexo),
-                    sanitize(p.id_privilegio), sanitize(p.id_tipo_publicador), sanitize(p.ungido), sanitize(p.calle), 
-                    sanitize(p.num), sanitize(p.colonia), sanitize(p.telefono_fijo), sanitize(p.telefono_movil), 
+                    sanitize(p.id_privilegio), sanitize(p.id_tipo_publicador), sanitize(p.ungido), sanitize(p.calle),
+                    sanitize(p.num), sanitize(p.colonia), sanitize(p.telefono_fijo), sanitize(p.telefono_movil),
                     sanitize(p.contacto_emergencia), sanitize(p.tel_contacto_emergencia), sanitize(p.correo_contacto_emergencia),
                     sanitize(p.privilegio), sanitize(p.tipo_publicador), sanitize(p.Estatus)
                 ]);
@@ -68,7 +68,7 @@ export const syncAllData = async () => {
                         cursos_biblicos, predico_en_el_mes, horas_SS, notas
                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
                 `, [
-                    sanitize(i.id), sanitize(i.id_publicador), sanitize(i.mes), sanitize(i.horas), 
+                    sanitize(i.id), sanitize(i.id_publicador), sanitize(i.mes), sanitize(i.horas),
                     sanitize(i.minutos), sanitize(i.publicaciones), sanitize(i.videos), sanitize(i.revisitas),
                     sanitize(i.cursos_biblicos), sanitize(i.predico_en_el_mes), sanitize(i.horas_SS), sanitize(i.notas)
                 ]);
@@ -95,14 +95,13 @@ export const syncAllData = async () => {
             }
 
             // Precursores Auxiliares
-            await db.runAsync('DELETE FROM precursores_auxiliares');
+            await db.runAsync('DELETE FROM PrecursoresAuxiliares');
             for (const pa of precursoresAuxiliares) {
                 if (pa.id === undefined || pa.id === null) continue;
                 await db.runAsync(`
-                    INSERT INTO precursores_auxiliares (id, id_publicador, anio_servicio, mes, notas) VALUES (?,?,?,?,?)
+                    INSERT INTO PrecursoresAuxiliares (id, id_publicador, mes, notas) VALUES (?,?,?,?)
                 `, [
-                    sanitize(pa.id), sanitize(pa.id_publicador), sanitize(pa.anio_servicio), 
-                    sanitize(pa.mes), sanitize(pa.notas)
+                    sanitize(pa.id), sanitize(pa.id_publicador), sanitize(pa.mes), sanitize(pa.notas)
                 ]);
             }
 

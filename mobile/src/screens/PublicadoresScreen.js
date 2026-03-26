@@ -563,7 +563,7 @@ const PublicadoresScreen = ({ navigation }) => {
 
                             <View style={{ flexDirection: 'row', gap: 8 }}>
                                 <TouchableOpacity
-                                    style={[st.modalPrimaryBtn, sharing && st.disabledBtn]}
+                                    style={[st.iconBtn, st.modalPrimaryBtn, sharing && st.disabledBtn]}
                                     onPress={handleShare}
                                     disabled={sharing}
                                 >
@@ -704,7 +704,7 @@ const getCardStyles = (colors) => StyleSheet.create({
     rowLabel: { fontSize: 14, color: '#4B5563', fontWeight: '500' },
     rowValue: { fontSize: 14, color: '#000000', fontWeight: '700' },
     section: { marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
-    sectionLabel: { fontSize: 13, fontWeight: '700', color: colors.text, marginBottom: 4 },
+    sectionLabel: { fontSize: 13, fontWeight: '700', color: '#4B5563', marginBottom: 4 },
     sectionValue: { fontSize: 14, color: colors.textSecondary },
     badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
     badge: {

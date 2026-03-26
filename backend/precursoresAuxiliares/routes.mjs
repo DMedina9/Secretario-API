@@ -8,8 +8,9 @@ const router = express.Router();
 // Exportar (antes de rutas con parámetros para evitar conflictos)
 router.get('/export', check, has('admin'), PrecursoresAuxiliaresController.exportPrecursoresAuxiliares);
 
-// Bulk upsert
+// Bulk upsert / sync
 router.post('/bulk', check, has('admin'), PrecursoresAuxiliaresController.upsertPrecursoresBulk);
+router.post('/sync', check, has('admin'), PrecursoresAuxiliaresController.syncPrecursoresAuxiliaresMonth);
 
 // CRUD básico
 router.post('/add', check, has('admin'), PrecursoresAuxiliaresController.addPrecursorAuxiliar);

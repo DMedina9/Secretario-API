@@ -36,6 +36,7 @@ export const ThemeProvider = ({ children }) => {
         background: isDarkMode ? '#121212' : '#f3f4f6',
         card: isDarkMode ? '#1E1E1E' : '#FFFFFF',
         header: isDarkMode ? '#000000' : '#1E1E1E',
+        subHeader: isDarkMode ? '#000000' : '#d1d8e4ff',
         text: isDarkMode ? '#FFFFFF' : '#000000',
         textSecondary: isDarkMode ? '#A0A0A0' : '#4B5563',
         primary: '#3b82f6',

@@ -132,6 +132,54 @@ const upsertPrecursoresBulk = async (req, res) => {
 };
 
 // =====================================================================================
+// SINCRONIZAR MES (bulk sync)
+// =====================================================================================
+const syncPrecursoresAuxiliaresMonth = async (req, res) => {
+    const transaction = await sequelize.transaction();
+    try {
+        const { mes, id_publicadores } = req.body;
+
+        if (!mes || !Array.isArray(id_publicadores)) {
+            await transaction.rollback();
+            return res.status(400).json({
+                success: false,
+                error: 'Se requiere mes e id_publicadores (array).'
+            });
+        }
+
+        // 1. Obtener los actuales
+        const actuales = await PrecursoresAuxiliares.findAll({
+            where: { mes },
+            transaction
+        });
+
+        const actualesIds = actuales.map(a => a.id_publicador);
+
+        // 2. Eliminar los que no están en la nueva lista
+        const aEliminar = actuales.filter(a => !id_publicadores.includes(a.id_publicador));
+        for (const record of aEliminar) {
+            await record.destroy({ transaction });
+        }
+
+        // 3. Agregar los nuevos
+        const aAgregar = id_publicadores.filter(id => !actualesIds.includes(id));
+        for (const id_pub of aAgregar) {
+            await PrecursoresAuxiliares.create({
+                id_publicador: id_pub,
+                mes,
+                notas: '' // Default vacío en sync
+            }, { transaction });
+        }
+
+        await transaction.commit();
+        res.json({ success: true });
+    } catch (error) {
+        if (!transaction.finished) await transaction.rollback();
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+// =====================================================================================
 // EXPORTAR PRECURSORES AUXILIARES
 // =====================================================================================
 const exportPrecursoresAuxiliares = async (req, res) => {
@@ -161,5 +209,6 @@ export default {
     updatePrecursorAuxiliar,
     deletePrecursorAuxiliar,
     upsertPrecursoresBulk,
+    syncPrecursoresAuxiliaresMonth,
     exportPrecursoresAuxiliares
 };

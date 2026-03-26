@@ -70,10 +70,9 @@ export const initDatabase = async () => {
             valor TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS precursores_auxiliares (
+        CREATE TABLE IF NOT EXISTS PrecursoresAuxiliares (
             id INTEGER PRIMARY KEY NOT NULL,
             id_publicador INTEGER,
-            anio_servicio INTEGER,
             mes TEXT,
             notas TEXT
         );

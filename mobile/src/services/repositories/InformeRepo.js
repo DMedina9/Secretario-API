@@ -110,11 +110,11 @@ export const getIrregulares = async (mes) => {
     return result.sort((a, b) => b.Estatus.localeCompare(a.Estatus) || a.apellidos.localeCompare(b.apellidos));
 };
 
-export const getPrecursoresAuxiliaresByMonth = async (anio_servicio, mes) => {
+export const getPrecursoresAuxiliaresByMonth = async (mes) => {
     const db = await getDb();
-    const mesStr = `${anio_servicio}-${mes}-01`; // This depends on how it's stored, I'll use the YYYY-MM-01 format
     return await db.getAllAsync(`
-        SELECT * FROM precursores_auxiliares 
-        WHERE anio_servicio = ? AND mes LIKE ?
-    `, [anio_servicio, `%-${mes}-%`]);
+        SELECT p.* FROM PrecursoresAuxiliares pa
+        JOIN publicadores p ON pa.id_publicador = p.id
+        WHERE mes = ?
+    `, [mes]);
 };

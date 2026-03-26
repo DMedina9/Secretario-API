@@ -16,6 +16,7 @@ import { syncAllData } from '../services/SyncService';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import FileService from '../services/FileService';
+import { PDF_JS_CODE, PDF_WORKER_CODE } from '../pdfjs_code';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,14 +87,20 @@ const buildPdfHtml = (base64) => `<!DOCTYPE html>
   <div id="error"></div>
   <div id="container"></div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>${PDF_JS_CODE}</script>
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    try {
+      const workerCode = ${JSON.stringify(PDF_WORKER_CODE)};
+      const workerBlob = new Blob([workerCode], { type: 'text/javascript' });
+      const workerUrl = URL.createObjectURL(workerBlob);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+    } catch (e) {
+      console.error('Error creating worker blob:', e);
+      // Fallback if blob fails (might not work offline)
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
 
     const base64 = "${base64}";
-
-    // Decode base64 → Uint8Array
     const raw = atob(base64);
     const bytes = new Uint8Array(raw.length);
     for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
@@ -125,7 +132,6 @@ const buildPdfHtml = (base64) => `<!DOCTYPE html>
   </script>
 </body>
 </html>`;
-
 
 const shareFileUri = async (fileUri, filename) => {
     await FileService.saveAndShareFile(fileUri, filename);
@@ -470,14 +476,14 @@ const ReportesScreen = ({ navigation }) => {
     const [activeTab, setActiveTab] = useState('visualizador');
 
     return (
-        <SafeAreaView style={st.safeArea}>
+        <View style={st.container}>
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={st.backBtn}>
                     <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={st.headerTitle}>Reportes</Text>
                 <TouchableOpacity onPress={() => (activeTab === 'visualizador' ? handleSync() : Alert.alert('Aviso', 'Sincronizar no disponible en esta pestaña'))}>
-                    <RefreshCcw size={22} color="#FFFFFF" />
+                    <RefreshCcw size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 
@@ -502,17 +508,17 @@ const ReportesScreen = ({ navigation }) => {
                     : <VisualizadorTab anioServicio={anioServicio} />
                 }
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const getStyles = (colors) => StyleSheet.create({
-    safeArea: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, backgroundColor: colors.background },
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: 20, paddingTop: 10, backgroundColor: colors.header,
+        padding: 20, paddingTop: 50, backgroundColor: colors.header,
         borderBottomWidth: 1, borderBottomColor: colors.border,
     },
     backBtn: { padding: 4 },

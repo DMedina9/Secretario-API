@@ -21,7 +21,6 @@ import PrecursoresAuxiliaresScreen from './src/screens/PrecursoresAuxiliaresScre
 import PrecursoresRegularesScreen from './src/screens/PrecursoresRegularesScreen';
 import IrregularesScreen from './src/screens/IrregularesScreen';
 import ReportesScreen from './src/screens/ReportesScreen';
-import PDFViewerScreen from './src/screens/PDFViewerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -47,7 +46,6 @@ const AppNavigator = () => {
               <Stack.Screen name="PrecursoresRegulares" component={PrecursoresRegularesScreen} />
               <Stack.Screen name="Irregulares" component={IrregularesScreen} />
               <Stack.Screen name="Reportes" component={ReportesScreen} />
-              <Stack.Screen name="PDFViewer" component={PDFViewerScreen} />
               <Stack.Screen name="Secretario" component={SecretarioScreen} />
               <Stack.Screen name="Configuracion" component={ConfiguracionScreen} />
             </>
