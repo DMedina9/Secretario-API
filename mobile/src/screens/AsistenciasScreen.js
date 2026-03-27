@@ -7,8 +7,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, RefreshCcw } from 'lucide-react-native';
-import { getAllAsistencias } from '../services/repositories/AsistenciaRepo';
-import { syncAllData } from '../services/SyncService';
+import { getAllAsistencias, saveAsistencia, deleteAsistencia } from '../services/repositories/AsistenciaRepo';
+import { syncAllData, pushEntityChanges } from '../services/SyncService';
+import { Asistencia } from '../services/models';
+import { Send } from 'lucide-react-native';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -39,20 +41,22 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
         }
         setSaving(true);
         try {
-            const payload = { fecha, asistentes: parseInt(asistentes, 10), notas };
-            let resp;
-            if (asistencia?.id) {
-                resp = await api.put(`/asistencias/${asistencia.id}`, payload);
-            } else {
-                resp = await api.post('/asistencias/add', payload);
-            }
-            if (resp.data.success) {
+            const payload = { 
+                id: asistencia?.id || null,
+                fecha: dayjs(fecha).format('YYYY-MM-DD'), 
+                asistentes: parseInt(asistentes, 10), 
+                notas 
+            };
+            
+            const success = await saveAsistencia(payload);
+            if (success) {
                 onSave();
             } else {
-                Alert.alert('Error', resp.data.error || 'No se pudo guardar.');
+                Alert.alert('Error', 'No se pudo guardar localmente.');
             }
-        } catch {
-            Alert.alert('Error', 'Error de conexión.');
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Error', 'Error al guardar en la base local.');
         } finally {
             setSaving(false);
         }
@@ -174,14 +178,29 @@ const AsistenciasScreen = ({ navigation }) => {
     const handleDelete = async () => {
         if (!selected?.id) return;
         try {
-            await api.delete(`/asistencias/${selected.id}`);
-            await syncAllData(); // Refresh local DB
-            setModalVisible(false);
-            setSelected(null);
-            load();
+            const success = await deleteAsistencia(selected.id);
+            if (success) {
+                setModalVisible(false);
+                setSelected(null);
+                load();
+            } else {
+                Alert.alert('Error', 'No se pudo eliminar localmente.');
+            }
         } catch {
-            Alert.alert('Error', 'No se pudo eliminar.');
+            Alert.alert('Error', 'Error al eliminar.');
         }
+    };
+
+    const handlePushChanges = async () => {
+        setLoading(true);
+        const res = await pushEntityChanges(Asistencia, '/asistencias');
+        if (res.success) {
+            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} registros de asistencia al servidor.`);
+            load();
+        } else {
+            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir las asistencias.');
+        }
+        setLoading(false);
     };
 
     // Build calendar grid for current month
@@ -211,6 +230,7 @@ const AsistenciasScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Asistencias</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={handlePushChanges}><Send size={24} color="#FFFFFF" /></TouchableOpacity>
                     <TouchableOpacity onPress={handleSync}><RefreshCcw size={24} color="#FFFFFF" /></TouchableOpacity>
                     <TouchableOpacity onPress={() => { setSelected(null); setModalVisible(true); }}>
                         <Plus size={24} color={colors.primary} />
@@ -271,6 +291,7 @@ const AsistenciasScreen = ({ navigation }) => {
                                 </View>
                                 <View style={st.asistenciaCount}>
                                     <Text style={st.asistenciaCountText}>{a.asistentes}</Text>
+                                    {!!a.is_dirty && <View style={st.dirtyIndicator} />}
                                 </View>
                             </TouchableOpacity>
                         ))
@@ -325,8 +346,9 @@ const getStyles = (colors) => StyleSheet.create({
     },
     asistenciaDate: { fontSize: 15, fontWeight: '600', color: colors.text, textTransform: 'capitalize' },
     asistenciaNota: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-    asistenciaCount: { backgroundColor: colors.primary, borderRadius: 20, width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
+    asistenciaCount: { backgroundColor: colors.primary, borderRadius: 24, width: 48, height: 48, justifyContent: 'center', alignItems: 'center', position: 'relative' },
     asistenciaCountText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+    dirtyIndicator: { position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: '#f97316', borderWidth: 2, borderColor: colors.card },
 
     // Modal
     overlay: { flex: 1, backgroundColor: colors.modalOverlay, justifyContent: 'center', padding: 24 },

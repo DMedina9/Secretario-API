@@ -11,6 +11,8 @@ import { ArrowLeft, FileText, BarChart2 } from 'lucide-react-native';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useTheme } from '../contexts/ThemeContext';
 import api from '../services/api';
+import { getS1, getS3, getS10 } from '../services/repositories/SecretarioRepo';
+import { Privilegio, TipoPublicador } from '../services/models';
 
 dayjs.locale('es');
 
@@ -25,11 +27,11 @@ const DatosBasicos = () => {
 
     useEffect(() => {
         Promise.all([
-            api.get('/publicador/privilegios'),
-            api.get('/publicador/tipos-publicador')
+            Privilegio.findAll({ raw: true }),
+            TipoPublicador.findAll({ raw: true })
         ]).then(([privRes, tiposRes]) => {
-            setPrivilegios(privRes.data?.data ?? []);
-            setTipos(tiposRes.data?.data ?? []);
+            setPrivilegios(privRes ?? []);
+            setTipos(tiposRes ?? []);
         }).catch(() => { }).finally(() => setLoading(false));
     }, []);
 
@@ -55,15 +57,19 @@ const ReporteS1View = () => {
     const [loading, setLoading] = useState(true);
     const { mesInforme } = useAnioServicio();
     const [currentMonth, setCurrentMonth] = useState(mesInforme);
-    const [endpoint, setEndpoint] = useState(`/secretario/s1/${currentMonth.format("YYYY-MM")}-01`);
+    const [monthStr, setMonthStr] = useState(`${currentMonth.format("YYYY-MM")}-01`);
 
     useEffect(() => {
-        api.get(endpoint).then(r => setData(r.data?.data ?? [])).catch(() => { }).finally(() => setLoading(false));
-    }, [endpoint]);
+        setLoading(true);
+        getS1(monthStr).then(r => {
+            if (!r.success && r.error) Alert.alert('Error S-1', r.error);
+            setData(r?.data ?? []);
+        }).catch(() => { }).finally(() => setLoading(false));
+    }, [monthStr]);
 
     const handleMonthChange = (newMonth) => {
         setCurrentMonth(newMonth);
-        setEndpoint(`/secretario/s1/${newMonth.format("YYYY-MM")}-01`);
+        setMonthStr(`${newMonth.format("YYYY-MM")}-01`);
     };
 
     const renderRow = (item, i) => (
@@ -105,8 +111,16 @@ const ReporteS3View = () => {
     const [currentYear, setCurrentYear] = useState(anioServicio);
 
     useEffect(() => {
-        api.get(`/secretario/s3/${currentYear}/ES`).then(r => setDataES(r.data?.data ?? [])).catch(() => { });
-        api.get(`/secretario/s3/${currentYear}/FS`).then(r => setDataFS(r.data?.data ?? [])).catch(() => { }).finally(() => setLoading(false));
+        setLoading(true);
+        Promise.all([
+            getS3(currentYear, 'ES'),
+            getS3(currentYear, 'FS')
+        ]).then(([rES, rFS]) => {
+            if (!rES.success && rES.error) Alert.alert('Error S-3 ES', rES.error);
+            if (!rFS.success && rFS.error) Alert.alert('Error S-3 FS', rFS.error);
+            setDataES(rES?.data ?? []);
+            setDataFS(rFS?.data ?? []);
+        }).catch(() => { }).finally(() => setLoading(false));
     }, [currentYear]);
 
     const handleYearChange = (newYear) => {
@@ -166,16 +180,17 @@ const ReporteS10View = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const { anioServicio } = useAnioServicio();
-    const [currentYear, setCurrentYear] = useState(anioServicio);
-    const [endpoint, setEndpoint] = useState(`/secretario/s10/${currentYear}`);
-
+    const [currentYear, setCurrentYear] = useState(anioServicio - 1);
     useEffect(() => {
-        api.get(endpoint).then(r => setData(r.data?.data ?? [])).catch(() => { }).finally(() => setLoading(false));
-    }, [endpoint]);
+        setLoading(true);
+        getS10(currentYear).then(r => {
+            if (!r.success && r.error) Alert.alert('Error S-10', r.error);
+            setData(r?.data ?? []);
+        }).catch(() => { }).finally(() => setLoading(false));
+    }, [currentYear]);
 
     const handleYearChange = (newYear) => {
         setCurrentYear(newYear);
-        setEndpoint(`/secretario/s10/${newYear}`);
     };
 
     if (loading) return <ActivityIndicator style={{ margin: 40 }} color={colors.primary} />;

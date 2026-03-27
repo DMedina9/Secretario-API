@@ -6,9 +6,11 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es'; // Spanish
-import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2, RefreshCcw } from 'lucide-react-native';
-import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
-import { syncAllData } from '../services/SyncService';
+import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2, RefreshCcw, Plus } from 'lucide-react-native';
+import { getAllPublicadores, savePublicador, deletePublicador } from '../services/repositories/PublicadorRepo';
+import { syncAllData, pushEntityChanges } from '../services/SyncService';
+import { Publicador } from '../services/models';
+import { Send } from 'lucide-react-native';
 import ViewShot from 'react-native-view-shot';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -241,14 +243,17 @@ const EditModal = ({ publicador, onClose, onSaved }) => {
                 ciego: form.ciego ? 1 : 0,
                 encarcelado: form.encarcelado ? 1 : 0,
             };
-            const resp = await api.put(`/publicador/${publicador.id}`, payload);
-            if (resp.data.success) {
+            
+            // Save to LOCAL DATABASE ONLY
+            const result = await savePublicador(payload);
+            if (result) {
                 onSaved();
             } else {
-                Alert.alert('Error', resp.data.error || 'No se pudo guardar.');
+                Alert.alert('Error', 'No se pudo guardar localmente.');
             }
         } catch (e) {
-            Alert.alert('Error', 'Error al conectar con el servidor.');
+            console.error(e);
+            Alert.alert('Error', 'Error al guardar en la base de datos local.');
         } finally {
             setSaving(false);
         }
@@ -259,7 +264,7 @@ const EditModal = ({ publicador, onClose, onSaved }) => {
             <View style={st.modalOverlay}>
                 <View style={[st.modalContainer, { maxHeight: '95%' }]}>
                     <View style={st.modalHeader}>
-                        <Text style={st.modalTitle}>Editar Publicador</Text>
+                        <Text style={st.modalTitle}>{publicador?.id ? 'Editar Publicador' : 'Agregar Publicador'}</Text>
                         <TouchableOpacity onPress={onClose}><X size={24} color={colors.textSecondary} /></TouchableOpacity>
                     </View>
                     <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
@@ -382,6 +387,18 @@ const PublicadoresScreen = ({ navigation }) => {
         fetchPublicadores();
     };
 
+    const handlePushChanges = async () => {
+        setLoading(true);
+        const res = await pushEntityChanges(Publicador, '/publicador');
+        if (res.success) {
+            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} cambios al servidor.`);
+            fetchPublicadores();
+        } else {
+            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los cambios.');
+        }
+        setLoading(false);
+    };
+
     const handleDelete = (p) => {
         Alert.alert(
             'Eliminar Publicador',
@@ -391,15 +408,15 @@ const PublicadoresScreen = ({ navigation }) => {
                 {
                     text: 'Eliminar', style: 'destructive', onPress: async () => {
                         try {
-                            const resp = await api.delete(`/publicador/${p.id}`);
-                            if (resp.data.success) {
+                            const success = await deletePublicador(p.id);
+                            if (success) {
                                 setSelected(null);
                                 fetchPublicadores();
                             } else {
-                                Alert.alert('Error', resp.data.error || 'No se pudo eliminar.');
+                                Alert.alert('Error', 'No se pudo eliminar de la base local.');
                             }
                         } catch {
-                            Alert.alert('Error', 'Error al conectar con el servidor.');
+                            Alert.alert('Error', 'Error al eliminar.');
                         }
                     }
                 }
@@ -425,7 +442,12 @@ const PublicadoresScreen = ({ navigation }) => {
         <TouchableOpacity style={st.card} onPress={() => setSelected(item)}>
             <View style={st.cardLeft}><User size={22} color={colors.textSecondary} /></View>
             <View style={st.cardInfo}>
-                <Text style={st.name}>{item.apellidos}, {item.nombre}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={st.name}>{item.apellidos}, {item.nombre}</Text>
+                    {!!item.is_dirty && (
+                        <View style={st.dirtyDot} />
+                    )}
+                </View>
                 <Text style={st.sub}>Grupo {item.grupo || '—'}{item.privilegio ? `  ·  ${item.privilegio}` : ''}</Text>
             </View>
             <View style={[st.statusBadge, item.Estatus === 'Activo' ? st.statusActive : st.statusInactive]}>
@@ -444,9 +466,17 @@ const PublicadoresScreen = ({ navigation }) => {
                     <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={st.headerTitle}>Publicadores</Text>
-                <TouchableOpacity onPress={handleSync} style={{ padding: 8 }}>
-                    <RefreshCcw size={24} color="#FFFFFF" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity onPress={() => setEditing(EMPTY_FORM)} style={{ padding: 8 }}>
+                        <Plus size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handlePushChanges} style={{ padding: 8 }}>
+                        <Send size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSync} style={{ padding: 8 }}>
+                        <RefreshCcw size={24} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Search */}
@@ -587,7 +617,11 @@ const PublicadoresScreen = ({ navigation }) => {
             <EditModal
                 publicador={editing}
                 onClose={() => setEditing(null)}
-                onSaved={() => { setEditing(null); fetchPublicadores(); Alert.alert('¡Listo!', 'Publicador actualizado correctamente.'); }}
+                onSaved={() => { 
+                    setEditing(null); 
+                    fetchPublicadores(); 
+                    Alert.alert('¡Listo!', editing?.id ? 'Publicador actualizado correctamente.' : 'Publicador agregado correctamente.'); 
+                }}
             />
         </View>
     );
@@ -643,6 +677,7 @@ const getStyles = (colors) => StyleSheet.create({
     cardLeft: { marginRight: 12 },
     cardInfo: { flex: 1 },
     name: { fontSize: 16, fontWeight: '700', color: colors.text },
+    dirtyDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316', marginLeft: 6 },
     sub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
     statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
     statusActive: { backgroundColor: colors.isDarkMode ? '#064e3b' : '#d1fae5' },

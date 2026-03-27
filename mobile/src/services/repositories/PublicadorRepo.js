@@ -1,17 +1,53 @@
-import { getDb } from '../Database';
+import { Publicadores, TipoPublicador, sequelize, QueryTypes } from '../models';
 
-export const getAllPublicadores = async () => {
-    const db = await getDb();
-    const rows = await db.getAllAsync('SELECT * FROM publicadores ORDER BY nombre, apellidos');
-    return rows;
+export const getAllPublicadores = async (grupo) => {
+    return await sequelize.query(`
+        SELECT
+            p.*,
+            CASE p.sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' END AS sup_grupo_desc,
+            pr.descripcion AS privilegio,
+            tp.descripcion AS tipo_publicador,
+            CASE WHEN (
+                SELECT SUM(predico_en_el_mes)
+                FROM Informes a
+                WHERE a.id_publicador = p.id
+                    AND DATE(a.mes) BETWEEN date(date('now', 'start of month'), '-5 months')
+                    AND date('now', 'start of month')
+            ) > 0 THEN 'Activo' ELSE 'Inactivo' END AS Estatus
+        FROM Publicadores p
+        LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
+        LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador
+        ${grupo ? 'WHERE p.grupo = ' + grupo : ''}
+        ORDER BY grupo, apellidos, nombre
+    `, { type: QueryTypes.SELECT })
 };
 
 export const getPublicadorById = async (id) => {
-    const db = await getDb();
-    return await db.getFirstAsync('SELECT * FROM publicadores WHERE id = ?', [id]);
+    const p = await Publicadores.findByPk(id);
+    return p ? p.toJSON() : null;
 };
 
 export const getTiposPublicador = async () => {
-    const db = await getDb();
-    return await db.getAllAsync('SELECT * FROM tipos_publicador');
+    return await TipoPublicador.findAll({ raw: true });
+};
+
+export const savePublicador = async (data) => {
+    const { id, ...rest } = data;
+    if (id) {
+        // Update
+        const p = await Publicadores.findByPk(id);
+        if (p) {
+            return await p.update({ ...rest, is_dirty: true });
+        }
+        return null;
+    } else {
+        // Create
+        return await Publicadores.create({ ...rest, is_dirty: true });
+    }
+};
+
+export const deletePublicador = async (id) => {
+    await Informes.destroy({ where: { id_publicador: id } })
+    const result = await Publicadores.destroy({ where: { id: id } })
+    return result;
 };

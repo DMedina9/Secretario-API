@@ -7,8 +7,10 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle, RefreshCcw } from 'lucide-react-native';
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
-import { getInformesByPublicadorAndAnio, getPrecursoresAuxiliaresByMonth } from '../services/repositories/InformeRepo';
-import { syncAllData } from '../services/SyncService';
+import { getInformesByPublicadorAndAnio, getPrecursoresAuxiliaresByMonth, saveInforme } from '../services/repositories/InformeRepo';
+import { syncAllData, pushEntityChanges } from '../services/SyncService';
+import { Informe } from '../services/models';
+import { Send } from 'lucide-react-native';
 import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -224,27 +226,45 @@ const InformesScreen = ({ navigation }) => {
         if (!bulkData.length) return;
         setLoading(true);
         try {
-            const payload = bulkData.map(item => ({
-                id_publicador: item.id_publicador,
-                mes: item.mes,
-                predico_en_el_mes: item.predico_en_el_mes ? 1 : 0,
-                horas: parseInt(item.horas) || 0,
-                horas_SS: parseInt(item.horas_SS) || 0,
-                cursos_biblicos: parseInt(item.cursos_biblicos) || 0,
-                id_tipo_publicador: parseInt(item.id_tipo_publicador),
-                notas: item.notas
-            }));
-            const resp = await api.post('/informe/bulk', payload);
-            if (resp.data?.success) {
-                Alert.alert('✅ Guardado', `${bulkData.length} informes guardados.`);
-                await syncAllData(); // Refresh local DB after save
-                setBulkData([]);
+            for (const item of bulkData) {
+                const payload = {
+                    id_publicador: item.id_publicador,
+                    mes: item.mes,
+                    predico_en_el_mes: item.predico_en_el_mes ? 1 : 0,
+                    horas: parseInt(item.horas) || 0,
+                    horas_SS: parseInt(item.horas_SS) || 0,
+                    cursos_biblicos: parseInt(item.cursos_biblicos) || 0,
+                    id_tipo_publicador: parseInt(item.id_tipo_publicador),
+                    notas: item.notas
+                };
+                
+                // Find if exists to get the ID for update, or just save
+                const informes = await getInformesByPublicadorAndAnio(item.id_publicador, dayjs(item.mes).year() + (dayjs(item.mes).month() >= 8 ? 1 : 0));
+                const ex = informes.find(i => i.mes.startsWith(item.mes.substring(0, 7)));
+                
+                await saveInforme({ ...payload, id: ex ? ex.id : null });
             }
-        } catch {
-            Alert.alert('Error', 'Error al guardar informes.');
+            Alert.alert('✅ Guardado Local', `${bulkData.length} informes guardados localmente.`);
+            setBulkData([]);
+            loadBulkData();
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Error', 'Error al guardar informes localmente.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePushChanges = async () => {
+        setLoading(true);
+        const res = await pushEntityChanges(Informe, '/informe');
+        if (res.success) {
+            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} informes al servidor.`);
+            loadBulkData();
+        } else {
+            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los informes.');
+        }
+        setLoading(false);
     };
 
     return (
@@ -253,6 +273,7 @@ const InformesScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Informes de Predicación</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={handlePushChanges}><Send size={24} color="#FFFFFF" /></TouchableOpacity>
                     <TouchableOpacity onPress={handleSync}><RefreshCcw size={24} color="#FFFFFF" /></TouchableOpacity>
                     {bulkData.length > 0 ? (
                         <TouchableOpacity onPress={handleSave}><Save size={24} color={colors.primary} /></TouchableOpacity>

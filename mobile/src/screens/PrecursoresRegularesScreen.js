@@ -121,36 +121,45 @@ const PrecursoresRegularesScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
-                <TouchableOpacity onPress={() => handleYearChange(currentYear - 1)}><ChevronLeft size={24} color={colors.text} /></TouchableOpacity>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{currentYear}</Text>
-                <TouchableOpacity onPress={() => handleYearChange(currentYear + 1)}><ChevronRight size={24} color={colors.text} /></TouchableOpacity>
-            </View>
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+                {/* Filters */}
+                <View style={st.filterCard}>
+                    <View style={st.monthNavRow}>
+                        <TouchableOpacity onPress={() => handleYearChange(currentYear - 1)}>
+                            <ChevronLeft size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={st.monthLabel}>{currentYear}</Text>
+                        <TouchableOpacity onPress={() => handleYearChange(currentYear + 1)}>
+                            <ChevronRight size={24} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
-            {loading ? (
-                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 32 }} />
-            ) : (
-                <ScrollView contentContainerStyle={st.content}>
-                    <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={{ backgroundColor: colors.background, padding: 10 }}>
-                        <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 8, textAlign: 'center' }}>Precursores Regulares {currentYear}</Text>
-                        {data.length === 0 ? (
-                            <Text style={st.emptyText}>No hay datos para este año de servicio.</Text>
-                        ) : (
-                            data.map((item) => (
-                                <View key={`${item.id}-${item.publicador}`} style={st.card}>
-                                    <Text style={st.name}>{item.publicador}</Text>
-                                    <View style={st.row}>
-                                        <Text style={st.small}>Meses: {item.meses}</Text>
-                                        <Text style={st.small}>Total: {item.suma}</Text>
-                                        <Text style={[st.small, item.promedio < 45 ? st.error : item.promedio < 50 ? st.warning : st.success]}>Prom: {item.promedio.toFixed(0)}</Text>
+                {loading ? (
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 32 }} />
+                ) : (
+                    <ScrollView contentContainerStyle={st.content}>
+                        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={{ backgroundColor: colors.background, padding: 10 }}>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 8, textAlign: 'center' }}>Precursores Regulares {currentYear}</Text>
+                            {data.length === 0 ? (
+                                <Text style={st.emptyText}>No hay datos para este año de servicio.</Text>
+                            ) : (
+                                data.map((item) => (
+                                    <View key={`${item.id}-${item.publicador}`} style={st.card}>
+                                        <Text style={st.name}>{item.publicador}</Text>
+                                        <View style={st.row}>
+                                            <Text style={st.small}>Meses: {item.meses}</Text>
+                                            <Text style={st.small}>Total: {item.suma}</Text>
+                                            <Text style={[st.small, item.promedio < 45 ? st.error : item.promedio < 50 ? st.warning : st.success]}>Prom: {item.promedio.toFixed(0)}</Text>
+                                        </View>
+                                        <MonthlyBarChart item={item} colors={colors} st={st} />
                                     </View>
-                                    <MonthlyBarChart item={item} colors={colors} st={st} />
-                                </View>
-                            ))
-                        )}
-                    </ViewShot>
-                </ScrollView>
-            )}
+                                ))
+                            )}
+                        </ViewShot>
+                    </ScrollView>
+                )}
+            </ScrollView>
         </View>
     );
 };
@@ -162,8 +171,12 @@ const getStyles = (colors) => StyleSheet.create({
         padding: 20, paddingTop: 50, backgroundColor: colors.header,
         borderBottomWidth: 1, borderBottomColor: colors.border,
     },
-    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' },
-    filterRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 8 },
+    headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF', flex: 1, textAlign: 'center' },
+    filterCard: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
+    monthNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    navArrow: { fontSize: 24, color: colors.textSecondary, paddingHorizontal: 10 },
+    monthLabel: { fontSize: 18, fontWeight: 'bold', color: colors.text, textTransform: 'capitalize' },
+
     label: { fontSize: 14, color: colors.text, marginRight: 8 },
     input: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.inputBackground, color: colors.inputText },
     button: { marginLeft: 8, backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8 },
@@ -175,8 +188,6 @@ const getStyles = (colors) => StyleSheet.create({
     sub: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
     row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
     small: { fontSize: 12, color: colors.textSecondary, marginRight: 10 },
-    monthRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
-    monthLabel: { fontSize: 12, color: colors.text, marginRight: 8, marginBottom: 4 },
     error: { color: colors.danger },
     warning: { color: colors.warning },
     success: { color: colors.success },

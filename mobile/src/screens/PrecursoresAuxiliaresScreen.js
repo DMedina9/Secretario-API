@@ -9,8 +9,10 @@ import api from '../services/api';
 import DropDownPicker from 'react-native-dropdown-picker'; // Assumes this is available, if not we'll use a simpler selection or rely on it being installed
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, RefreshCcw, Edit, CheckSquare, Square, Save, X } from 'lucide-react-native';
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
-import { getPrecursoresAuxiliaresByMonth } from '../services/repositories/InformeRepo';
-import { syncAllData } from '../services/SyncService';
+import { getPrecursoresAuxiliaresByMonth, savePrecursorAuxiliar, deletePrecursorAuxiliar } from '../services/repositories/InformeRepo';
+import { syncAllData, pushEntityChanges } from '../services/SyncService';
+import { PrecursorAuxiliar } from '../services/models';
+import { Send } from 'lucide-react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
 dayjs.locale('es');
@@ -86,25 +88,47 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
     const handleBulkSave = async () => {
         setLoading(true);
         try {
-            const payload = {
-                mes: month + '-01',
-                id_publicadores: selectedIds
-            };
+            const currentPAs = await getPrecursoresAuxiliaresByMonth(month + '-01');
+            const currentIds = currentPAs.map(p => p.id_publicador);
 
-            const resp = await api.post('/precursoresAuxiliares/sync', payload);
-            if (resp.data?.success) {
-                Alert.alert('✅ Éxito', 'Lista de precursores actualizada.');
-                await syncAllData();
-                setIsEditMode(false);
-                loadPrecursores(month);
-            } else {
-                Alert.alert('Error', resp.data?.error || 'Error al guardar.');
+            // Add new ones
+            for (const id of selectedIds) {
+                if (!currentIds.includes(id)) {
+                    await savePrecursorAuxiliar({
+                        id_publicador: id,
+                        mes: month + '-01'
+                    });
+                }
             }
+
+            // Remove unselected
+            for (const pa of currentPAs) {
+                if (!selectedIds.includes(pa.id_publicador)) {
+                    await deletePrecursorAuxiliar(pa.id);
+                }
+            }
+
+            Alert.alert('✅ Éxito local', 'Lista de precursores actualizada localmente.');
+            setIsEditMode(false);
+            loadPrecursores(month);
         } catch (e) {
-            Alert.alert('Error', 'No se pudo sincronizar la lista.');
+            console.error(e);
+            Alert.alert('Error', 'No se pudo actualizar la lista local.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePushChanges = async () => {
+        setLoading(true);
+        const res = await pushEntityChanges(PrecursorAuxiliar, '/precursoresAuxiliares');
+        if (res.success) {
+            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} registros al servidor.`);
+            loadPrecursores(month);
+        } else {
+            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los cambios.');
+        }
+        setLoading(false);
     };
 
     const handleMonthChange = (direction) => {
@@ -127,19 +151,19 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                 notas: notas
             };
 
-            const resp = await api.post('/precursoresAuxiliares/add', payload);
-            if (resp.data?.success) {
-                Alert.alert('✅ Éxito', 'Precursor auxiliar registrado.');
-                await syncAllData(); // Refresh local DB
+            const success = await savePrecursorAuxiliar(payload);
+            if (success) {
+                Alert.alert('✅ Éxito local', 'Precursor auxiliar registrado localmente.');
                 setShowForm(false);
                 setSelectedPublicadorId('');
                 setNotas('');
                 loadPrecursores(month);
             } else {
-                Alert.alert('Error', resp.data?.error || 'Error al guardar.');
+                Alert.alert('Error', 'Error al guardar localmente.');
             }
         } catch (e) {
-            Alert.alert('Error', 'No se pudo guardar el registro.');
+            console.error(e);
+            Alert.alert('Error', 'No se pudo guardar el registro local.');
         } finally {
             setLoading(false);
         }
@@ -148,7 +172,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
     const handleDelete = (id) => {
         Alert.alert(
             'Confirmar',
-            '¿Eliminar este registro?',
+            '¿Eliminar este registro local?',
             [
                 { text: 'Cancelar', style: 'cancel' },
                 {
@@ -157,15 +181,15 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                     onPress: async () => {
                         setLoading(true);
                         try {
-                            const resp = await api.delete(`/precursoresAuxiliares/${id}`);
-                            if (resp.data?.success) {
-                                await syncAllData(); // Refresh local DB
+                            const success = await deletePrecursorAuxiliar(id);
+                            if (success) {
                                 loadPrecursores(month);
                             } else {
-                                Alert.alert('Error', 'No se pudo eliminar.');
+                                Alert.alert('Error', 'No se pudo eliminar de la base local.');
                             }
                         } catch (e) {
-                            Alert.alert('Error', 'Error de conexión.');
+                            console.error(e);
+                            Alert.alert('Error', 'Error al eliminar.');
                         } finally {
                             setLoading(false);
                         }
@@ -183,6 +207,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     {!isEditMode ? (
                         <>
+                            <TouchableOpacity onPress={handlePushChanges}><Send size={22} color={colors.textSecondary} /></TouchableOpacity>
                             <TouchableOpacity onPress={handleSync}><RefreshCcw size={22} color={colors.textSecondary} /></TouchableOpacity>
                             <TouchableOpacity onPress={toggleEditMode}><Edit size={22} color={colors.textSecondary} /></TouchableOpacity>
                             <TouchableOpacity onPress={() => setShowForm(!showForm)}>
@@ -313,6 +338,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                                             <Text style={st.itemGroup}>Grupo {p.grupo}</Text>
                                             {p.notas ? <Text style={st.itemNotes}> • {p.notas}</Text> : null}
+                                            {!!p.is_dirty && <View style={st.dirtyDot} />}
                                         </View>
                                     </View>
                                     <TouchableOpacity onPress={() => handleDelete(p.id)} style={st.deleteBtn}>
@@ -363,6 +389,7 @@ const getStyles = (colors) => StyleSheet.create({
     itemName: { fontSize: 16, fontWeight: '700', color: colors.text },
     itemGroup: { fontSize: 13, color: colors.primary, fontWeight: '600' },
     itemNotes: { fontSize: 13, color: colors.textSecondary },
+    dirtyDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316', marginLeft: 8 },
     deleteBtn: { padding: 8, backgroundColor: colors.isDarkMode ? '#451a1a' : '#fee2e2', borderRadius: 8 },
     editActions: {
         position: 'absolute', bottom: 20, left: 16, right: 16,

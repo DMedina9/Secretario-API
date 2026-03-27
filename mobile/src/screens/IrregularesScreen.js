@@ -99,59 +99,68 @@ const IrregularesScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, paddingVertical: 16, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 16 }}>
-                <TouchableOpacity onPress={() => handleMonthChange(currentMonth.subtract(1, 'month'))}><ChevronLeft size={24} color={colors.text} /></TouchableOpacity>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: colors.text }}>{currentMonth.format('MMMM YYYY')}</Text>
-                <TouchableOpacity onPress={() => handleMonthChange(currentMonth.add(1, 'month'))}><ChevronRight size={24} color={colors.text} /></TouchableOpacity>
-            </View>
+                {/* Filters */}
+                <View style={st.filterCard}>
+                    <View style={st.monthNavRow}>
+                        <TouchableOpacity onPress={() => handleMonthChange(currentMonth.subtract(1, 'month'))}>
+                            <ChevronLeft size={24} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={st.monthLabel}>{dayjs(currentMonth).format('MMMM YYYY')}</Text>
+                        <TouchableOpacity onPress={() => handleMonthChange(currentMonth.add(1, 'month'))}>
+                            <ChevronRight size={24} color={colors.text} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
-            {loading ? (
-                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 16 }} />
-            ) : (
-                <ScrollView contentContainerStyle={st.list}>
-                    <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={{ backgroundColor: colors.background, paddingVertical: 10 }}>
-                        <View style={st.summaryContainer}>
-                            <Text style={st.summaryTitle}>{currentMonth.format('MMMM YYYY')}</Text>
-                            <View style={st.summaryRow}>
-                                <View style={st.summaryBox}>
-                                    <Text style={[st.summaryValue, { color: colors.warning }]}>{totals.irregulares}</Text>
-                                    <Text style={st.summaryLabel}>Irregulares</Text>
-                                </View>
-                                <View style={st.summaryBox}>
-                                    <Text style={[st.summaryValue, { color: colors.danger }]}>{totals.inactivos}</Text>
-                                    <Text style={st.summaryLabel}>Inactivos</Text>
-                                </View>
-                                <View style={st.summaryBox}>
-                                    <Text style={[st.summaryValue, { color: colors.primary }]}>{data.length}</Text>
-                                    <Text style={st.summaryLabel}>Total</Text>
+                {loading ? (
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 16 }} />
+                ) : (
+                    <ScrollView contentContainerStyle={st.list}>
+                        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={{ backgroundColor: colors.background, paddingVertical: 10 }}>
+                            <View style={st.summaryContainer}>
+                                <Text style={st.summaryTitle}>{currentMonth.format('MMMM YYYY')}</Text>
+                                <View style={st.summaryRow}>
+                                    <View style={st.summaryBox}>
+                                        <Text style={[st.summaryValue, { color: colors.warning }]}>{totals.irregulares}</Text>
+                                        <Text style={st.summaryLabel}>Irregulares</Text>
+                                    </View>
+                                    <View style={st.summaryBox}>
+                                        <Text style={[st.summaryValue, { color: colors.danger }]}>{totals.inactivos}</Text>
+                                        <Text style={st.summaryLabel}>Inactivos</Text>
+                                    </View>
+                                    <View style={st.summaryBox}>
+                                        <Text style={[st.summaryValue, { color: colors.primary }]}>{data.length}</Text>
+                                        <Text style={st.summaryLabel}>Total</Text>
+                                    </View>
                                 </View>
                             </View>
-                        </View>
 
-                        {data.length === 0 ? (
-                            <Text style={st.empty}>No hay datos para este mes</Text>
-                        ) : (
-                            data.map((item) => (
-                                <View key={`${item.id}-${item.publicador}`} style={st.card}>
-                                    <View style={st.row}>
-                                        <Text style={st.name}>{item.publicador}</Text>
-                                        <Text style={[st.rowValue, { color: item.meses_predicados > 0 ? colors.warning : colors.danger }]}>{item.meses_predicados > 0 ? 'Irregular' : 'Inactivo'}</Text>
-                                    </View>
-                                    <View style={st.metaRow}>
-                                        <Text style={st.meta}>Objetivo: {item.meses_a_predicar}</Text>
-                                        <Text style={st.meta}>Predicó: {item.meses_predicados}</Text>
-                                        <Text style={st.meta}>Faltantes: {item.meses_faltantes}</Text>
-                                    </View>
-                                    <Text style={st.meta}>Meses consecutivos sin predicar: {item.consecutivos_sin_predicar}</Text>
+                            {data.length === 0 ? (
+                                <Text style={st.empty}>No hay datos para este mes</Text>
+                            ) : (
+                                data.map((item) => (
+                                    <View key={`${item.id}-${item.publicador}`} style={st.card}>
+                                        <View style={st.row}>
+                                            <Text style={st.name}>{item.publicador}</Text>
+                                            <Text style={[st.rowValue, { color: item.meses_predicados > 0 ? colors.warning : colors.danger }]}>{item.meses_predicados > 0 ? 'Irregular' : 'Inactivo'}</Text>
+                                        </View>
+                                        <View style={st.metaRow}>
+                                            <Text style={st.meta}>Objetivo: {item.meses_a_predicar}</Text>
+                                            <Text style={st.meta}>Predicó: {item.meses_predicados}</Text>
+                                            <Text style={st.meta}>Faltantes: {item.meses_faltantes}</Text>
+                                        </View>
+                                        <Text style={st.meta}>Meses consecutivos sin predicar: {item.consecutivos_sin_predicar}</Text>
 
-                                    <IrregularityChart item={item} colors={colors} st={st} />
-                                </View>
-                            ))
-                        )}
-                    </ViewShot>
-                </ScrollView>
-            )}
+                                        <IrregularityChart item={item} colors={colors} st={st} />
+                                    </View>
+                                ))
+                            )}
+                        </ViewShot>
+                    </ScrollView>
+                )}
+            </ScrollView>
         </View>
     );
 };
@@ -160,6 +169,10 @@ const getStyles = (colors) => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingTop: 50, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border },
     title: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' },
+    filterCard: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
+    monthNavRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    navArrow: { fontSize: 24, color: colors.textSecondary, paddingHorizontal: 10 },
+    monthLabel: { fontSize: 18, fontWeight: 'bold', color: colors.text, textTransform: 'capitalize' },
     filter: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 8 },
     input: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, backgroundColor: colors.inputBackground, color: colors.inputText },
     btn: { backgroundColor: colors.primary, padding: 12, borderRadius: 8, marginLeft: 8 },

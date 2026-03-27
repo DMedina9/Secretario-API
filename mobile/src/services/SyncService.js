@@ -1,7 +1,62 @@
 import api from './api';
-import { getDb } from './Database';
+import { Publicadores, Informes, Asistencias, Configuracion, PrecursoresAuxiliares, Privilegio, TipoPublicador } from './models';
 import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export const pushEntityChanges = async (model, endpoint) => {
+    const net = await NetInfo.fetch();
+    if (!net.isConnected) return { success: false, error: 'Sin conexión' };
+
+    const dirtyRecords = await model.findAll({ where: { is_dirty: true } });
+    if (dirtyRecords.length === 0) return { success: true, count: 0 };
+
+    console.log(`Pushing ${dirtyRecords.length} changes for ${model.name}...`);
+    try {
+        let successCount = 0;
+        for (const record of dirtyRecords) {
+            try {
+                const plain = record.get({ plain: true });
+                const { is_dirty, last_sync, ...data } = plain;
+
+                let response;
+                // If the record was already on the server (has an ID that we trust is the server's)
+                // Or if we should try PUT first. 
+                // In this specific app, let's assume if it's dirty and has an ID, we try to update it if it's not "new".
+                // Since we don't have a 'is_new' flag, we'll use a simple heuristic: 
+                // if we just created it locally and it's dirty, we'll try POST /add. 
+                // But how do we know if it was ALREADY on the server?
+                // Usually by checking if 'last_sync' is null.
+
+                if (last_sync) {
+                    // Was previously synced, so update
+                    response = await api.put(`${endpoint}/${data.id}`, data);
+                } else {
+                    // Never synced, so Create
+                    // Strip ID to let server generate it, OR keep it if the server respects it.
+                    // Looking at backend addPublicador, it uses Publicadores.create(req.body).
+                    const { id, ...newData } = data;
+                    response = await api.post(`${endpoint}/add`, newData);
+                }
+
+                if (response.data.success) {
+                    await record.update({
+                        is_dirty: false,
+                        last_sync: new Date(),
+                        id: response.data.lastID || record.id // Update local ID if server returned a new one
+                    });
+                    successCount++;
+                }
+            } catch (error) {
+                console.error(`Failed to push record ${record.id}:`, error);
+            }
+        }
+
+        return { success: true, count: successCount };
+    } catch (error) {
+        console.error(`Error pushing ${model.name}:`, error);
+        return { success: false, error: error.message };
+    }
+};
 
 export const syncAllData = async () => {
     const net = await NetInfo.fetch();
@@ -10,7 +65,7 @@ export const syncAllData = async () => {
         return false;
     }
 
-    console.log('Starting sync process...');
+    console.log('Starting PULL sync process...');
     try {
         const resp = await api.get('/sync/all');
         if (!resp.data.success) {
@@ -19,145 +74,57 @@ export const syncAllData = async () => {
         }
 
         const raw = resp.data.data || {};
-        const clean = (list) => (Array.isArray(list) ? list.filter(item => item && typeof item === 'object') : []);
+        const cleanData = (list) => (Array.isArray(list) ? list.filter(item => item && typeof item === 'object') : []);
 
-        const publicadores = clean(raw.publicadores);
-        const informes = clean(raw.informes);
-        const asistencias = clean(raw.asistencias);
-        const configuraciones = clean(raw.configuraciones);
-        const precursoresAuxiliares = clean(raw.precursoresAuxiliares);
-        const privilegios = clean(raw.privilegios);
-        const tiposPublicador = clean(raw.tiposPublicador);
+        const entities = [
+            { remote: cleanData(raw.publicadores), model: Publicadores },
+            { remote: cleanData(raw.informes), model: Informes },
+            { remote: cleanData(raw.asistencias), model: Asistencias },
+            { remote: cleanData(raw.configuraciones), model: Configuracion },
+            { remote: cleanData(raw.precursoresAuxiliares), model: PrecursoresAuxiliares },
+            { remote: cleanData(raw.privilegios), model: Privilegio },
+            { remote: cleanData(raw.tiposPublicador), model: TipoPublicador }
+        ];
 
-        console.log(`Data to sync: ${publicadores.length} pubs, ${informes.length} infs, ${asistencias.length} asists`);
+        for (const { remote, model } of entities) {
+            for (const item of remote) {
+                if (!item.id) continue;
 
-        const db = await getDb();
-        const sanitize = (val) => (val === undefined ? null : val);
+                // Check if local exists and is dirty
+                const local = await model.findByPk(item.id);
+                if (local && local.is_dirty) {
+                    // Skip overwriting local changes not yet pushed
+                    console.log(`Skipping local dirty record ${model.name}:${item.id}`);
+                    continue;
+                }
 
-        try {
-            await db.execAsync('BEGIN TRANSACTION');
-
-            // Publicadores
-            await db.runAsync('DELETE FROM publicadores');
-            for (const p of publicadores) {
-                if (p.id === undefined || p.id === null) continue;
-                await db.runAsync(`
-                    INSERT INTO publicadores (
-                        id, nombre, apellidos, fecha_nacimiento, fecha_bautismo, grupo, sup_grupo, sexo,
-                        id_privilegio, id_tipo_publicador, ungido, calle, num, colonia, telefono_fijo,
-                        telefono_movil, contacto_emergencia, tel_contacto_emergencia, correo_contacto_emergencia,
-                        privilegio, tipo_publicador, Estatus
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                `, [
-                    sanitize(p.id), sanitize(p.nombre), sanitize(p.apellidos), sanitize(p.fecha_nacimiento),
-                    sanitize(p.fecha_bautismo), sanitize(p.grupo), sanitize(p.sup_grupo), sanitize(p.sexo),
-                    sanitize(p.id_privilegio), sanitize(p.id_tipo_publicador), sanitize(p.ungido), sanitize(p.calle),
-                    sanitize(p.num), sanitize(p.colonia), sanitize(p.telefono_fijo), sanitize(p.telefono_movil),
-                    sanitize(p.contacto_emergencia), sanitize(p.tel_contacto_emergencia), sanitize(p.correo_contacto_emergencia),
-                    sanitize(p.privilegio), sanitize(p.tipo_publicador), sanitize(p.Estatus)
-                ]);
+                // Upsert (Sequelize upsert or find/create/update)
+                // We'll use a transaction for safety
+                await model.upsert({ ...item, is_dirty: false, last_sync: new Date() });
             }
-
-            // Informes
-            await db.runAsync('DELETE FROM informes');
-            for (const i of informes) {
-                if (i.id === undefined || i.id === null) continue;
-                await db.runAsync(`
-                    INSERT INTO informes (
-                        id, id_publicador, mes, horas, minutos, publicaciones, videos, revisitas,
-                        cursos_biblicos, predico_en_el_mes, horas_SS, notas
-                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-                `, [
-                    sanitize(i.id), sanitize(i.id_publicador), sanitize(i.mes), sanitize(i.horas),
-                    sanitize(i.minutos), sanitize(i.publicaciones), sanitize(i.videos), sanitize(i.revisitas),
-                    sanitize(i.cursos_biblicos), sanitize(i.predico_en_el_mes), sanitize(i.horas_SS), sanitize(i.notas)
-                ]);
-            }
-
-            // Asistencias
-            await db.runAsync('DELETE FROM asistencias');
-            for (const a of asistencias) {
-                if (a.id === undefined || a.id === null) continue;
-                await db.runAsync(`
-                    INSERT INTO asistencias (id, fecha, asistentes, notas, tipo_asistencia) VALUES (?,?,?,?,?)
-                `, [
-                    sanitize(a.id), sanitize(a.fecha), sanitize(a.asistentes), sanitize(a.notas), sanitize(a.tipo_asistencia)
-                ]);
-            }
-
-            // Configuraciones
-            await db.runAsync('DELETE FROM configuraciones');
-            for (const c of configuraciones) {
-                if (c.id === undefined || c.id === null) continue;
-                await db.runAsync(`
-                    INSERT INTO configuraciones (id, clave, valor) VALUES (?,?,?)
-                `, [sanitize(c.id), sanitize(c.clave), sanitize(c.valor)]);
-            }
-
-            // Precursores Auxiliares
-            await db.runAsync('DELETE FROM PrecursoresAuxiliares');
-            for (const pa of precursoresAuxiliares) {
-                if (pa.id === undefined || pa.id === null) continue;
-                await db.runAsync(`
-                    INSERT INTO PrecursoresAuxiliares (id, id_publicador, mes, notas) VALUES (?,?,?,?)
-                `, [
-                    sanitize(pa.id), sanitize(pa.id_publicador), sanitize(pa.mes), sanitize(pa.notas)
-                ]);
-            }
-
-            // Privilegios
-            await db.runAsync('DELETE FROM privilegios');
-            for (const pr of privilegios) {
-                if (pr.id === undefined || pr.id === null) continue;
-                await db.runAsync(`
-                    INSERT INTO privilegios (id, descripcion) VALUES (?,?)
-                `, [sanitize(pr.id), sanitize(pr.descripcion)]);
-            }
-
-            // Tipos Publicador
-            await db.runAsync('DELETE FROM tipos_publicador');
-            for (const tp of tiposPublicador) {
-                if (tp.id === undefined || tp.id === null) continue;
-                await db.runAsync(`
-                    INSERT INTO tipos_publicador (id, descripcion) VALUES (?,?)
-                `, [sanitize(tp.id), sanitize(tp.descripcion)]);
-            }
-
-            await db.execAsync('COMMIT');
-            console.log('Sync completed and committed');
-        } catch (txnError) {
-            console.error('Transaction failed:', txnError);
-            try { await db.execAsync('ROLLBACK'); } catch (e) { /* ignore rollback error */ }
-            throw txnError;
         }
 
         await AsyncStorage.setItem('@last_sync', new Date().toISOString());
+        console.log('PULL sync completed');
         return true;
     } catch (error) {
         console.error('Sync failed finally:', error);
         return false;
     }
 };
+
 export const syncIfNeeded = async () => {
     try {
         const lastSync = await AsyncStorage.getItem('@last_sync');
         if (!lastSync) {
-            console.log('No previous sync found, triggering sync...');
             return await syncAllData();
         }
-
         const lastDate = new Date(lastSync);
         const now = new Date();
-
-        // Sync if it's a different month or year
         const needsSync = lastDate.getMonth() !== now.getMonth() || lastDate.getFullYear() !== now.getFullYear();
-
         if (needsSync) {
-            console.log('New month detected, triggering automatic sync...');
             return await syncAllData();
         }
-
-        console.log('Sync not needed yet (already synced this month)');
         return true;
     } catch (error) {
         console.error('Error in syncIfNeeded:', error);

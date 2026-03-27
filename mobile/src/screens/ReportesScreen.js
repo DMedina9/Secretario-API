@@ -3,17 +3,15 @@ import {
     View, Text, StyleSheet, TouchableOpacity,
     ActivityIndicator, Alert, ScrollView, TextInput
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { WebView } from 'react-native-webview';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowLeft, RefreshCcw } from 'lucide-react-native';
 import { getAllPublicadores, getTiposPublicador } from '../services/repositories/PublicadorRepo';
+import { getS21Local, getS21TotalesLocal, getS88Local, getReporteGeneralLocal } from '../services/repositories/ReportesRepo';
 import { syncAllData } from '../services/SyncService';
-import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import FileService from '../services/FileService';
 import { PDF_JS_CODE, PDF_WORKER_CODE } from '../pdfjs_code';
@@ -31,32 +29,11 @@ const arrayBufferToBase64 = (buffer) => {
 };
 
 /**
- * Fetch binary resource, save to cache, return { fileUri, base64 }.
- * Token is read from AsyncStorage directly (same as Axios interceptor).
- * 'x-mobile-app': 'true'  bypasses JWT check in IsAuthenticated.mjs.
+ * Save Base64 to cache, return { fileUri, base64 }.
  */
-const downloadToCache = async (endpoint, method, body, filename) => {
-    const token = await AsyncStorage.getItem('@auth_token');
-    const url = `${api.defaults.baseURL}${endpoint}`;
-    const options = {
-        method,
-        headers: {
-            'x-mobile-app': 'true',
-            'Authorization': `Bearer ${token}`,
-        }
-    };
-    if (body) {
-        options.headers['Content-Type'] = 'application/json';
-        options.body = JSON.stringify(body);
-    }
-
-    const response = await fetch(url, options);
-    if (!response.ok) throw new Error(`El servidor respondió con error ${response.status}`);
-
-    const buffer = await response.arrayBuffer();
-    const base64 = arrayBufferToBase64(buffer);
+const saveToCache = async (base64, filename) => {
     const fileUri = FileSystem.cacheDirectory + filename;
-    await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+    await FileSystem.writeAsStringAsync(fileUri, base64, { encoding: 'base64' });
     return { fileUri, base64 };
 };
 
@@ -144,11 +121,22 @@ const DescargasTab = ({ anioServicio }) => {
     const st = getStyles(colors);
     const [loading, setLoading] = useState(null);
 
-    const handleAction = async (key, endpoint, method, body, filename) => {
+    const handleAction = async (key, filename) => {
         setLoading(key);
         try {
-            const { fileUri } = await downloadToCache(endpoint, method, body, filename);
-            await shareFileUri(fileUri);
+            let result;
+            if (key === 'S21') {
+                result = await getS21Local(anioServicio, null);
+            } else if (key === 'S88') {
+                result = await getS88Local(anioServicio);
+            } else if (key === 'GENERAL') {
+                result = await getReporteGeneralLocal();
+            }
+
+            if (!result.success) throw new Error(result.error || 'Error al generar el reporte');
+
+            const { fileUri } = await saveToCache(result.base64, filename);
+            await shareFileUri(fileUri, filename);
         } catch (e) {
             Alert.alert('Error', e.message);
         } finally {
@@ -163,9 +151,6 @@ const DescargasTab = ({ anioServicio }) => {
             subtitle: 'ZIP con informes de todos los publicadores',
             icon: '🗂️',
             color: '#3b82f6',
-            endpoint: '/reportes/get-s21',
-            method: 'POST',
-            body: { anio: null },
             filename: 'S21_Por_Publicador.zip',
         },
         {
@@ -174,9 +159,6 @@ const DescargasTab = ({ anioServicio }) => {
             subtitle: 'Archivo PDF del año de servicio',
             icon: '📄',
             color: '#ef4444',
-            endpoint: `/reportes/get-s88/${anioServicio}`,
-            method: 'GET',
-            body: null,
             filename: `S88_${anioServicio}.pdf`,
         },
         {
@@ -185,9 +167,6 @@ const DescargasTab = ({ anioServicio }) => {
             subtitle: 'Exportar todos los datos a Excel',
             icon: '📊',
             color: '#10b981',
-            endpoint: '/secretario/export/template',
-            method: 'GET',
-            body: null,
             filename: `Reporte_General_${new Date().toISOString().slice(0, 10)}.xlsx`,
         },
     ];
@@ -205,7 +184,7 @@ const DescargasTab = ({ anioServicio }) => {
                     </View>
                     <TouchableOpacity
                         style={[st.btn, { backgroundColor: c.color }, loading !== null && st.btnDisabled]}
-                        onPress={() => handleAction(c.key, c.endpoint, c.method, c.body, c.filename)}
+                        onPress={() => handleAction(c.key, c.filename)}
                         disabled={loading !== null}
                     >
                         {loading === c.key
@@ -270,32 +249,32 @@ const VisualizadorTab = ({ anioServicio }) => {
     const handleGenerarPDF = async () => {
         if (!year) { Alert.alert('Aviso', 'Ingresa un año de servicio'); return; }
 
-        let endpoint = '', method = 'GET', body = null, filename = '';
-
-        if (reportType === 'S21I') {
-            if (!selectedPublicadorId) { Alert.alert('Aviso', 'Selecciona un publicador'); return; }
-            const pub = publicadores.find(p => String(p.id) === selectedPublicadorId);
-            endpoint = '/reportes/get-s21';
-            method = 'POST';
-            body = { anio: parseInt(year), id_publicador: parseInt(selectedPublicadorId) };
-            filename = pub ? `S21_${year}_${pub.nombre}_${pub.apellidos}.pdf` : `S21_${year}.pdf`;
-        } else if (reportType === 'S21T') {
-            if (!selectedTipoId) { Alert.alert('Aviso', 'Selecciona un tipo de publicador'); return; }
-            const tipo = tiposPublicador.find(t => String(t.id) === selectedTipoId);
-            endpoint = '/reportes/get-s21-totales';
-            method = 'POST';
-            body = { anio: parseInt(year), id_tipo_publicador: parseInt(selectedTipoId) };
-            filename = tipo ? `S21_Totales_${year}_${tipo.descripcion}.pdf` : `S21_Totales_${year}.pdf`;
-        } else {
-            endpoint = `/reportes/get-s88/${year}`;
-            filename = `S88_${year}.pdf`;
-        }
+        let result;
+        let filename;
 
         setLoadingPdf(true);
         setPdfState(null);
+
         try {
-            const { fileUri, base64 } = await downloadToCache(endpoint, method, body, filename);
-            setPdfState({ fileUri, base64, filename });
+            if (reportType === 'S21I') {
+                if (!selectedPublicadorId) { throw new Error('Selecciona un publicador'); }
+                const pub = publicadores.find(p => String(p.id) === selectedPublicadorId);
+                filename = pub ? `S21_${year}_${pub.nombre}_${pub.apellidos}.pdf` : `S21_${year}.pdf`;
+                result = await getS21Local(parseInt(year), parseInt(selectedPublicadorId));
+            } else if (reportType === 'S21T') {
+                if (!selectedTipoId) { throw new Error('Selecciona un tipo de publicador'); }
+                const tipo = tiposPublicador.find(t => String(t.id) === selectedTipoId);
+                filename = tipo ? `S21_Totales_${year}_${tipo.descripcion}.pdf` : `S21_Totales_${year}.pdf`;
+                result = await getS21TotalesLocal(parseInt(year), parseInt(selectedTipoId), null);
+            } else {
+                filename = `S88_${year}.pdf`;
+                result = await getS88Local(parseInt(year));
+            }
+
+            if (!result.success) throw new Error(result.error || 'No se pudo generar el documento localmente');
+
+            const { fileUri } = await saveToCache(result.base64, filename);
+            setPdfState({ fileUri, base64: result.base64, filename });
         } catch (e) {
             Alert.alert('Error', e.message);
         } finally {

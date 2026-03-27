@@ -25,11 +25,11 @@ export const saveAndShareFile = async (sourceUri, filename) => {
                 
                 const safUri = await FileSystem.StorageAccessFramework.createFileAsync(folderUri, filename, mimeType);
                 await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
-                finalUri = safUri;
+                // Do not set finalUri = safUri; Expo sharing requires a 'file://' scheme 
+                // We leave finalUri = sourceUri so it shares the cached copy successfully.
                 console.log('File saved to SAF directory:', safUri);
             } catch (safError) {
                 console.error('Error saving with SAF, falling back to cache:', safError);
-                // Fallback to sharing the sourceUri if SAF fails
             }
         } else {
             // Save to project document directory as a "persistent" copy
@@ -38,7 +38,7 @@ export const saveAndShareFile = async (sourceUri, filename) => {
             finalUri = projectDir;
         }
 
-        // Share the file
+        // Share the file using the valid file:// scheme
         if (await Sharing.isAvailableAsync()) {
             await Sharing.shareAsync(finalUri);
         } else {

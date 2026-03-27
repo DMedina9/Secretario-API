@@ -4,8 +4,10 @@ import {
     Alert, ActivityIndicator, Modal, TextInput, Switch
 } from 'react-native';
 import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun, RefreshCcw } from 'lucide-react-native';
-import { getAllConfiguraciones } from '../services/repositories/ConfiguracionesRepo';
-import { syncAllData } from '../services/SyncService';
+import { getAllConfiguraciones, saveConfiguracion } from '../services/repositories/ConfiguracionesRepo';
+import { syncAllData, pushEntityChanges } from '../services/SyncService';
+import { Configuracion } from '../services/models';
+import { Send } from 'lucide-react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -61,19 +63,40 @@ const ConfiguracionesSection = () => {
         }
 
         try {
-            await api.put(`/configuraciones/${selectedConfig}`, { value: inputValue });
-            await syncAllData(); // Refresh local DB
-            Alert.alert('Éxito', 'Configuración actualizada correctamente.');
-            setIsModalVisible(false);
-            fetchConfiguraciones();
+            // Save to LOCAL DATABASE ONLY
+            const success = await saveConfiguracion(selectedConfig, inputValue);
+            if (success) {
+                Alert.alert('Éxito local', 'Configuración guardada localmente.');
+                setIsModalVisible(false);
+                fetchConfiguraciones();
+            } else {
+                Alert.alert('Error', 'No se pudo guardar localmente.');
+            }
         } catch (error) {
-            Alert.alert('Error', 'No se pudo actualizar la configuración.');
+            console.error(error);
+            Alert.alert('Error', 'Error al guardar en la base local.');
+        }
+    };
+
+    const handlePushChanges = async () => {
+        setIsModalVisible(false); // Just in case
+        const res = await pushEntityChanges(Configuracion, '/configuraciones');
+        if (res.success) {
+            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} configuraciones al servidor.`);
+            fetchConfiguraciones();
+        } else {
+            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los cambios.');
         }
     };
 
     return (
         <View style={st.card}>
-            <Text style={st.cardTitle}>⚙️ Configuraciones del Sistema</Text>
+            <View style={st.headerRow}>
+                <Text style={st.cardTitle}>⚙️ Configuraciones del Sistema</Text>
+                <TouchableOpacity onPress={handlePushChanges} style={st.pushBtn}>
+                    <Send size={20} color={colors.primary} />
+                </TouchableOpacity>
+            </View>
             {items.map((item, i) => (
                 <TouchableOpacity key={i} style={st.configRow} onPress={() => handleEditConfig(item.key)}>
                     <View>
@@ -670,6 +693,8 @@ const getStyles = (colors) => StyleSheet.create({
     tabLabelActive: { color: colors.primary, fontWeight: '700' },
     card: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
     cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, marginBottom: 8 },
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    pushBtn: { padding: 8 },
     cardSubtitle: { fontSize: 13, color: colors.text, marginBottom: 16, lineHeight: 18 },
     configRow: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
