@@ -1746,3 +1746,102 @@ input:checked+.slider:before {
 .leaflet-bottom {
     display: none !important;
 }
+
+/* === CHARTS === */
+.monthly-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--table-border);
+    min-width: 200px;
+}
+
+.chart-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-label {
+    width: 35px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+
+.bar-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bar-background {
+    flex: 1;
+    height: 8px;
+    background: var(--input-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.bar-value {
+    width: 25px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.irregularity-chart {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.chart-month {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.chart-block {
+    width: 14px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.chart-month-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.bg-success {
+    background-color: var(--color-success) !important;
+}
+
+.bg-warning {
+    background-color: var(--color-warning) !important;
+}
+
+.bg-danger {
+    background-color: var(--color-error) !important;
+}
+
+.font-bold {
+    font-weight: 600;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}

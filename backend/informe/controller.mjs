@@ -119,9 +119,18 @@ const getIrregulares = async (req, res) => {
                 p.nombre,
                 p.apellidos,
                 p.nombre || ' ' || p.apellidos as publicador,
-                (	select min(mes)
+                p.grupo,
+                ifnull((select min(mes)
                 	FROM Informes a
-                    WHERE a.id_publicador = p.id) AS inicio_predicacion,
+                    WHERE a.id_publicador = p.id
+                    and a.Notas = 'Nuevo publicador'),
+                    (select min(mes)
+                	FROM Informes a
+                    WHERE a.id_publicador = p.id)) AS inicio_predicacion,
+                (select max(mes)
+                	FROM Informes a
+                    WHERE a.id_publicador = p.id
+                    and a.predico_en_el_mes > 0) AS fin_predicacion,
                 CASE WHEN (
                     SELECT SUM(predico_en_el_mes)
                     FROM Informes a
@@ -139,7 +148,7 @@ const getIrregulares = async (req, res) => {
                       AND DATE(a.mes) BETWEEN date(date('${mes}'), '-5 months')
                       AND date('${mes}')
             ) < 6
-            ORDER BY Estatus DESC, apellidos, nombre
+            ORDER BY grupo, Estatus DESC, apellidos, nombre
         `, { type: QueryTypes.SELECT });
 
         // Informes en últimos 6 meses
@@ -172,10 +181,6 @@ const getIrregulares = async (req, res) => {
             if (expectedMonths <= 0) continue;
 
             const monthInfos = months
-                .filter((m) => {
-                    const mday = dayjs(`${m}-01`);
-                    return !started || !mday.isBefore(started);
-                })
                 .map((m) => {
                     const informe = informes.find((inf) => inf.id_publicador === pub.id && dayjs(inf.mes).format('YYYY-MM') === m);
                     return {
@@ -202,7 +207,9 @@ const getIrregulares = async (req, res) => {
                     nombre: pub.nombre,
                     apellidos: pub.apellidos,
                     publicador: `${pub.nombre} ${pub.apellidos}`,
+                    grupo: pub.grupo,
                     inicio_predicacion: started ? started.format('YYYY-MM-DD') : null,
+                    fin_predicacion: pub.fin_predicacion ? dayjs(pub.fin_predicacion).format('YYYY-MM-DD') : null,
                     meses_a_predicar: expectedMonths,
                     meses_predicados: predicados,
                     meses_faltantes: faltantes,

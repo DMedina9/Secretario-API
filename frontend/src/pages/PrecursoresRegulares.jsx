@@ -5,6 +5,48 @@ import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useToast } from '../contexts/ToastContext';
 import Loading from '../components/Common/Loading';
 
+const MonthlyBarChart = ({ item }) => {
+    const months = [
+        { key: 'sep', label: 'Sep' },
+        { key: 'oct', label: 'Oct' },
+        { key: 'nov', label: 'Nov' },
+        { key: 'dic', label: 'Dic' },
+        { key: 'ene', label: 'Ene' },
+        { key: 'feb', label: 'Feb' },
+        { key: 'mar', label: 'Mar' },
+        { key: 'abr', label: 'Abr' },
+        { key: 'may', label: 'May' },
+        { key: 'jun', label: 'Jun' },
+        { key: 'jul', label: 'Jul' },
+        { key: 'ago', label: 'Ago' },
+    ];
+
+    return (
+        <div className="monthly-bar-chart">
+            {months.map((m) => {
+                const value = item[m.key];
+                if (value === undefined || value === null) return null;
+
+                const numValue = parseFloat(value) || 0;
+                const barWidth = Math.min((numValue / 90) * 100, 100) + '%';
+                const barColorClass = numValue < 45 ? 'bg-danger' : numValue < 50 ? 'bg-warning' : 'bg-success';
+
+                return (
+                    <div key={m.key} className="chart-row">
+                        <span className="chart-label">{m.label}</span>
+                        <div className="bar-wrapper">
+                            <div className="bar-background">
+                                <div className={`bar ${barColorClass}`} style={{ width: barWidth }} />
+                            </div>
+                            <span className="bar-value">{numValue}</span>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 const PrecursoresRegulares = () => {
     const { anioServicio } = useAnioServicio();
     const { showToast } = useToast();
@@ -72,7 +114,7 @@ const PrecursoresRegulares = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3 className="card-title">Reporte de Precursores Regulares</h3>
+                    <h3 className="card-title">Reporte de Precursores Regulares {filterAnio}</h3>
                 </div>
                 <div className="card-body">
                     {loading ? <Loading /> : (
@@ -84,42 +126,35 @@ const PrecursoresRegulares = () => {
                                     <thead>
                                         <tr>
                                             <th>Nombre</th>
-                                            <th>Meses</th>
-                                            <th>Sep</th>
-                                            <th>Oct</th>
-                                            <th>Nov</th>
-                                            <th>Dic</th>
-                                            <th>Ene</th>
-                                            <th>Feb</th>
-                                            <th>Mar</th>
-                                            <th>Abr</th>
-                                            <th>May</th>
-                                            <th>Jun</th>
-                                            <th>Jul</th>
-                                            <th>Ago</th>
+                                            <th>Inicio</th>
+                                            <th>Años/Meses</th>
                                             <th>Suma</th>
                                             <th>Promedio</th>
+                                            <th>Desempeño Anual</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {data.map((item) => (
                                             <tr key={`${item.id}-${item.publicador}`}>
-                                                <td data-label="Nombre">{item.publicador}</td>
-                                                <td data-label="Meses">{item.meses ?? '-'}</td>
-                                                <td data-label="Sep">{item.sep}</td>
-                                                <td data-label="Oct">{item.oct}</td>
-                                                <td data-label="Nov">{item.nov}</td>
-                                                <td data-label="Dic">{item.dic}</td>
-                                                <td data-label="Ene">{item.ene}</td>
-                                                <td data-label="Feb">{item.feb}</td>
-                                                <td data-label="Mar">{item.mar}</td>
-                                                <td data-label="Abr">{item.abr}</td>
-                                                <td data-label="May">{item.may}</td>
-                                                <td data-label="Jun">{item.jun}</td>
-                                                <td data-label="Jul">{item.jul}</td>
-                                                <td data-label="Ago">{item.ago}</td>
+                                                <td data-label="Nombre">
+                                                    <div style={{ fontWeight: 'bold' }}>{item.publicador}</div>
+                                                </td>
+                                                <td data-label="Inicio">
+                                                    {item.inicio_precursorado ? dayjs(item.inicio_precursorado).format('MMM YYYY') : '-'}
+                                                </td>
+                                                <td data-label="Años/Meses">
+                                                    <div>{item.anios_precursorado ?? 0} años</div>
+                                                    <div className="text-muted" style={{ fontSize: '0.8rem' }}>{item.meses ?? 0} meses</div>
+                                                </td>
                                                 <td data-label="Suma">{item.suma}</td>
-                                                <td data-label="Promedio">{item.promedio.toFixed(2)}</td>
+                                                <td data-label="Promedio">
+                                                    <span className={`badge ${item.promedio < 45 ? 'badge-danger' : item.promedio < 50 ? 'badge-warning' : 'badge-success'}`}>
+                                                        {item.promedio.toFixed(2)}
+                                                    </span>
+                                                </td>
+                                                <td data-label="Desempeño">
+                                                    <MonthlyBarChart item={item} />
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -132,5 +167,6 @@ const PrecursoresRegulares = () => {
         </div>
     );
 };
+
 
 export default PrecursoresRegulares;

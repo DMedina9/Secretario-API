@@ -45,7 +45,7 @@ const Navbar = () => {
 
     return (
         <>
-            <nav className="navbar" id="navbar">
+            <nav className="navbar no-print" id="navbar">
                 <div className="container navbar-content">
                     <div className="navbar-brand">
                         <img src="/logo.png" alt="Secretario Logo" className="navbar-logo" />

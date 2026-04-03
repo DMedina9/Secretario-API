@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Secretario de Congregación",
-    "slug": "mobile",
+    "slug": "secretario-de-congregacion",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,7 +21,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.dmedina9.mobile"
+      "package": "com.dmedina9.secretariodecongregacion"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,6 +34,9 @@
       "eas": {
         "projectId": "d5893d36-2670-42fc-9346-c769abd4b427"
       }
+    },
+    "updates": {
+      "enabled": false
     }
   }
 }

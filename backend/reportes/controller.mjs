@@ -185,7 +185,7 @@ async function getS21(anio = null, id_publicador = null, zip = null) {
     // Leer todos los publicadores
     const Publicadores = await sequelize.query(`select p.id, nombre, apellidos, fecha_nacimiento, fecha_bautismo, grupo, case sup_grupo when 1 then 'Sup' when 2 then 'Aux' else null end as sup_grupo,
 		sexo, pr.descripcion as privilegio, tp.descripcion as tipo_publicador, ungido, calle, num, colonia, telefono_fijo, telefono_movil, contacto_emergencia, tel_contacto_emergencia, correo_contacto_emergencia,
-        (select max(mes) from Informes where id_publicador = p.id and predico_en_el_mes = 1) as mes_informe
+        ifnull((select date(max(mes), '+6 months') from Informes where id_publicador = p.id and predico_en_el_mes = 1), date('now', 'start of month', '-1 month')) as mes_informe
 		from Publicadores p
 		left join Privilegios pr
 			on pr.id = p.id_privilegio
@@ -222,8 +222,8 @@ async function getS21(anio = null, id_publicador = null, zip = null) {
 
         let anio_informe = anio;
         if (anio_informe == null) {
-            const mes = publicador.mes_informe ? dayjs(publicador.mes_informe).toDate() : await getMesInforme();
-            anio_informe = mes.getFullYear() + (mes.getMonth() >= 8 ? 1 : 0);
+            const mes = dayjs(publicador.mes_informe);
+            anio_informe = mes.year() + (mes.month() >= 8 ? 1 : 0);
         }
         form.getTextField(dataFields['Año de servicio']).setText(anio_informe.toString());
 
