@@ -6,13 +6,10 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es'; // Spanish
-import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2, RefreshCcw, Plus } from 'lucide-react-native';
+import { ArrowLeft, User, Search, X, Share2, Edit2, Trash2, Plus } from 'lucide-react-native';
 import { getAllPublicadores, savePublicador, deletePublicador } from '../services/repositories/PublicadorRepo';
-import { syncAllData, pushEntityChanges } from '../services/SyncService';
-import { Publicador } from '../services/models';
-import { Send } from 'lucide-react-native';
+import { getAllConfiguraciones } from '../services/repositories/ConfiguracionesRepo';
 import ViewShot from 'react-native-view-shot';
-import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 import FileService from '../services/FileService';
 
@@ -98,9 +95,12 @@ const PublicadorCardView = ({ p }) => {
     const [configuraciones, setConfiguraciones] = useState([]);
     useEffect(() => {
         const fetchConfiguraciones = async () => {
-            const response = await api.get('/configuraciones');
-            const data = await response.data;
-            setConfiguraciones(data.data);
+            try {
+                const data = await getAllConfiguraciones();
+                setConfiguraciones(data);
+            } catch (error) {
+                console.error('Error loading config for card:', error);
+            }
         };
         fetchConfiguraciones();
     }, []);
@@ -381,24 +381,6 @@ const PublicadoresScreen = ({ navigation }) => {
         }
     };
 
-    const handleSync = async () => {
-        setLoading(true);
-        await syncAllData();
-        fetchPublicadores();
-    };
-
-    const handlePushChanges = async () => {
-        setLoading(true);
-        const res = await pushEntityChanges(Publicador, '/publicador');
-        if (res.success) {
-            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} cambios al servidor.`);
-            fetchPublicadores();
-        } else {
-            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los cambios.');
-        }
-        setLoading(false);
-    };
-
     const handleDelete = (p) => {
         Alert.alert(
             'Eliminar Publicador',
@@ -444,9 +426,6 @@ const PublicadoresScreen = ({ navigation }) => {
             <View style={st.cardInfo}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={st.name}>{item.apellidos}, {item.nombre}</Text>
-                    {!!item.is_dirty && (
-                        <View style={st.dirtyDot} />
-                    )}
                 </View>
                 <Text style={st.sub}>Grupo {item.grupo || '—'}{item.privilegio ? `  ·  ${item.privilegio}` : ''}</Text>
             </View>
@@ -469,12 +448,6 @@ const PublicadoresScreen = ({ navigation }) => {
                 <View style={{ flexDirection: 'row' }}>
                     <TouchableOpacity onPress={() => setEditing(EMPTY_FORM)} style={{ padding: 8 }}>
                         <Plus size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handlePushChanges} style={{ padding: 8 }}>
-                        <Send size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleSync} style={{ padding: 8 }}>
-                        <RefreshCcw size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -737,7 +710,7 @@ const getCardStyles = (colors) => StyleSheet.create({
         borderBottomWidth: 1, borderBottomColor: colors.border, paddingBottom: 8,
     },
     rowLabel: { fontSize: 14, color: '#4B5563', fontWeight: '500' },
-    rowValue: { fontSize: 14, color: '#000000', fontWeight: '700' },
+    rowValue: { fontSize: 14, color: colors.isDarkMode ? '#f8fafc' : '#000000', fontWeight: '700' },
     section: { marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
     sectionLabel: { fontSize: 13, fontWeight: '700', color: '#4B5563', marginBottom: 4 },
     sectionValue: { fontSize: 14, color: colors.textSecondary },

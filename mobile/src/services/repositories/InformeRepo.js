@@ -107,7 +107,7 @@ export const getIrregulares = async (mes) => {
         `, { type: QueryTypes.SELECT });
 
     // Informes en últimos 6 meses
-    const informes = await Informes.findAll({
+    const informes_data = await Informes.findAll({
         where: {
             mes: {
                 [Op.between]: [dayjs(mes).subtract(5, 'month').format('YYYY-MM-DD'), dayjs(mes).format('YYYY-MM-DD')]
@@ -127,7 +127,6 @@ export const getIrregulares = async (mes) => {
     const rows = [];
     for (const pub of publicadores) {
         const started = pub.inicio_predicacion ? dayjs(pub.inicio_predicacion).startOf('month') : null;
-        const effectiveStartMonth = started && started.isAfter(dayjs(mes).subtract(5, 'month')) ? started : dayjs(mes).subtract(5, 'month');
 
         const expectedMonths = started
             ? Math.min(6, dayjs(mes).diff(started.startOf('month'), 'month') + 1)
@@ -141,7 +140,7 @@ export const getIrregulares = async (mes) => {
                 return !started || !mday.isBefore(started);
             })
             .map((m) => {
-                const informe = informes.find((inf) => inf.id_publicador === pub.id && dayjs(inf.mes).format('YYYY-MM') === m);
+                const informe = informes_data.find((inf) => inf.id_publicador === pub.id && dayjs(inf.mes).format('YYYY-MM') === m);
                 return {
                     mes: m,
                     predico: informe ? !!informe.predico_en_el_mes : false
@@ -152,13 +151,16 @@ export const getIrregulares = async (mes) => {
         const faltantes = expectedMonths - predicados;
 
         let maxConsecutivos = 0;
-        let current = 6;
-        for (const index in monthInfos) {
-            if (monthInfos[index].predico) {
-                current = 5 - index;
+        let current = 0;
+        // Search reversed to find consecutive months without preaching from the end
+        for (let i = monthInfos.length - 1; i >= 0; i--) {
+            if (!monthInfos[i].predico) {
+                current++;
+            } else {
+                break;
             }
         }
-        maxConsecutivos = Math.max(maxConsecutivos, current);
+        maxConsecutivos = current;
 
         if (predicados < expectedMonths) {
             rows.push({
@@ -185,11 +187,11 @@ export const savePrecursorAuxiliar = async (data) => {
         if (data.id) {
             const pa = await PrecursoresAuxiliares.findByPk(data.id);
             if (pa) {
-                await pa.update({ ...data, is_dirty: true });
+                await pa.update({ ...data });
                 return true;
             }
         }
-        await PrecursoresAuxiliares.create({ ...data, is_dirty: true });
+        await PrecursoresAuxiliares.create({ ...data });
         return true;
     } catch (e) {
         console.error(e);
@@ -215,9 +217,9 @@ export const saveInforme = async (data) => {
     const { id, ...rest } = data;
     if (id) {
         const i = await Informes.findByPk(id);
-        if (i) return await i.update({ ...rest, is_dirty: true });
+        if (i) return await i.update({ ...rest });
     } else {
-        return await Informes.create({ ...rest, is_dirty: true });
+        return await Informes.create({ ...rest });
     }
 };
 
@@ -228,13 +230,6 @@ export const deleteInforme = async (id) => {
 };
 
 export const getPrecursoresAuxiliaresByMonth = async (mes) => {
-    // This is from a different table in original
-    // But I can fetch via Informe if I know the type
-    // The original uses a table PrecursoresAuxiliares
-    //return await PrecursoresAuxiliares.findAll({
-    //    where: { mes },
-    //    include: [Publicadores]
-    //});
     return await sequelize.query(`
             SELECT pa.*,
                 p.nombre, p.apellidos, p.grupo,

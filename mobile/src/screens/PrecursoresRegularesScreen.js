@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, FlatList } from 'react-native';
-import { Share as ShareIcon, ArrowLeft, ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react-native';
+import { Share as ShareIcon, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { getPrecursoresRegulares } from '../services/repositories/InformeRepo';
-import { syncAllData } from '../services/SyncService';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -82,12 +81,6 @@ const PrecursoresRegularesScreen = ({ navigation }) => {
         }
     };
 
-    const handleSync = async () => {
-        setLoading(true);
-        await syncAllData();
-        loadData();
-    };
-
     const handleYearChange = (newYear) => {
         setCurrentYear(newYear);
         loadData();
@@ -115,9 +108,6 @@ const PrecursoresRegularesScreen = ({ navigation }) => {
                 <Text style={st.headerTitle}>Precursores Regulares</Text>
                 <TouchableOpacity onPress={onShare} disabled={loading || data.length === 0}>
                     <ShareIcon size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleSync} style={{ marginLeft: 15 }}>
-                    <RefreshCcw size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
 

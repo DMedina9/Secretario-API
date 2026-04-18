@@ -5,14 +5,10 @@ import {
 } from 'react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import api from '../services/api';
-import DropDownPicker from 'react-native-dropdown-picker'; // Assumes this is available, if not we'll use a simpler selection or rely on it being installed
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, RefreshCcw, Edit, CheckSquare, Square, Save, X } from 'lucide-react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, Edit, CheckSquare, Square, Save, X } from 'lucide-react-native';
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
 import { getPrecursoresAuxiliaresByMonth, savePrecursorAuxiliar, deletePrecursorAuxiliar } from '../services/repositories/InformeRepo';
-import { syncAllData, pushEntityChanges } from '../services/SyncService';
-import { PrecursorAuxiliar } from '../services/models';
-import { Send } from 'lucide-react-native';
 import { useTheme } from '../contexts/ThemeContext';
 
 dayjs.locale('es');
@@ -42,7 +38,7 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
     const loadPublicadores = async () => {
         try {
             const pubs = await getAllPublicadores();
-            setPublicadores(pubs.filter(p => p.id_tipo_publicador === 1 && p.Estatus == 'Activo').sort((a, b) => a.apellidos.localeCompare(b.apellidos)));
+            setPublicadores(pubs.filter(p => p.id_tipo_publicador === 1 && p.Estatus === 'Activo').sort((a, b) => a.apellidos.localeCompare(b.apellidos)));
         } catch (e) {
             console.error(e);
         }
@@ -59,13 +55,6 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleSync = async () => {
-        setLoading(true);
-        await syncAllData();
-        loadPublicadores();
-        loadPrecursores(month);
     };
 
     const toggleEditMode = () => {
@@ -117,18 +106,6 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const handlePushChanges = async () => {
-        setLoading(true);
-        const res = await pushEntityChanges(PrecursorAuxiliar, '/precursoresAuxiliares');
-        if (res.success) {
-            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} registros al servidor.`);
-            loadPrecursores(month);
-        } else {
-            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los cambios.');
-        }
-        setLoading(false);
     };
 
     const handleMonthChange = (direction) => {
@@ -207,15 +184,13 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     {!isEditMode ? (
                         <>
-                            <TouchableOpacity onPress={handlePushChanges}><Send size={22} color={colors.textSecondary} /></TouchableOpacity>
-                            <TouchableOpacity onPress={handleSync}><RefreshCcw size={22} color={colors.textSecondary} /></TouchableOpacity>
-                            <TouchableOpacity onPress={toggleEditMode}><Edit size={22} color={colors.textSecondary} /></TouchableOpacity>
+                            <TouchableOpacity onPress={toggleEditMode}><Edit size={22} color="#FFFFFF" /></TouchableOpacity>
                             <TouchableOpacity onPress={() => setShowForm(!showForm)}>
-                                <Plus size={22} color={colors.textSecondary} />
+                                <Plus size={22} color="#FFFFFF" />
                             </TouchableOpacity>
                         </>
                     ) : (
-                        <TouchableOpacity onPress={toggleEditMode}><X size={24} color={colors.textSecondary} /></TouchableOpacity>
+                        <TouchableOpacity onPress={toggleEditMode}><X size={24} color="#FFFFFF" /></TouchableOpacity>
                     )}
                 </View>
             </View>
@@ -338,7 +313,6 @@ const PrecursoresAuxiliaresScreen = ({ navigation }) => {
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                                             <Text style={st.itemGroup}>Grupo {p.grupo}</Text>
                                             {p.notas ? <Text style={st.itemNotes}> • {p.notas}</Text> : null}
-                                            {!!p.is_dirty && <View style={st.dirtyDot} />}
                                         </View>
                                     </View>
                                     <TouchableOpacity onPress={() => handleDelete(p.id)} style={st.deleteBtn}>
@@ -389,7 +363,6 @@ const getStyles = (colors) => StyleSheet.create({
     itemName: { fontSize: 16, fontWeight: '700', color: colors.text },
     itemGroup: { fontSize: 13, color: colors.primary, fontWeight: '600' },
     itemNotes: { fontSize: 13, color: colors.textSecondary },
-    dirtyDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#f97316', marginLeft: 8 },
     deleteBtn: { padding: 8, backgroundColor: colors.isDarkMode ? '#451a1a' : '#fee2e2', borderRadius: 8 },
     editActions: {
         position: 'absolute', bottom: 20, left: 16, right: 16,

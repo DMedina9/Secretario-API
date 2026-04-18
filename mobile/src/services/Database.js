@@ -33,7 +33,6 @@ export const initDatabase = async () => {
                 colonia TEXT, telefono_fijo INTEGER, telefono_movil INTEGER,
                 contacto_emergencia TEXT, tel_contacto_emergencia INTEGER,
                 correo_contacto_emergencia TEXT,
-                is_dirty BOOLEAN DEFAULT 0, last_sync TEXT,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -41,25 +40,23 @@ export const initDatabase = async () => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT, id_publicador INTEGER, mes TEXT, 
                 mes_enviado TEXT, predico_en_el_mes INTEGER, cursos_biblicos INTEGER, 
                 id_tipo_publicador INTEGER, horas INTEGER, notas TEXT, horas_SS INTEGER, 
-                is_dirty BOOLEAN DEFAULT 0, last_sync TEXT,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS Asistencias (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, fecha TEXT, asistentes INTEGER, 
-                notas TEXT, is_dirty BOOLEAN DEFAULT 0, last_sync TEXT,
+                notas TEXT,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS Configuraciones (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, clave TEXT UNIQUE, valor TEXT,
-                is_dirty BOOLEAN DEFAULT 0, last_sync TEXT,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS PrecursoresAuxiliares (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, id_publicador INTEGER, mes TEXT, 
-                notas TEXT, is_dirty BOOLEAN DEFAULT 0, last_sync TEXT,
+                notas TEXT,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
             );

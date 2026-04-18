@@ -5,13 +5,9 @@ import {
 } from 'react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle, RefreshCcw } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle } from 'lucide-react-native';
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
 import { getInformesByPublicadorAndAnio, getPrecursoresAuxiliaresByMonth, saveInforme } from '../services/repositories/InformeRepo';
-import { syncAllData, pushEntityChanges } from '../services/SyncService';
-import { Informe } from '../services/models';
-import { Send } from 'lucide-react-native';
-import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
 dayjs.locale('es');
@@ -24,7 +20,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
     const prevIsRP = index > 0 && data[index - 1].id_tipo_publicador === 2;
     const showRPHeader = index === 0 && isRP;
     const showPubHeader = (index === 0 && !isRP) || (index > 0 && !isRP && prevIsRP);
-    //console.log(item);
+    
     return (
         <>
             {showRPHeader && <Text style={st.groupHeader}>⭐ Precursores Regulares</Text>}
@@ -206,14 +202,6 @@ const InformesScreen = ({ navigation }) => {
         }
     };
 
-    const handleSync = async () => {
-        setLoading(true);
-        await syncAllData();
-        loadGroups();
-        if (bulkData.length) loadBulkData();
-        else setLoading(false);
-    };
-
     const handleFieldChange = (index, field, value) => {
         setBulkData(prev => {
             const next = [...prev];
@@ -255,26 +243,12 @@ const InformesScreen = ({ navigation }) => {
         }
     };
 
-    const handlePushChanges = async () => {
-        setLoading(true);
-        const res = await pushEntityChanges(Informe, '/informe');
-        if (res.success) {
-            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} informes al servidor.`);
-            loadBulkData();
-        } else {
-            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los informes.');
-        }
-        setLoading(false);
-    };
-
     return (
         <View style={st.container}>
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Informes de Predicación</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <TouchableOpacity onPress={handlePushChanges}><Send size={24} color="#FFFFFF" /></TouchableOpacity>
-                    <TouchableOpacity onPress={handleSync}><RefreshCcw size={24} color="#FFFFFF" /></TouchableOpacity>
                     {bulkData.length > 0 ? (
                         <TouchableOpacity onPress={handleSave}><Save size={24} color={colors.primary} /></TouchableOpacity>
                     ) : null}
@@ -284,7 +258,7 @@ const InformesScreen = ({ navigation }) => {
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
                 {/* Filters */}
                 <View style={st.filterCard}>
-                    <View style={st.monthNavRow}>
+                    <View style={st.month NavRow}>
                         <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').subtract(1, 'month').format('YYYY-MM'))}>
                             <ChevronLeft size={26} color={colors.text} />
                         </TouchableOpacity>

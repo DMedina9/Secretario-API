@@ -1,4 +1,4 @@
-import { Publicadores, TipoPublicador, sequelize, QueryTypes } from '../models';
+import { Publicadores, TipoPublicador, sequelize, QueryTypes, Informes } from '../models';
 
 export const getAllPublicadores = async (grupo) => {
     return await sequelize.query(`
@@ -37,12 +37,12 @@ export const savePublicador = async (data) => {
         // Update
         const p = await Publicadores.findByPk(id);
         if (p) {
-            return await p.update({ ...rest, is_dirty: true });
+            return await p.update({ ...rest });
         }
         return null;
     } else {
         // Create
-        return await Publicadores.create({ ...rest, is_dirty: true });
+        return await Publicadores.create({ ...rest });
     }
 };
 

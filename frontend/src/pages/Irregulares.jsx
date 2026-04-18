@@ -61,8 +61,8 @@ const Irregulares = () => {
                 <p className="page-description">Reporte de publicadores con meses sin predicar en los últimos 6 meses</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg no-print">
-                <div className="card">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-lg mb-lg">
+                <div className="card no-print">
                     <div className="card-header">
                         <h3 className="card-title">Filtros</h3>
                     </div>

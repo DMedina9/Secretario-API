@@ -6,12 +6,8 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Edit2, Trash2, X, RefreshCcw } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, X, Trash2 } from 'lucide-react-native';
 import { getAllAsistencias, saveAsistencia, deleteAsistencia } from '../services/repositories/AsistenciaRepo';
-import { syncAllData, pushEntityChanges } from '../services/SyncService';
-import { Asistencia } from '../services/models';
-import { Send } from 'lucide-react-native';
-import api from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
 
 dayjs.locale('es');
@@ -169,12 +165,6 @@ const AsistenciasScreen = ({ navigation }) => {
         }
     };
 
-    const handleSync = async () => {
-        setLoading(true);
-        await syncAllData();
-        load();
-    };
-
     const handleDelete = async () => {
         if (!selected?.id) return;
         try {
@@ -189,18 +179,6 @@ const AsistenciasScreen = ({ navigation }) => {
         } catch {
             Alert.alert('Error', 'Error al eliminar.');
         }
-    };
-
-    const handlePushChanges = async () => {
-        setLoading(true);
-        const res = await pushEntityChanges(Asistencia, '/asistencias');
-        if (res.success) {
-            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} registros de asistencia al servidor.`);
-            load();
-        } else {
-            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir las asistencias.');
-        }
-        setLoading(false);
     };
 
     // Build calendar grid for current month
@@ -230,10 +208,8 @@ const AsistenciasScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Asistencias</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <TouchableOpacity onPress={handlePushChanges}><Send size={24} color="#FFFFFF" /></TouchableOpacity>
-                    <TouchableOpacity onPress={handleSync}><RefreshCcw size={24} color="#FFFFFF" /></TouchableOpacity>
                     <TouchableOpacity onPress={() => { setSelected(null); setModalVisible(true); }}>
-                        <Plus size={24} color={colors.primary} />
+                        <Plus size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -291,7 +267,6 @@ const AsistenciasScreen = ({ navigation }) => {
                                 </View>
                                 <View style={st.asistenciaCount}>
                                     <Text style={st.asistenciaCountText}>{a.asistentes}</Text>
-                                    {!!a.is_dirty && <View style={st.dirtyIndicator} />}
                                 </View>
                             </TouchableOpacity>
                         ))
@@ -306,7 +281,6 @@ const AsistenciasScreen = ({ navigation }) => {
                 onSave={async () => { 
                     setModalVisible(false); 
                     setSelected(null); 
-                    await syncAllData(); // Refresh local DB
                     load(); 
                 }}
                 onDelete={handleDelete}
@@ -348,7 +322,6 @@ const getStyles = (colors) => StyleSheet.create({
     asistenciaNota: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
     asistenciaCount: { backgroundColor: colors.primary, borderRadius: 24, width: 48, height: 48, justifyContent: 'center', alignItems: 'center', position: 'relative' },
     asistenciaCountText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
-    dirtyIndicator: { position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: 6, backgroundColor: '#f97316', borderWidth: 2, borderColor: colors.card },
 
     // Modal
     overlay: { flex: 1, backgroundColor: colors.modalOverlay, justifyContent: 'center', padding: 24 },
@@ -363,7 +336,7 @@ const getStyles = (colors) => StyleSheet.create({
         fontSize: 15, backgroundColor: colors.inputBackground, color: colors.inputText
     },
     deleteBtn: {
-        width: 44, height: 44, borderRadius: 8, borderWidth: 1, borderColor: colors.danger,
+        width: 44, height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#ef4444',
         backgroundColor: colors.isDarkMode ? '#450a0a' : '#fff1f2', justifyContent: 'center', alignItems: 'center',
     },
     cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border },

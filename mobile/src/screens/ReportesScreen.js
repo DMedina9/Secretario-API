@@ -8,10 +8,9 @@ import { WebView } from 'react-native-webview';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ArrowLeft, RefreshCcw } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { getAllPublicadores, getTiposPublicador } from '../services/repositories/PublicadorRepo';
 import { getS21Local, getS21TotalesLocal, getS88Local, getReporteGeneralLocal } from '../services/repositories/ReportesRepo';
-import { syncAllData } from '../services/SyncService';
 import { useTheme } from '../contexts/ThemeContext';
 import FileService from '../services/FileService';
 import { PDF_JS_CODE, PDF_WORKER_CODE } from '../pdfjs_code';
@@ -233,19 +232,6 @@ const VisualizadorTab = ({ anioServicio }) => {
         loadLists();
     }, []);
 
-    const handleSync = async () => {
-        setLoadingPdf(true); // Reuse loading or add new
-        await syncAllData();
-        // Reload lists
-        const [pubData, tipoData] = await Promise.all([
-            getAllPublicadores(),
-            getTiposPublicador(),
-        ]);
-        setPublicadores(pubData);
-        setTiposPublicador(tipoData);
-        setLoadingPdf(false);
-    };
-
     const handleGenerarPDF = async () => {
         if (!year) { Alert.alert('Aviso', 'Ingresa un año de servicio'); return; }
 
@@ -461,9 +447,7 @@ const ReportesScreen = ({ navigation }) => {
                     <ArrowLeft size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={st.headerTitle}>Reportes</Text>
-                <TouchableOpacity onPress={() => (activeTab === 'visualizador' ? handleSync() : Alert.alert('Aviso', 'Sincronizar no disponible en esta pestaña'))}>
-                    <RefreshCcw size={24} color="#FFFFFF" />
-                </TouchableOpacity>
+                <View style={{ width: 24 }} />
             </View>
 
             <View style={st.tabBar}>

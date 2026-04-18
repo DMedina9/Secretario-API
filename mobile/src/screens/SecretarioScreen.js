@@ -7,10 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { ArrowLeft, FileText, BarChart2 } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useTheme } from '../contexts/ThemeContext';
-import api from '../services/api';
 import { getS1, getS3, getS10 } from '../services/repositories/SecretarioRepo';
 import { Privilegio, TipoPublicador } from '../services/models';
 
@@ -215,11 +214,11 @@ const ReporteS10View = () => {
                             <View style={st.cardBody}>
                                 <View style={st.reporteRow}>
                                     <Text style={st.reporteLabel}>Reunión del fin de semana</Text>
-                                    <Text style={st.reporteValue}>{data.asistencia.fin_de_semana}</Text>
+                                    <Text style={st.reporteValue}>{data.asistencia ? data.asistencia.fin_de_semana : 0}</Text>
                                 </View>
                                 <View style={st.reporteRow}>
                                     <Text style={st.reporteLabel}>Reunión de entre semana</Text>
-                                    <Text style={st.reporteValue}>{data.asistencia.entre_semana}</Text>
+                                    <Text style={st.reporteValue}>{data.asistencia ? data.asistencia.entre_semana : 0}</Text>
                                 </View>
                             </View>
                         </View>
@@ -232,11 +231,11 @@ const ReporteS10View = () => {
                             <View style={st.cardBody}>
                                 <View style={st.reporteRow}>
                                     <Text style={st.reporteLabel}>Número total de territorios</Text>
-                                    <Text style={st.reporteValue}>{data.territorios.total}</Text>
+                                    <Text style={st.reporteValue}>{data.territorios ? data.territorios.total : 0}</Text>
                                 </View>
                                 <View style={st.reporteRow}>
                                     <Text style={st.reporteLabel}>Territorios no predicados</Text>
-                                    <Text style={st.reporteValue}>{data.territorios.no_predicados}</Text>
+                                    <Text style={st.reporteValue}>{data.territorios ? data.territorios.no_predicados : 0}</Text>
                                 </View>
                             </View>
                         </View>
@@ -250,29 +249,29 @@ const ReporteS10View = () => {
                                 <View>
                                     <View style={st.reporteRow}>
                                         <Text style={st.reporteLabel}>Todos los publicadores activos:</Text>
-                                        <Text style={st.reporteValue}>{data.totales_congregacion.publicadores_activos}</Text>
+                                        <Text style={st.reporteValue}>{data.totales_congregacion ? data.totales_congregacion.publicadores_activos : 0}</Text>
                                     </View>
                                     <View style={st.reporteRow}>
                                         <Text style={st.reporteLabel}>Nuevos publicadores inactivos:</Text>
-                                        <Text style={st.reporteValue}>{data.totales_congregacion.nuevos_inactivos}</Text>
+                                        <Text style={st.reporteValue}>{data.totales_congregacion ? data.totales_congregacion.nuevos_inactivos : 0}</Text>
                                     </View>
                                     <View style={st.reporteRow}>
                                         <Text style={st.reporteLabel}>Publicadores reactivados:</Text>
-                                        <Text style={st.reporteValue}>{data.totales_congregacion.reactivados}</Text>
+                                        <Text style={st.reporteValue}>{data.totales_congregacion ? data.totales_congregacion.reactivados : 0}</Text>
                                     </View>
                                 </View>
                                 <View>
                                     <View style={st.reporteRow}>
                                         <Text style={st.reporteLabel}>Publicadores sordos:</Text>
-                                        <Text style={st.reporteValue}>{data.totales_congregacion.sordos}</Text>
+                                        <Text style={st.reporteValue}>{data.totales_congregacion ? data.totales_congregacion.sordos : 0}</Text>
                                     </View>
                                     <View style={st.reporteRow}>
                                         <Text style={st.reporteLabel}>Publicadores ciegos:</Text>
-                                        <Text style={st.reporteValue}>{data.totales_congregacion.ciegos}</Text>
+                                        <Text style={st.reporteValue}>{data.totales_congregacion ? data.totales_congregacion.ciegos : 0}</Text>
                                     </View>
                                     <View style={st.reporteRow}>
                                         <Text style={st.reporteLabel}>Publicadores encarcelados:</Text>
-                                        <Text style={st.reporteValue}>{data.totales_congregacion.encarcelados}</Text>
+                                        <Text style={st.reporteValue}>{data.totales_congregacion ? data.totales_congregacion.encarcelados : 0}</Text>
                                     </View>
                                 </View>
                             </View>

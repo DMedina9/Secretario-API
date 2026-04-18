@@ -3,19 +3,13 @@ import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
     Alert, ActivityIndicator, Modal, TextInput, Switch
 } from 'react-native';
-import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun, RefreshCcw } from 'lucide-react-native';
+import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun } from 'lucide-react-native';
 import { getAllConfiguraciones, saveConfiguracion } from '../services/repositories/ConfiguracionesRepo';
-import { syncAllData, pushEntityChanges } from '../services/SyncService';
-import { Configuracion } from '../services/models';
-import { Send } from 'lucide-react-native';
+import { Informes, Asistencias, PrecursoresAuxiliares, Publicadores } from '../services/models';
 import { useTheme } from '../contexts/ThemeContext';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import * as DocumentPicker from 'expo-document-picker';
-import api from '../services/api';
-import { useUser } from '../contexts/UserContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { io as ioClient } from 'socket.io-client';
 import FileService from '../services/FileService';
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
@@ -33,7 +27,6 @@ const ConfiguracionesSection = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedConfig, setSelectedConfig] = useState(null);
     const [inputValue, setInputValue] = useState('');
-
     const [configuraciones, setConfiguraciones] = useState([]);
 
     const fetchConfiguraciones = async () => {
@@ -63,29 +56,17 @@ const ConfiguracionesSection = () => {
         }
 
         try {
-            // Save to LOCAL DATABASE ONLY
             const success = await saveConfiguracion(selectedConfig, inputValue);
             if (success) {
-                Alert.alert('Éxito local', 'Configuración guardada localmente.');
+                Alert.alert('Éxito', 'Configuración guardada.');
                 setIsModalVisible(false);
                 fetchConfiguraciones();
             } else {
-                Alert.alert('Error', 'No se pudo guardar localmente.');
+                Alert.alert('Error', 'No se pudo guardar.');
             }
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'Error al guardar en la base local.');
-        }
-    };
-
-    const handlePushChanges = async () => {
-        setIsModalVisible(false); // Just in case
-        const res = await pushEntityChanges(Configuracion, '/configuraciones');
-        if (res.success) {
-            Alert.alert('Sincronización Exitosa', `Se subieron ${res.count} configuraciones al servidor.`);
-            fetchConfiguraciones();
-        } else {
-            Alert.alert('Error de Sincronización', res.error || 'No se pudieron subir los cambios.');
+            Alert.alert('Error', 'Error al guardar.');
         }
     };
 
@@ -93,9 +74,6 @@ const ConfiguracionesSection = () => {
         <View style={st.card}>
             <View style={st.headerRow}>
                 <Text style={st.cardTitle}>⚙️ Configuraciones del Sistema</Text>
-                <TouchableOpacity onPress={handlePushChanges} style={st.pushBtn}>
-                    <Send size={20} color={colors.primary} />
-                </TouchableOpacity>
             </View>
             {items.map((item, i) => (
                 <TouchableOpacity key={i} style={st.configRow} onPress={() => handleEditConfig(item.key)}>
@@ -144,169 +122,28 @@ const ConfiguracionesSection = () => {
     );
 };
 
-// ─── Sub-section: Gestión de Datos ───────────────────────────────────────────
+// ─── Sub-section: Gestión de Datos (Offline) ──────────────────────────────────
 const GestionDatosSection = () => {
     const { colors } = useTheme();
     const st = getStyles(colors);
     const [loading, setLoading] = useState(null);
 
-    const handleExport = async (tableKey, tableName) => {
-        Alert.alert(
-            `Exportar ${tableName}`,
-            'Selecciona el formato de exportación',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'XLSX', onPress: () => downloadAndShare(tableKey, 'excel', 'xlsx') },
-                { text: 'JSON', onPress: () => downloadAndShare(tableKey, 'json', 'json') },
-                { text: 'XML', onPress: () => downloadAndShare(tableKey, 'xml', 'xml') }
-            ]
-        );
-    };
-
-    const handleImport = async (tableKey, tableName) => {
-        Alert.alert(
-            `Importar ${tableName}`,
-            'Selecciona el formato de importación',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'XLSX', onPress: () => importFromFile(tableKey, 'excel') },
-                { text: 'JSON', onPress: () => importFromFile(tableKey, 'json') },
-                { text: 'XML', onPress: () => importFromFile(tableKey, 'xml') }
-            ]
-        );
-    };
-
-    const downloadAndShare = async (tableKey, format, extension) => {
-        setLoading(tableKey);
-        try {
-            const token = await AsyncStorage.getItem('@auth_token');
-            const url = `${api.defaults.baseURL}/${tableKey}/export?format=${format}`;
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'x-mobile-app': 'true',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error del servidor: ${response.status}`);
-            }
-
-            const buffer = await response.arrayBuffer();
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            const base64data = btoa(binary);
-
-            const filename = `${tableKey}_export.${extension}`;
-            const fileUri = FileSystem.cacheDirectory + filename;
-            await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: FileSystem.EncodingType.Base64 });
-
-            await FileService.saveAndShareFile(fileUri, filename);
-        } catch (error) {
-            Alert.alert('Error', error.message);
-        } finally {
-            setLoading(null);
-        }
-    };
-
-    const importFromFile = async (tableKey, format) => {
-        try {
-            let mimeType = '*/*';
-            if (format === 'json') mimeType = 'application/json';
-            else if (format === 'excel') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-            else if (format === 'xml') mimeType = 'application/xml';
-
-            const result = await DocumentPicker.getDocumentAsync({ type: mimeType });
-            if (result.canceled) return;
-
-            setLoading(`import_${tableKey}`);
-
-            const token = await AsyncStorage.getItem('@auth_token');
-            let response;
-            if (format === 'json') {
-                // For JSON, read and parse
-                const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri);
-                const data = JSON.parse(fileContent);
-                response = await fetch(`${api.defaults.baseURL}/${tableKey}/import`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        'x-mobile-app': 'true'
-                    },
-                    body: JSON.stringify({ format, data })
-                });
-                if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
-            } else {
-                // For Excel and XML, send as file
-                const formData = new FormData();
-                formData.append('file', {
-                    uri: result.assets[0].uri,
-                    name: result.assets[0].name,
-                    type: result.assets[0].mimeType || 'application/octet-stream'
-                });
-
-                response = await fetch(`${api.defaults.baseURL}/${tableKey}/import`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'x-mobile-app': 'true'
-                    },
-                    body: formData
-                });
-                if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
-            }
-
-            const resultData = await response.json();
-            Alert.alert('Éxito', 'Datos importados correctamente.');
-        } catch (error) {
-            Alert.alert('Error', error.message);
-        } finally {
-            setLoading(null);
-        }
-    };
-
     const downloadBackup = async () => {
         setLoading('backup');
         try {
-            // Obtener el token desde AsyncStorage
-            const token = await AsyncStorage.getItem('@auth_token');
-            if (!token) throw new Error('No hay token de autenticación');
-            const url = `${api.defaults.baseURL}/backup/download`;
-            const options = {
-                method: 'GET',
-                headers: {
-                    'x-mobile-app': 'true',
-                    'Authorization': `Bearer ${token}`
-                }
-            };
-
-            const response = await fetch(url, options);
-            if (!response.ok) throw new Error('Error al descargar respaldo');
-
-            const blob = await response.blob();
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = async () => {
-                try {
-                    const base64data = reader.result.split(',')[1];
-                    const filename = `backup-${Date.now()}.db`;
-                    const fileUri = FileSystem.cacheDirectory + filename;
-                    await FileSystem.writeAsStringAsync(fileUri, base64data, { encoding: FileSystem.EncodingType.Base64 });
-                    
-                    await FileService.saveAndShareFile(fileUri, filename);
-                } catch (e) {
-                    Alert.alert('Error', 'No se pudo guardar el respaldo.');
-                } finally {
-                    setLoading(null);
-                }
-            };
+            const dbName = 'secretario.db';
+            const dbUri = `${FileSystem.documentDirectory}SQLite/${dbName}`;
+            
+            // Generate a backup with timestamp
+            const backupFilename = `respaldo_secretario_${new Date().toISOString().split('T')[0]}.db`;
+            const backupUri = `${FileSystem.cacheDirectory}${backupFilename}`;
+            
+            await FileSystem.copyAsync({ from: dbUri, to: backupUri });
+            await FileService.saveAndShareFile(backupUri, backupFilename);
         } catch (error) {
-            Alert.alert('Error', error.message);
+            console.error(error);
+            Alert.alert('Error', 'No se pudo crear el respaldo de la base de datos.');
+        } finally {
             setLoading(null);
         }
     };
@@ -315,37 +152,35 @@ const GestionDatosSection = () => {
         try {
             const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
             if (result.canceled) return;
-            // Pedir confirmación antes de proceder
+
             Alert.alert(
-                'Confirmar restauración',
-                'La restauración reemplazará completamente la base de datos del servidor. ¿Deseas continuar?',
+                'Confirmar Restauración',
+                'Esto reemplazará todos los datos actuales por los del archivo seleccionado. La aplicación podría necesitar reiniciarse. ¿Deseas continuar?',
                 [
                     { text: 'Cancelar', style: 'cancel' },
                     {
                         text: 'Restaurar', style: 'destructive', onPress: async () => {
                             setLoading('restore');
                             try {
-                                const form = new FormData();
-                                form.append('backup', {
-                                    uri: result.assets[0].uri,
-                                    name: result.assets[0].name || 'backup.db',
-                                    type: result.assets[0].mimeType || 'application/octet-stream'
-                                });
-
-                                const resp = await fetch(`${api.defaults.baseURL}/backup/restore`, {
-                                    method: 'POST',
-                                    headers: { 'Authorization': `Bearer ${token}` },
-                                    body: form
-                                });
-
-                                const data = await resp.json();
-                                if (data && data.success) {
-                                    Alert.alert('Éxito', 'Restauración completada.');
-                                } else {
-                                    Alert.alert('Error', 'No se pudo restaurar: ' + (data.error || 'respuesta inesperada'));
+                                const dbName = 'secretario.db';
+                                const destUri = `${FileSystem.documentDirectory}SQLite/${dbName}`;
+                                
+                                // Ensure the SQLite directory exists
+                                const sqliteDir = `${FileSystem.documentDirectory}SQLite/`;
+                                const dirInfo = await FileSystem.getInfoAsync(sqliteDir);
+                                if (!dirInfo.exists) {
+                                    await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
                                 }
+
+                                await FileSystem.copyAsync({
+                                    from: result.assets[0].uri,
+                                    to: destUri
+                                });
+
+                                Alert.alert('Éxito', 'Restauración completada. Por favor reinicia la aplicación para ver los cambios.');
                             } catch (e) {
-                                Alert.alert('Error', 'No se pudo restaurar el respaldo.');
+                                console.error(e);
+                                Alert.alert('Error', 'No se pudo restaurar el archivo. Asegúrate de que es un archivo de base de datos válido.');
                             } finally {
                                 setLoading(null);
                             }
@@ -354,28 +189,15 @@ const GestionDatosSection = () => {
                 ]
             );
         } catch (e) {
-            Alert.alert('Error', 'No se pudo restaurar el respaldo.');
-        } finally {
-            // loading is handled in the confirmation branch
+            Alert.alert('Error', 'No se pudo abrir el selector de archivos.');
         }
     };
 
-    const actions = [
-        { key: 'publicador', label: 'Exportar Publicadores', icon: '📋' },
-        { key: 'asistencias', label: 'Exportar Asistencias', icon: '📊' },
-        { key: 'informe', label: 'Exportar Informes', icon: '📈' },
-    ];
-
-    const importActions = [
-        { key: 'publicador', label: 'Importar Publicadores', icon: '📥' },
-        { key: 'asistencias', label: 'Importar Asistencias', icon: '📥' },
-        { key: 'informe', label: 'Importar Informes', icon: '📥' },
-    ];
-
     return (
         <View style={st.card}>
-            <Text style={st.cardTitle}>📊 Gestión de Datos</Text>
-            <Text style={st.cardSubtitle}>Exporta e importa datos desde la aplicación móvil.</Text>
+            <Text style={st.cardTitle}>📊 Gestión de Datos Local</Text>
+            <Text style={st.cardSubtitle}>Respalda y restaura tu información directamente en este dispositivo.</Text>
+            
             <Modal
                 visible={loading === 'restore' || loading === 'backup'}
                 transparent
@@ -384,43 +206,12 @@ const GestionDatosSection = () => {
                 <View style={st.modalOverlayCentered}>
                     <View style={st.modalProgress}>
                         <ActivityIndicator size="large" color="#3b82f6" />
-                        <Text style={{ marginTop: 12, color: colors.text }}>{loading === 'backup' ? 'Descargando respaldo...' : 'Restaurando respaldo...'}</Text>
+                        <Text style={{ marginTop: 12, color: colors.text }}>
+                            {loading === 'backup' ? 'Creando respaldo...' : 'Restaurando datos...'}
+                        </Text>
                     </View>
                 </View>
             </Modal>
-            {actions.map(a => (
-                <TouchableOpacity
-                    key={a.key}
-                    style={[st.actionRow, loading === a.key && { opacity: 0.5 }]}
-                    onPress={() => handleExport(a.key, a.label)}
-                    disabled={loading !== null}
-                >
-                    <Text style={st.actionIcon}>{a.icon}</Text>
-                    {loading === a.key ? (
-                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
-                    ) : (
-                        <Text style={st.actionLabel}>{a.label}</Text>
-                    )}
-                    <ChevronRight size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-            ))}
-
-            {importActions.map(a => (
-                <TouchableOpacity
-                    key={`import_${a.key}`}
-                    style={[st.actionRow, loading === `import_${a.key}` && { opacity: 0.5 }]}
-                    onPress={() => handleImport(a.key, a.label)}
-                    disabled={loading !== null}
-                >
-                    <Text style={st.actionIcon}>{a.icon}</Text>
-                    {loading === `import_${a.key}` ? (
-                        <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
-                    ) : (
-                        <Text style={st.actionLabel}>{a.label}</Text>
-                    )}
-                    <ChevronRight size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-            ))}
 
             <TouchableOpacity
                 style={[st.actionRow, loading === 'backup' && { opacity: 0.5 }]}
@@ -428,11 +219,7 @@ const GestionDatosSection = () => {
                 disabled={!!loading}
             >
                 <Text style={st.actionIcon}>💾</Text>
-                {loading === 'backup' ? (
-                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
-                ) : (
-                    <Text style={st.actionLabel}>Descargar Respaldo de la Base</Text>
-                )}
+                <Text style={st.actionLabel}>Crear Respaldo (Exportar .db)</Text>
                 <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
 
@@ -442,11 +229,7 @@ const GestionDatosSection = () => {
                 disabled={!!loading}
             >
                 <Text style={st.actionIcon}>🔁</Text>
-                {loading === 'restore' ? (
-                    <ActivityIndicator style={{ flex: 1, alignItems: 'flex-start' }} color={colors.primary} />
-                ) : (
-                    <Text style={st.actionLabel}>Restaurar Respaldo desde Archivo</Text>
-                )}
+                <Text style={st.actionLabel}>Restaurar desde Archivo (.db)</Text>
                 <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
         </View>
@@ -483,19 +266,19 @@ const ArchivosSection = () => {
     const handleClearFolder = async () => {
         await AsyncStorage.removeItem('@download_folder_uri');
         setFolderUri(null);
-        Alert.alert('Aviso', 'Se usará la carpeta interna de la aplicación (directorio del proyecto).');
+        Alert.alert('Aviso', 'Se usará la carpeta interna de la aplicación.');
     };
 
     return (
         <View style={st.card}>
             <Text style={st.cardTitle}>📁 Archivos y Descargas</Text>
-            <Text style={st.cardSubtitle}>Configura dónde se guardarán los reportes y respaldos antes de compartirlos.</Text>
+            <Text style={st.cardSubtitle}>Configura dónde se guardarán los reportes y respaldos.</Text>
             
             <View style={st.configRow}>
                 <View style={{ flex: 1 }}>
                     <Text style={st.configLabel}>Carpeta de Descargas</Text>
                     <Text style={st.configDesc} numberOfLines={1} ellipsizeMode="middle">
-                        {folderUri ? folderUri : 'No configurada (usar directorio del proyecto)'}
+                        {folderUri ? folderUri : 'Interna del sistema'}
                     </Text>
                 </View>
                 <TouchableOpacity onPress={handleSelectFolder} style={st.folderBtn}>
@@ -512,8 +295,7 @@ const ArchivosSection = () => {
     );
 };
 
-
-// ─── Sub-section: Mantenimiento ───────────────────────────────────────────────
+// ─── Sub-section: Mantenimiento (Local) ───────────────────────────────────────
 const MantenimientoSection = () => {
     const { colors } = useTheme();
     const st = getStyles(colors);
@@ -521,18 +303,23 @@ const MantenimientoSection = () => {
 
     const handleClean = (type) => {
         Alert.alert(
-            'Confirmar',
-            `¿Estás seguro de que deseas limpiar los registros antiguos de ${type}?`,
+            'Confirmar Limpieza',
+            `¿Estás seguro de que deseas eliminar permanentemente todos los registros de ${type}? Esta acción no se puede deshacer.`,
             [
                 { text: 'Cancelar', style: 'cancel' },
                 {
-                    text: 'Limpiar', style: 'destructive', onPress: async () => {
+                    text: 'Eliminar', style: 'destructive', onPress: async () => {
                         setLoading(type);
                         try {
-                            await api.delete(`/mantenimiento/${type}`);
-                            Alert.alert('✅ Hecho', `Registros de ${type} eliminados.`);
-                        } catch {
-                            Alert.alert('Error', 'No se pudo completar la operación.');
+                            if (type === 'informes') await Informes.destroy({ where: {}, truncate: true });
+                            else if (type === 'asistencias') await Asistencias.destroy({ where: {}, truncate: true });
+                            else if (type === 'publicadores') await Publicadores.destroy({ where: {}, truncate: true });
+                            else if (type === 'precursores') await PrecursoresAuxiliares.destroy({ where: {}, truncate: true });
+                            
+                            Alert.alert('✅ Hecho', `Registros de ${type} eliminados exitosamente.`);
+                        } catch (error) {
+                            console.error(error);
+                            Alert.alert('Error', 'No se pudo completar la operación local.');
                         } finally {
                             setLoading(null);
                         }
@@ -543,14 +330,16 @@ const MantenimientoSection = () => {
     };
 
     const actions = [
-        { key: 'informes', label: 'Limpiar Informes Antiguos', color: '#ef4444' },
-        { key: 'asistencias', label: 'Limpiar Asistencias Antiguas', color: '#f97316' },
+        { key: 'informes', label: 'Borrar Todos los Informes', color: '#ef4444' },
+        { key: 'asistencias', label: 'Borrar Todas las Asistencias', color: '#f97316' },
+        { key: 'precursores', label: 'Borrar Precursores Auxiliares', color: '#3b82f6' },
+        { key: 'publicadores', label: 'Borrar Todos los Publicadores', color: '#ef4444' },
     ];
 
     return (
         <View style={st.card}>
-            <Text style={st.cardTitle}>🗑️ Mantenimiento</Text>
-            <Text style={st.cardSubtitle}>Elimina registros históricos para mantener la base de datos limpia.</Text>
+            <Text style={st.cardTitle}>🗑️ Mantenimiento Local</Text>
+            <Text style={st.cardSubtitle}>Elimina registros locales para liberar espacio o reiniciar datos.</Text>
             {actions.map(a => (
                 <TouchableOpacity
                     key={a.key}
@@ -568,16 +357,16 @@ const MantenimientoSection = () => {
     );
 };
 
-// ─── Sub-section: Usuarios ────────────────────────────────────────────────────
-const UsuariosSection = () => {
+// ─── Sub-section: Usuarios (Eliminado) ─────────────────────────────────────────
+const InfoVersionSection = () => {
     const { colors } = useTheme();
     const st = getStyles(colors);
     return (
         <View style={st.card}>
-            <Text style={st.cardTitle}>👥 Usuarios</Text>
-            <Text style={st.cardSubtitle}>La gestión de usuarios (crear, editar, eliminar cuentas) está disponible únicamente en la versión web por razones de seguridad.</Text>
+            <Text style={st.cardTitle}>ℹ️ Información</Text>
+            <Text style={st.cardSubtitle}>Esta aplicación funciona de manera 100% offline. Tu información se guarda exclusivamente en este dispositivo.</Text>
             <View style={st.infoBox}>
-                <Text style={st.infoText}>💡 Accede desde un navegador en la misma red local para gestionar cuentas de usuario.</Text>
+                <Text style={st.infoText}>💡 Recuerda realizar respaldos periódicos usando la opción de "Gestión de Datos Local".</Text>
             </View>
         </View>
     );
@@ -614,29 +403,14 @@ const AparienciaSection = () => {
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const ConfiguracionScreen = ({ navigation }) => {
     const [section, setSection] = useState('configuraciones');
-    const { token } = useUser();
-
-    useEffect(() => {
-        // connect to Socket.IO to receive backup notifications
-        if (!token) return;
-        const socket = ioClient(api.defaults.baseURL, { transports: ['websocket'], auth: { token } });
-        socket.on('connect', () => { });
-        socket.on('backup', (data) => {
-            if (data.status === 'restore_started') Alert.alert('Restauración', 'La restauración ha iniciado');
-            if (data.status === 'restore_success') Alert.alert('Restauración', 'Restauración completada con éxito');
-            if (data.status === 'restore_error') Alert.alert('Error', 'Error al restaurar: ' + (data.error || ''));
-        });
-
-        return () => socket.disconnect();
-    }, [token]);
 
     const sections = [
-        { key: 'configuraciones', label: 'Config.', icon: <Settings size={16} color="#fff" /> },
-        { key: 'apariencia', label: 'Tema', icon: <Moon size={16} color="#fff" /> },
-        { key: 'archivos', label: 'Archivos', icon: <Database size={16} color="#fff" /> },
-        { key: 'gestion', label: 'Datos', icon: <Database size={16} color="#fff" /> },
-        { key: 'mantenimiento', label: 'Mant.', icon: <Wrench size={16} color="#fff" /> },
-        { key: 'usuarios', label: 'Usuarios', icon: <Users size={16} color="#fff" /> },
+        { key: 'configuraciones', label: 'Config.', icon: <Settings size={16} /> },
+        { key: 'apariencia', label: 'Tema', icon: <Moon size={16} /> },
+        { key: 'archivos', label: 'Archivos', icon: <Database size={16} /> },
+        { key: 'gestion', label: 'Datos', icon: <Database size={16} /> },
+        { key: 'mantenimiento', label: 'Mant.', icon: <Wrench size={16} /> },
+        { key: 'info', label: 'Info', icon: <Users size={16} /> },
     ];
 
     const { colors } = useTheme();
@@ -669,7 +443,7 @@ const ConfiguracionScreen = ({ navigation }) => {
                 {section === 'archivos' && <ArchivosSection />}
                 {section === 'gestion' && <GestionDatosSection />}
                 {section === 'mantenimiento' && <MantenimientoSection />}
-                {section === 'usuarios' && <UsuariosSection />}
+                {section === 'info' && <InfoVersionSection />}
             </ScrollView>
         </View>
     );
@@ -694,7 +468,6 @@ const getStyles = (colors) => StyleSheet.create({
     card: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, elevation: 2 },
     cardTitle: { fontSize: 16, fontWeight: 'bold', color: colors.text, marginBottom: 8 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    pushBtn: { padding: 8 },
     cardSubtitle: { fontSize: 13, color: colors.text, marginBottom: 16, lineHeight: 18 },
     configRow: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

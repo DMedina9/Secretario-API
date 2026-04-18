@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
-import { ArrowLeft, ChevronLeft, ChevronRight, Share as ShareIcon, RefreshCcw } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Share as ShareIcon } from 'lucide-react-native';
 import { getIrregulares } from '../services/repositories/InformeRepo';
-import { syncAllData } from '../services/SyncService';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import ViewShot, { captureRef } from 'react-native-view-shot';
@@ -50,12 +49,6 @@ const IrregularesScreen = ({ navigation }) => {
         }
     };
 
-    const handleSync = async () => {
-        setLoading(true);
-        await syncAllData();
-        loadData(currentMonth.format('YYYY-MM-01'));
-    };
-
     const handleMonthChange = (newMonth) => {
         setCurrentMonth(newMonth);
     };
@@ -93,9 +86,6 @@ const IrregularesScreen = ({ navigation }) => {
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity onPress={onShare} disabled={loading || data.length === 0} style={{ padding: 8 }}>
                         <ShareIcon size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleSync} style={{ padding: 8, marginLeft: 8 }}>
-                        <RefreshCcw size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </View>

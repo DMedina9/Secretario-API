@@ -40,10 +40,7 @@ export const Publicadores = sequelize.define('Publicadores', {
     telefono_movil: DataTypes.INTEGER,
     contacto_emergencia: DataTypes.TEXT,
     tel_contacto_emergencia: DataTypes.INTEGER,
-    correo_contacto_emergencia: DataTypes.TEXT,
-    // Sync Metadata
-    is_dirty: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_sync: { type: DataTypes.DATE, allowNull: true }
+    correo_contacto_emergencia: DataTypes.TEXT
 }, {
     indexes: [{ unique: true, fields: ['nombre', 'apellidos'] }]
 })
@@ -59,10 +56,7 @@ export const Informes = sequelize.define('Informes', {
     id_tipo_publicador: DataTypes.INTEGER,
     horas: DataTypes.INTEGER,
     notas: DataTypes.TEXT,
-    horas_SS: DataTypes.INTEGER,
-    // Sync Metadata
-    is_dirty: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_sync: { type: DataTypes.DATE, allowNull: true }
+    horas_SS: DataTypes.INTEGER
 }, {
     indexes: [{ unique: true, fields: ['id_publicador', 'mes'] }]
 })
@@ -72,10 +66,7 @@ export const PrecursoresAuxiliares = sequelize.define('PrecursoresAuxiliares', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     id_publicador: DataTypes.INTEGER,
     mes: DataTypes.TEXT,
-    notas: DataTypes.TEXT,
-    // Sync Metadata
-    is_dirty: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_sync: { type: DataTypes.DATE, allowNull: true }
+    notas: DataTypes.TEXT
 }, {
     indexes: [{ unique: true, fields: ['id_publicador', 'mes'] }]
 })
@@ -85,10 +76,7 @@ export const Asistencias = sequelize.define('Asistencias', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     fecha: { type: DataTypes.TEXT, unique: true },
     asistentes: DataTypes.INTEGER,
-    notas: DataTypes.TEXT,
-    // Sync Metadata
-    is_dirty: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_sync: { type: DataTypes.DATE, allowNull: true }
+    notas: DataTypes.TEXT
 }, {
     indexes: [{ unique: true, fields: ['fecha'] }]
 })
@@ -98,10 +86,7 @@ export const Configuracion = sequelize.define('Configuraciones', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     clave: { type: DataTypes.TEXT, unique: true },
     valor: DataTypes.TEXT,
-    tipo: DataTypes.TEXT,
-    // Sync Metadata
-    is_dirty: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_sync: { type: DataTypes.DATE, allowNull: true }
+    tipo: DataTypes.TEXT
 }, {
     indexes: [{ unique: true, fields: ['clave'] }]
 })
@@ -109,10 +94,7 @@ export const Configuracion = sequelize.define('Configuraciones', {
 // Privilegio
 export const Privilegio = sequelize.define('Privilegios', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    descripcion: { type: DataTypes.TEXT, unique: true },
-    // Sync Metadata
-    is_dirty: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_sync: { type: DataTypes.DATE, allowNull: true }
+    descripcion: { type: DataTypes.TEXT, unique: true }
 }, {
     indexes: [{ unique: true, fields: ['descripcion'] }]
 })
@@ -120,10 +102,7 @@ export const Privilegio = sequelize.define('Privilegios', {
 // Tipo de Publicador
 export const TipoPublicador = sequelize.define('Tipos_Publicadores', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    descripcion: { type: DataTypes.TEXT, unique: true },
-    // Sync Metadata
-    is_dirty: { type: DataTypes.BOOLEAN, defaultValue: false },
-    last_sync: { type: DataTypes.DATE, allowNull: true }
+    descripcion: { type: DataTypes.TEXT, unique: true }
 }, {
     indexes: [{ unique: true, fields: ['descripcion'] }]
 })
