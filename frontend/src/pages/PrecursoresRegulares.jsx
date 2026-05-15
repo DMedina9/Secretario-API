@@ -89,9 +89,17 @@ const PrecursoresRegulares = () => {
                 <p className="page-description">Reporte de precursores regulares</p>
             </div>
 
-            <div className="card mb-lg">
-                <div className="card-header">
+            <div className="card mb-lg no-print">
+                <div className="card-header flex justify-between items-center">
                     <h3 className="card-title">Filtros</h3>
+                    <button className="btn btn-secondary btn-sm no-print" onClick={() => window.print()}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect>
+                        </svg>
+                        Imprimir
+                    </button>
                 </div>
                 <div className="card-body">
                     <div className="grid grid-cols-2 gap-md">

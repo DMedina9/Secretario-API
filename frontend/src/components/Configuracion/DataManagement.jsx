@@ -9,7 +9,15 @@ const DataManagement = () => {
     const { getAuthHeaders } = useAuth(); // Need auth headers for manual fetch/download
     const { showToast } = useToast();
     const [loading, setLoading] = useState(false);
-    const [selectedTable, setSelectedTable] = useState('publicador'); // publicador, informe, asistencias
+    const [selectedTables, setSelectedTables] = useState(['publicador', 'informe', 'asistencias']);
+
+    const handleTableToggle = (table) => {
+        setSelectedTables(prev => 
+            prev.includes(table)
+                ? prev.filter(t => t !== table)
+                : [...prev, table]
+        );
+    };
     const [restoreFile, setRestoreFile] = useState(null);
     const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
@@ -39,24 +47,44 @@ const DataManagement = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        if (selectedTables.length === 0) {
+            showToast('Selecciona al menos una tabla para importar', 'warning');
+            e.target.value = null;
+            return;
+        }
+
         setLoading(true);
-        const formData = new FormData();
-        formData.append('file', file);
+        let successCount = 0;
+        let errors = [];
 
         try {
-            const endpoint = `/${selectedTable}/import`;
-            const data = await apiRequest(endpoint, {
-                method: 'POST',
-                body: formData
-            });
+            for (const table of selectedTables) {
+                const formData = new FormData();
+                formData.append('file', file);
+                const endpoint = `/${table}/import`;
+                try {
+                    const data = await apiRequest(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
 
-            if (data && (data.success || data.message)) {
-                showToast('Importación completada con éxito', 'success');
-            } else {
-                showToast('Error en la importación', 'error');
+                    if (data && (data.success || data.message)) {
+                        successCount++;
+                    } else {
+                        errors.push(`Error en tabla ${table}`);
+                    }
+                } catch (err) {
+                    errors.push(`Error en tabla ${table}: ${err.message}`);
+                }
             }
-        } catch (error) {
-            showToast('Error al importar: ' + error.message, 'error');
+
+            if (successCount === selectedTables.length) {
+                showToast(`Importación completada con éxito (${successCount} tablas)`, 'success');
+            } else if (successCount > 0) {
+                showToast(`Importación parcial. ${errors.join(', ')}`, 'warning');
+            } else {
+                showToast(`Error en la importación. ${errors.join(', ')}`, 'error');
+            }
         } finally {
             setLoading(false);
             e.target.value = null; // Reset input
@@ -64,29 +92,38 @@ const DataManagement = () => {
     };
 
     const handleExport = async (format) => {
+        if (selectedTables.length === 0) {
+            showToast('Selecciona al menos una tabla para exportar', 'warning');
+            return;
+        }
+
         setLoading(true);
         try {
-            const endpoint = `/${selectedTable}/export?format=${format}`;
-            const extension = format === 'excel' ? 'xlsx' : format;
+            for (const table of selectedTables) {
+                const endpoint = `/${table}/export?format=${format}`;
+                const extension = format === 'excel' ? 'xlsx' : format;
 
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                headers: getAuthHeaders()
-            });
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    headers: getAuthHeaders()
+                });
 
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error || 'Error al descargar');
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || `Error al descargar ${table}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${table}_export.${extension}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${selectedTable}_export.${extension}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
 
             showToast('Exportación completada', 'success');
         } catch (error) {
@@ -205,33 +242,33 @@ const DataManagement = () => {
                         <div className="flex flex-col gap-sm">
                             <label className="flex items-center gap-sm cursor-pointer">
                                 <input
-                                    type="radio"
+                                    type="checkbox"
                                     name="dataTable"
                                     value="publicador"
-                                    checked={selectedTable === 'publicador'}
-                                    onChange={(e) => setSelectedTable(e.target.value)}
+                                    checked={selectedTables.includes('publicador')}
+                                    onChange={() => handleTableToggle('publicador')}
                                     disabled={loading || isRestoring}
                                 />
                                 Publicadores
                             </label>
                             <label className="flex items-center gap-sm cursor-pointer">
                                 <input
-                                    type="radio"
+                                    type="checkbox"
                                     name="dataTable"
                                     value="informe"
-                                    checked={selectedTable === 'informe'}
-                                    onChange={(e) => setSelectedTable(e.target.value)}
+                                    checked={selectedTables.includes('informe')}
+                                    onChange={() => handleTableToggle('informe')}
                                     disabled={loading || isRestoring}
                                 />
                                 Informes
                             </label>
                             <label className="flex items-center gap-sm cursor-pointer">
                                 <input
-                                    type="radio"
+                                    type="checkbox"
                                     name="dataTable"
                                     value="asistencias"
-                                    checked={selectedTable === 'asistencias'}
-                                    onChange={(e) => setSelectedTable(e.target.value)}
+                                    checked={selectedTables.includes('asistencias')}
+                                    onChange={() => handleTableToggle('asistencias')}
                                     disabled={loading || isRestoring}
                                 />
                                 Asistencias

@@ -33,7 +33,7 @@ const AppContent = () => {
       <main className="main-content">
         <div className="container" id="appContent">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/publicadores" element={<Publicadores />} />
@@ -42,7 +42,7 @@ const AppContent = () => {
               <Route path="/irregulares" element={<Irregulares />} />
               <Route path="/asistencias" element={<Asistencias />} />
               <Route path="/informes" element={<Informes />} />
-              <Route path="/secretario" element={<Secretario />} />
+              <Route path="/" element={<Secretario />} />
               <Route path="/reportes" element={<Reportes />} />
               <Route path="/territorios" element={<Territorios />} />
               {isAdmin && <Route path="/configuracion" element={<Configuracion />} />}
