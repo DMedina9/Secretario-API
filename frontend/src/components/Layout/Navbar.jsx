@@ -71,9 +71,9 @@ const Navbar = () => {
                         <li><NavLink to="/precursores-auxiliares" className={({ isActive }) => isActive ? "active" : ""}>P. Auxiliares</NavLink></li>
                         <li><NavLink to="/precursores-regulares" className={({ isActive }) => isActive ? "active" : ""}>P. Regulares</NavLink></li>
                         <li><NavLink to="/irregulares" className={({ isActive }) => isActive ? "active" : ""}>Irregulares</NavLink></li>
-                        <li><NavLink to="/asistencias" className={({ isActive }) => isActive ? "active" : ""}>Asistencias</NavLink></li>
+                        <li><NavLink to="/" className={({ isActive }) => isActive ? "active" : ""}>Asistencias</NavLink></li>
                         <li><NavLink to="/informes" className={({ isActive }) => isActive ? "active" : ""}>Informes</NavLink></li>
-                        <li><NavLink to="/" className={({ isActive }) => isActive ? "active" : ""}>Servicios</NavLink></li>
+                        <li><NavLink to="/secretario" className={({ isActive }) => isActive ? "active" : ""}>Servicios</NavLink></li>
                         <li><NavLink to="/reportes" className={({ isActive }) => isActive ? "active" : ""}>Reportes</NavLink></li>
                         <li><NavLink to="/territorios" className={({ isActive }) => isActive ? "active" : ""}>Territorios</NavLink></li>
                         {isAdmin && <li><NavLink to="/configuracion" className={({ isActive }) => isActive ? "active" : ""}>Configuración</NavLink></li>}

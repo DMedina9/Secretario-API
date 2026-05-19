@@ -40,9 +40,9 @@ const AppContent = () => {
               <Route path="/precursores-auxiliares" element={<PrecursoresAuxiliares />} />
               <Route path="/precursores-regulares" element={<PrecursoresRegulares />} />
               <Route path="/irregulares" element={<Irregulares />} />
-              <Route path="/asistencias" element={<Asistencias />} />
+              <Route path="/" element={<Asistencias />} />
               <Route path="/informes" element={<Informes />} />
-              <Route path="/" element={<Secretario />} />
+              <Route path="/secretario" element={<Secretario />} />
               <Route path="/reportes" element={<Reportes />} />
               <Route path="/territorios" element={<Territorios />} />
               {isAdmin && <Route path="/configuracion" element={<Configuracion />} />}
