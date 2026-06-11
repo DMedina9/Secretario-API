@@ -5,7 +5,11 @@ import {
 } from 'react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
-import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle } from 'lucide-react-native';
+import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle, Share2, Import } from 'lucide-react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import FileService from '../services/FileService';
+import * as DocumentPicker from 'expo-document-picker';
+import { generateGroupReportsXLSX, importExcelFromUri } from '../services/ImportExcelService';
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
 import { getInformesByPublicadorAndAnio, getPrecursoresAuxiliaresByMonth, saveInforme } from '../services/repositories/InformeRepo';
 import { useTheme } from '../contexts/ThemeContext';
@@ -20,7 +24,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
     const prevIsRP = index > 0 && data[index - 1].id_tipo_publicador === 2;
     const showRPHeader = index === 0 && isRP;
     const showPubHeader = (index === 0 && !isRP) || (index > 0 && !isRP && prevIsRP);
-    
+
     return (
         <>
             {showRPHeader && <Text style={st.groupHeader}>⭐ Precursores Regulares</Text>}
@@ -149,11 +153,11 @@ const InformesScreen = ({ navigation }) => {
         try {
             const allPubs = await getAllPublicadores();
             const publicadores = allPubs.filter(p => p.grupo == selectedGroup);
-            
-            if (!publicadores.length) { 
-                Alert.alert('Aviso', 'No hay publicadores en este grupo.'); 
-                setBulkData([]); 
-                return; 
+
+            if (!publicadores.length) {
+                Alert.alert('Aviso', 'No hay publicadores en este grupo.');
+                setBulkData([]);
+                return;
             }
 
             const monthDate = dayjs(month + '-01');
@@ -169,12 +173,12 @@ const InformesScreen = ({ navigation }) => {
 
             // Fetch auxiliares and existing informes locally
             const aux = await getPrecursoresAuxiliaresByMonth(serviceYear, monthStr);
-            
+
             const results = await Promise.all(sorted.map(async pub => {
                 const informes = await getInformesByPublicadorAndAnio(pub.id, serviceYear);
                 const ex = informes.find(i => i.mes.startsWith(month));
                 const isAux = aux.some(a => a.id_publicador === pub.id);
-                
+
                 return {
                     id_publicador: pub.id,
                     nombre: `${pub.apellidos}, ${pub.nombre}`,
@@ -225,11 +229,11 @@ const InformesScreen = ({ navigation }) => {
                     id_tipo_publicador: parseInt(item.id_tipo_publicador),
                     notas: item.notas
                 };
-                
+
                 // Find if exists to get the ID for update, or just save
                 const informes = await getInformesByPublicadorAndAnio(item.id_publicador, dayjs(item.mes).year() + (dayjs(item.mes).month() >= 8 ? 1 : 0));
                 const ex = informes.find(i => i.mes.startsWith(item.mes.substring(0, 7)));
-                
+
                 await saveInforme({ ...payload, id: ex ? ex.id : null });
             }
             Alert.alert('✅ Guardado Local', `${bulkData.length} informes guardados localmente.`);
@@ -243,14 +247,88 @@ const InformesScreen = ({ navigation }) => {
         }
     };
 
+    const handleShare = async () => {
+        if (!bulkData.length) return;
+        setLoading(true);
+        try {
+            const b64 = await generateGroupReportsXLSX(selectedGroup, month, bulkData);
+            const filename = `Informes_Grupo_${selectedGroup}_${month}.xlsx`;
+            const fileUri = FileSystem.cacheDirectory + filename;
+            await FileSystem.writeAsStringAsync(fileUri, b64, { encoding: 'base64' });
+            await FileService.saveOrShareFile(fileUri, filename);
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Error', 'No se pudo generar o compartir el archivo de Excel.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleImportExcel = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            if (result.canceled) return;
+
+            Alert.alert(
+                'Confirmar Importación',
+                '¿Deseas importar los datos del archivo seleccionado? Esto agregará nuevos publicadores, informes y asistencias, y actualizará los existentes con la misma información clave.',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Importar',
+                        onPress: async () => {
+                            setIsImporting(true);
+                            setImportProgress(0);
+                            setImportMessage('Iniciando importación...');
+                            try {
+                                const response = await importExcelFromUri(result.assets[0].uri, (progress, message) => {
+                                    setImportProgress(progress);
+                                    setImportMessage(message);
+                                });
+
+                                Alert.alert(
+                                    'Carga Exitosa',
+                                    `Importación completada con éxito:\n\n- Publicadores: ${response.publicadoresImportados}\n- Informes: ${response.informesImportados}\n- Asistencias: ${response.asistenciasImportadas}`
+                                );
+                                setIsExcelModalVisible(false);
+                            } catch (e) {
+                                console.error(e);
+                                Alert.alert('Error de Importación', e.message || 'Ocurrió un error al importar el archivo Excel.');
+                            } finally {
+                                setIsImporting(false);
+                                setImportProgress(0);
+                                setImportMessage('');
+                            }
+                        }
+                    }
+                ]
+            );
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Error', 'No se pudo abrir el selector de archivos.');
+        }
+    };
+
     return (
         <View style={st.container}>
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
                 <Text style={st.headerTitle}>Informes de Predicación</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
                     {bulkData.length > 0 ? (
-                        <TouchableOpacity onPress={handleSave}><Save size={24} color={colors.primary} /></TouchableOpacity>
+                        <>
+                            <TouchableOpacity onPress={handleImportExcel} disabled={loading}>
+                                <Import size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleShare} disabled={loading}>
+                                <Share2 size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleSave} disabled={loading}>
+                                <Save size={24} color={colors.primary} />
+                            </TouchableOpacity>
+                        </>
                     ) : null}
                 </View>
             </View>
@@ -258,7 +336,7 @@ const InformesScreen = ({ navigation }) => {
             <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
                 {/* Filters */}
                 <View style={st.filterCard}>
-                    <View style={st.month NavRow}>
+                    <View style={st.monthNavRow}>
                         <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').subtract(1, 'month').format('YYYY-MM'))}>
                             <ChevronLeft size={26} color={colors.text} />
                         </TouchableOpacity>

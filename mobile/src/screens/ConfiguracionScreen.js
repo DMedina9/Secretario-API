@@ -11,6 +11,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FileService from '../services/FileService';
+import { generateTemplateXLSX, importExcelFromUri } from '../services/ImportExcelService';
+
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
 const ConfiguracionesSection = () => {
@@ -127,6 +129,10 @@ const GestionDatosSection = () => {
     const { colors } = useTheme();
     const st = getStyles(colors);
     const [loading, setLoading] = useState(null);
+    const [isExcelModalVisible, setIsExcelModalVisible] = useState(false);
+    const [importProgress, setImportProgress] = useState(0);
+    const [importMessage, setImportMessage] = useState('');
+    const [isImporting, setIsImporting] = useState(false);
 
     const downloadBackup = async () => {
         setLoading('backup');
@@ -193,10 +199,70 @@ const GestionDatosSection = () => {
         }
     };
 
+    const handleDownloadTemplate = async () => {
+        try {
+            const b64 = generateTemplateXLSX();
+            const filename = 'Plantilla_Carga_Inicial.xlsx';
+            const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+            await FileSystem.writeAsStringAsync(fileUri, b64, { encoding: FileSystem.EncodingType.Base64 });
+            await FileService.saveAndShareFile(fileUri, filename);
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'No se pudo generar o compartir la plantilla de Excel.');
+        }
+    };
+
+    const handleImportExcel = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            if (result.canceled) return;
+
+            Alert.alert(
+                'Confirmar Importación',
+                '¿Deseas importar los datos del archivo seleccionado? Esto agregará nuevos publicadores, informes y asistencias, y actualizará los existentes con la misma información clave.',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Importar',
+                        onPress: async () => {
+                            setIsImporting(true);
+                            setImportProgress(0);
+                            setImportMessage('Iniciando importación...');
+                            try {
+                                const response = await importExcelFromUri(result.assets[0].uri, (progress, message) => {
+                                    setImportProgress(progress);
+                                    setImportMessage(message);
+                                });
+
+                                Alert.alert(
+                                    'Carga Exitosa',
+                                    `Importación completada con éxito:\n\n- Publicadores: ${response.publicadoresImportados}\n- Informes: ${response.informesImportados}\n- Asistencias: ${response.asistenciasImportadas}`
+                                );
+                                setIsExcelModalVisible(false);
+                            } catch (e) {
+                                console.error(e);
+                                Alert.alert('Error de Importación', e.message || 'Ocurrió un error al importar el archivo Excel.');
+                            } finally {
+                                setIsImporting(false);
+                                setImportProgress(0);
+                                setImportMessage('');
+                            }
+                        }
+                    }
+                ]
+            );
+        } catch (e) {
+            console.error(e);
+            Alert.alert('Error', 'No se pudo abrir el selector de archivos.');
+        }
+    };
+
     return (
         <View style={st.card}>
             <Text style={st.cardTitle}>📊 Gestión de Datos Local</Text>
-            <Text style={st.cardSubtitle}>Respalda y restaura tu información directamente en este dispositivo.</Text>
+            <Text style={st.cardSubtitle}>Respalda, restaura o importa tu información directamente en este dispositivo.</Text>
             
             <Modal
                 visible={loading === 'restore' || loading === 'backup'}
@@ -209,6 +275,82 @@ const GestionDatosSection = () => {
                         <Text style={{ marginTop: 12, color: colors.text }}>
                             {loading === 'backup' ? 'Creando respaldo...' : 'Restaurando datos...'}
                         </Text>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Modal de Carga Excel */}
+            <Modal
+                visible={isExcelModalVisible}
+                animationType="slide"
+                transparent
+                onRequestClose={() => {
+                    if (!isImporting) setIsExcelModalVisible(false);
+                }}
+            >
+                <View style={st.modalOverlay}>
+                    <View style={[st.modalContent, { width: '90%', maxHeight: '85%' }]}>
+                        <Text style={st.modalTitle}>📊 Carga Inicial desde Excel</Text>
+                        
+                        <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
+                            <Text style={st.instructionHeading}>Instrucciones de llenado:</Text>
+                            
+                            <Text style={st.instructionText}>
+                                1. **Descarga la plantilla**: Toca el botón de abajo para guardar o compartir la plantilla vacía en tu dispositivo.
+                            </Text>
+                            <Text style={st.instructionText}>
+                                2. **Hojas requeridas**: La plantilla contiene tres pestañas importantes que debes conservar sin cambiar sus nombres:
+                            </Text>
+                            
+                            <View style={st.bulletContainer}>
+                                <Text style={st.bulletText}>• **Publicadores**: Registro de personas. El campo **Nombre** debe tener el formato `Apellidos, Nombre` (ej: `Pérez, Juan`). El campo **Sexo** acepta `Hombre` o `Mujer`. Los privilegios admitidos son `Anciano` y `Siervo ministerial`. Los tipos de publicador son `Publicador`, `Precursor regular` o `Precursor auxiliar`.</Text>
+                                <Text style={st.bulletText}>• **Informes**: Historial mensual. Asegúrate de que los nombres coincidan exactamente con la hoja de Publicadores. El formato de **Mes** debe ser una fecha o texto `AAAA-MM-DD` (ej: `2025-01-01`).</Text>
+                                <Text style={st.bulletText}>• **Asistencias**: Registro de asistencia a las reuniones. La **Fecha** debe tener formato `AAAA-MM-DD`.</Text>
+                            </View>
+
+                            <Text style={st.instructionText}>
+                                3. **Formatos**: No cambies los encabezados de las columnas. Las fechas deben ingresarse idealmente en formato `AAAA-MM-DD`. Los valores lógicos de Sí/No como "Ungido" o "Predicó en el mes" deben ingresarse como `TRUE` o `FALSE`.
+                            </Text>
+                            
+                            <Text style={st.instructionText}>
+                                4. **Importación**: Una vez que llenes el archivo, pulsa el botón **Seleccionar y Cargar** para proceder.
+                            </Text>
+                        </ScrollView>
+
+                        {isImporting ? (
+                            <View style={st.progressContainer}>
+                                <ActivityIndicator size="small" color={colors.primary} />
+                                <Text style={st.progressText}>{importMessage}</Text>
+                                <View style={st.progressBarBg}>
+                                    <View style={[st.progressBarFg, { width: `${importProgress}%` }]} />
+                                </View>
+                                <Text style={st.progressPercent}>{importProgress}%</Text>
+                            </View>
+                        ) : (
+                            <View style={st.modalButtonsExcel}>
+                                <TouchableOpacity
+                                    style={[st.excelButton, { backgroundColor: '#3b82f6' }]}
+                                    onPress={handleDownloadTemplate}
+                                >
+                                    <Text style={st.excelButtonText}>📥 Descargar Plantilla</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[st.excelButton, { backgroundColor: colors.success }]}
+                                    onPress={handleImportExcel}
+                                >
+                                    <Text style={st.excelButtonText}>📁 Seleccionar y Cargar</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        {!isImporting && (
+                            <TouchableOpacity
+                                style={st.closeExcelBtn}
+                                onPress={() => setIsExcelModalVisible(false)}
+                            >
+                                <Text style={st.closeExcelBtnText}>Cerrar</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             </Modal>
@@ -232,9 +374,20 @@ const GestionDatosSection = () => {
                 <Text style={st.actionLabel}>Restaurar desde Archivo (.db)</Text>
                 <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
+
+            <TouchableOpacity
+                style={st.actionRow}
+                onPress={() => setIsExcelModalVisible(true)}
+                disabled={!!loading}
+            >
+                <Text style={st.actionIcon}>📥</Text>
+                <Text style={st.actionLabel}>Carga Inicial desde Excel (.xlsx)</Text>
+                <ChevronRight size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
         </View>
     );
 };
+
 
 // ─── Sub-section: Archivos ────────────────────────────────────────────────────
 const ArchivosSection = () => {
@@ -548,6 +701,88 @@ const getStyles = (colors) => StyleSheet.create({
     modalButtonText: {
         color: 'white',
         fontWeight: 'bold',
+    },
+    instructionHeading: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginTop: 12,
+        marginBottom: 8,
+    },
+    instructionText: {
+        fontSize: 13,
+        color: colors.textSecondary,
+        marginBottom: 10,
+        lineHeight: 18,
+    },
+    bulletContainer: {
+        paddingLeft: 10,
+        marginBottom: 10,
+    },
+    bulletText: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        marginBottom: 6,
+        lineHeight: 17,
+    },
+    progressContainer: {
+        alignItems: 'center',
+        marginTop: 15,
+        width: '100%',
+    },
+    progressText: {
+        fontSize: 13,
+        color: colors.text,
+        marginTop: 8,
+        textAlign: 'center',
+    },
+    progressBarBg: {
+        width: '100%',
+        height: 6,
+        backgroundColor: colors.border,
+        borderRadius: 3,
+        marginTop: 10,
+    },
+    progressBarFg: {
+        height: 6,
+        backgroundColor: colors.primary,
+        borderRadius: 3,
+    },
+    progressPercent: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: colors.primary,
+        marginTop: 4,
+    },
+    modalButtonsExcel: {
+        flexDirection: 'column',
+        gap: 10,
+        marginTop: 15,
+        width: '100%',
+    },
+    excelButton: {
+        paddingVertical: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    excelButtonText: {
+        color: '#ffffff',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    closeExcelBtn: {
+        marginTop: 15,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+        width: '100%',
+    },
+    closeExcelBtnText: {
+        color: '#ef4444',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
     folderBtn: {
         backgroundColor: colors.primary,

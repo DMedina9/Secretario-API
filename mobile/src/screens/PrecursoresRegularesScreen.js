@@ -93,7 +93,7 @@ const PrecursoresRegularesScreen = ({ navigation }) => {
                 quality: 0.8,
             });
             const filename = `Precursores_Regulares_${currentYear}.png`;
-            await FileService.saveAndShareFile(uri, filename);
+            await FileService.saveOrShareFile(uri, filename);
         } catch (error) {
             console.error('Error sharing image:', error);
         }

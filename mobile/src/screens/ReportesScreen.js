@@ -110,7 +110,7 @@ const buildPdfHtml = (base64) => `<!DOCTYPE html>
 </html>`;
 
 const shareFileUri = async (fileUri, filename) => {
-    await FileService.saveAndShareFile(fileUri, filename);
+    await FileService.saveOrShareFile(fileUri, filename);
 };
 
 // ─── Tab: Descargas ───────────────────────────────────────────────────────────

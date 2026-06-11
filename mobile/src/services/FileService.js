@@ -50,6 +50,82 @@ export const saveAndShareFile = async (sourceUri, filename) => {
     }
 };
 
+/**
+ * Saves a file to the configured download folder (if configured)
+ * without triggering the sharing UI.
+ * 
+ * @param {string} sourceUri 
+ * @param {string} filename 
+ */
+export const saveFileOnly = async (sourceUri, filename) => {
+    try {
+        const folderUri = await AsyncStorage.getItem(DOWNLOAD_FOLDER_KEY);
+        
+        if (Platform.OS === 'android' && folderUri) {
+            const fileContent = await FileSystem.readAsStringAsync(sourceUri, { encoding: FileSystem.EncodingType.Base64 });
+            const mimeType = getMimeType(filename);
+            
+            const safUri = await FileSystem.StorageAccessFramework.createFileAsync(folderUri, filename, mimeType);
+            await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
+            Alert.alert('✅ Guardado', `El archivo se ha guardado en tu carpeta de descargas:\n${filename}`);
+            return true;
+        } else {
+            // Save to project document directory as fallback
+            const projectDir = FileSystem.documentDirectory + filename;
+            await FileSystem.copyAsync({ from: sourceUri, to: projectDir });
+            Alert.alert('✅ Guardado', `El archivo se ha guardado en el almacenamiento de la app:\n${filename}`);
+            return true;
+        }
+    } catch (error) {
+        console.error('Error in saveFileOnly:', error);
+        Alert.alert('Error', 'No se pudo guardar el archivo en el disco.');
+        return false;
+    }
+};
+
+/**
+ * Checks if the download folder is configured, and offers the user to either:
+ * 1. Only save to disk.
+ * 2. Save and share.
+ * 3. Cancel.
+ * If the download folder is not configured, it directly saves and shares.
+ * 
+ * @param {string} sourceUri 
+ * @param {string} filename 
+ */
+export const saveOrShareFile = async (sourceUri, filename) => {
+    try {
+        const folderUri = await AsyncStorage.getItem(DOWNLOAD_FOLDER_KEY);
+        const isConfigured = Platform.OS === 'android' && folderUri;
+        
+        if (isConfigured) {
+            Alert.alert(
+                'Guardar Reporte',
+                `¿Qué deseas hacer con el archivo "${filename}"?`,
+                [
+                    {
+                        text: 'Cancelar',
+                        style: 'cancel'
+                    },
+                    {
+                        text: 'Sólo guardar en disco',
+                        onPress: () => saveFileOnly(sourceUri, filename)
+                    },
+                    {
+                        text: 'Guardar y compartir',
+                        onPress: () => saveAndShareFile(sourceUri, filename)
+                    }
+                ]
+            );
+        } else {
+            await saveAndShareFile(sourceUri, filename);
+        }
+    } catch (error) {
+        console.error('Error in saveOrShareFile:', error);
+        await saveAndShareFile(sourceUri, filename);
+    }
+};
+
 /** Simple MIME type helper */
 const getMimeType = (filename) => {
     const ext = filename.split('.').pop().toLowerCase();
@@ -67,5 +143,7 @@ const getMimeType = (filename) => {
 };
 
 export default {
-    saveAndShareFile
+    saveAndShareFile,
+    saveFileOnly,
+    saveOrShareFile
 };
