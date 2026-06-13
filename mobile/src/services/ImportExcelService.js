@@ -238,7 +238,7 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
     };
 
     notify(5, "Leyendo archivo...");
-    
+
     // Read the file content as base64
     const fileBase64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
     const workbook = XLSX.read(fileBase64, { type: 'base64', cellDates: true });
@@ -249,7 +249,7 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
     }
 
     notify(15, "Inicializando catálogos...");
-    
+
     // Ensure catalog values exist
     await insertPrivilegios();
     await insertTipoPublicador();
@@ -259,14 +259,14 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
 
     // ─── PART 1: PUBLICADORES ───
     const sheetPub = workbook.Sheets['Publicadores'];
+    let pubCount = 0;
     if (sheetPub) {
         notify(20, "Importando Publicadores...");
         const jsonPub = XLSX.utils.sheet_to_json(sheetPub);
-        let pubCount = 0;
 
         for (let i = 0; i < jsonPub.length; i++) {
             const p = jsonPub[i];
-            
+
             // Skip total/summary rows
             if (!p.Nombre || String(p.Nombre).trim().toLowerCase() === 'total') continue;
 
@@ -279,12 +279,12 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
 
             const nacimiento = parseExcelDate(p['Fecha de nacimiento']);
             const bautismo = parseExcelDate(p['Fecha de bautismo']);
-            
+
             const grupo = parseInt(p.Grupo) || null;
-            
+
             const supGrupoVal = String(p['Sup. Grupo'] || '').trim();
             const sup_grupo = supGrupoVal === 'Sup' ? 1 : (supGrupoVal === 'Aux' ? 2 : 0);
-            
+
             const sexoVal = String(p.Sexo || '').trim().toUpperCase();
             const sexo = sexoVal.startsWith('H') ? 'H' : (sexoVal.startsWith('M') ? 'M' : 'H');
 
@@ -365,7 +365,7 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
 
         for (let i = 0; i < jsonInf.length; i++) {
             const p = jsonInf[i];
-            
+
             if (!p.Nombre || String(p.Nombre).trim().toLowerCase() === 'total') continue;
 
             // Find the matching publisher in the database
@@ -385,12 +385,12 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
             if (!mes) continue;
 
             const mesEnviado = parseExcelDate(p['Mes enviado']);
-            
+
             const predicoVal = String(p['Predicó en el mes'] || '').trim().toUpperCase();
             const predico_en_el_mes = (predicoVal === 'TRUE' || predicoVal === '1' || predicoVal === 'SÍ' || predicoVal === 'SI') ? 1 : 0;
-            
+
             const cursos_biblicos = parseInt(p['Cursos bíblicos']) || 0;
-            
+
             const repTipoVal = String(p['Tipo Publicador'] || '').trim().toLowerCase();
             const repTipoObj = TiposPublicadores.find(tp => tp.descripcion.toLowerCase() === repTipoVal);
             const id_tipo_publicador = repTipoObj ? repTipoObj.id : publicador.id_tipo_publicador || 1;
@@ -470,7 +470,7 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
     }
 
     notify(100, "Carga finalizada con éxito.");
-    
+
     return {
         success: true,
         publicadoresImportados: pubCount,

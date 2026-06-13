@@ -29,6 +29,7 @@ const DashboardScreen = ({ navigation }) => {
                         { screen: 'PrecursoresAuxiliares', icon: '⭐', label: 'P. Auxiliares', color: colors.primary },
                         { screen: 'Irregulares', icon: '⚠️', label: 'Irregulares', color: colors.warning },
                         { screen: 'Informes', icon: '📋', label: 'Informes', color: colors.primary },
+                        { screen: 'InformesFaltantes', icon: '📝', label: 'Faltantes', color: colors.primary },
                         { screen: 'Secretario', icon: '📊', label: 'Formularios', color: colors.warning },
                         { screen: 'Reportes', icon: '📑', label: 'Reportes PDF', color: colors.primary },
                         { screen: 'Configuracion', icon: '⚙️', label: 'Configuración', color: colors.textSecondary },

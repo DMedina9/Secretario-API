@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { ArrowLeft, Settings, Database, Wrench, Users, ChevronRight, Moon, Sun } from 'lucide-react-native';
 import { getAllConfiguraciones, saveConfiguracion } from '../services/repositories/ConfiguracionesRepo';
-import { Informes, Asistencias, PrecursoresAuxiliares, Publicadores } from '../services/models';
+import { Informes, Asistencias, PrecursoresAuxiliares, Publicadores, Configuracion, Privilegio, TipoPublicador } from '../services/models';
 import { useTheme } from '../contexts/ThemeContext';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
@@ -137,18 +137,34 @@ const GestionDatosSection = () => {
     const downloadBackup = async () => {
         setLoading('backup');
         try {
-            const dbName = 'secretario.db';
-            const dbUri = `${FileSystem.documentDirectory}SQLite/${dbName}`;
+            const publicadores = await Publicadores.findAll();
+            const informes = await Informes.findAll();
+            const precursores = await PrecursoresAuxiliares.findAll();
+            const asistencias = await Asistencias.findAll();
+            const configuraciones = await Configuracion.findAll();
+            const privilegios = await Privilegio.findAll();
+            const tipos = await TipoPublicador.findAll();
+
+            const backupData = {
+                publicadores: publicadores.map(p => p.toJSON()),
+                informes: informes.map(i => i.toJSON()),
+                precursores: precursores.map(p => p.toJSON()),
+                asistencias: asistencias.map(a => a.toJSON()),
+                configuraciones: configuraciones.map(c => c.toJSON()),
+                privilegios: privilegios.map(p => p.toJSON()),
+                tiposPublicador: tipos.map(t => t.toJSON())
+            };
+
+            const jsonStr = JSON.stringify(backupData);
             
-            // Generate a backup with timestamp
-            const backupFilename = `respaldo_secretario_${new Date().toISOString().split('T')[0]}.db`;
+            const backupFilename = `respaldo_secretario_${new Date().toISOString().split('T')[0]}.json`;
             const backupUri = `${FileSystem.cacheDirectory}${backupFilename}`;
             
-            await FileSystem.copyAsync({ from: dbUri, to: backupUri });
+            await FileSystem.writeAsStringAsync(backupUri, jsonStr, { encoding: FileSystem.EncodingType.UTF8 });
             await FileService.saveAndShareFile(backupUri, backupFilename);
         } catch (error) {
             console.error(error);
-            Alert.alert('Error', 'No se pudo crear el respaldo de la base de datos.');
+            Alert.alert('Error', 'No se pudo crear el respaldo de los datos.');
         } finally {
             setLoading(null);
         }
@@ -156,37 +172,57 @@ const GestionDatosSection = () => {
 
     const restoreBackup = async () => {
         try {
-            const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+            const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
             if (result.canceled) return;
 
             Alert.alert(
                 'Confirmar Restauración',
-                'Esto reemplazará todos los datos actuales por los del archivo seleccionado. La aplicación podría necesitar reiniciarse. ¿Deseas continuar?',
+                'Esto reemplazará todos los datos actuales por los del archivo seleccionado. ¿Deseas continuar?',
                 [
                     { text: 'Cancelar', style: 'cancel' },
                     {
                         text: 'Restaurar', style: 'destructive', onPress: async () => {
                             setLoading('restore');
                             try {
-                                const dbName = 'secretario.db';
-                                const destUri = `${FileSystem.documentDirectory}SQLite/${dbName}`;
-                                
-                                // Ensure the SQLite directory exists
-                                const sqliteDir = `${FileSystem.documentDirectory}SQLite/`;
-                                const dirInfo = await FileSystem.getInfoAsync(sqliteDir);
-                                if (!dirInfo.exists) {
-                                    await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
+                                const fileContent = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
+                                const backupData = JSON.parse(fileContent);
+
+                                // Limpiar tablas existentes
+                                await Informes.destroy({ where: {}, truncate: true });
+                                await PrecursoresAuxiliares.destroy({ where: {}, truncate: true });
+                                await Asistencias.destroy({ where: {}, truncate: true });
+                                await Publicadores.destroy({ where: {}, truncate: true });
+                                await Configuracion.destroy({ where: {}, truncate: true });
+                                await Privilegio.destroy({ where: {}, truncate: true });
+                                await TipoPublicador.destroy({ where: {}, truncate: true });
+
+                                // Insertar nuevos datos
+                                if (backupData.privilegios && backupData.privilegios.length > 0) {
+                                    await Privilegio.bulkCreate(backupData.privilegios);
+                                }
+                                if (backupData.tiposPublicador && backupData.tiposPublicador.length > 0) {
+                                    await TipoPublicador.bulkCreate(backupData.tiposPublicador);
+                                }
+                                if (backupData.configuraciones && backupData.configuraciones.length > 0) {
+                                    await Configuracion.bulkCreate(backupData.configuraciones);
+                                }
+                                if (backupData.publicadores && backupData.publicadores.length > 0) {
+                                    await Publicadores.bulkCreate(backupData.publicadores);
+                                }
+                                if (backupData.asistencias && backupData.asistencias.length > 0) {
+                                    await Asistencias.bulkCreate(backupData.asistencias);
+                                }
+                                if (backupData.precursores && backupData.precursores.length > 0) {
+                                    await PrecursoresAuxiliares.bulkCreate(backupData.precursores);
+                                }
+                                if (backupData.informes && backupData.informes.length > 0) {
+                                    await Informes.bulkCreate(backupData.informes);
                                 }
 
-                                await FileSystem.copyAsync({
-                                    from: result.assets[0].uri,
-                                    to: destUri
-                                });
-
-                                Alert.alert('Éxito', 'Restauración completada. Por favor reinicia la aplicación para ver los cambios.');
+                                Alert.alert('Éxito', 'Restauración completada.');
                             } catch (e) {
                                 console.error(e);
-                                Alert.alert('Error', 'No se pudo restaurar el archivo. Asegúrate de que es un archivo de base de datos válido.');
+                                Alert.alert('Error', 'No se pudo restaurar el archivo. Asegúrate de que es un archivo de respaldo válido (.json).');
                             } finally {
                                 setLoading(null);
                             }
@@ -361,7 +397,7 @@ const GestionDatosSection = () => {
                 disabled={!!loading}
             >
                 <Text style={st.actionIcon}>💾</Text>
-                <Text style={st.actionLabel}>Crear Respaldo (Exportar .db)</Text>
+                <Text style={st.actionLabel}>Crear Respaldo (Exportar .json)</Text>
                 <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
 
@@ -371,7 +407,7 @@ const GestionDatosSection = () => {
                 disabled={!!loading}
             >
                 <Text style={st.actionIcon}>🔁</Text>
-                <Text style={st.actionLabel}>Restaurar desde Archivo (.db)</Text>
+                <Text style={st.actionLabel}>Restaurar desde Archivo (.json)</Text>
                 <ChevronRight size={18} color={colors.textSecondary} />
             </TouchableOpacity>
 

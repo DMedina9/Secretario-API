@@ -2,7 +2,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { initDatabase } from './src/services/Database';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 // Contexts
 import { AnioServicioProvider } from './src/contexts/AnioServicioContext';
@@ -13,6 +17,7 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import PublicadoresScreen from './src/screens/PublicadoresScreen';
 import AsistenciasScreen from './src/screens/AsistenciasScreen';
 import InformesScreen from './src/screens/InformesScreen';
+import InformesFaltantesScreen from './src/screens/InformesFaltantesScreen';
 import SecretarioScreen from './src/screens/SecretarioScreen';
 import ConfiguracionScreen from './src/screens/ConfiguracionScreen';
 import PrecursoresAuxiliaresScreen from './src/screens/PrecursoresAuxiliaresScreen';
@@ -33,6 +38,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Publicadores" component={PublicadoresScreen} />
           <Stack.Screen name="Asistencias" component={AsistenciasScreen} />
           <Stack.Screen name="Informes" component={InformesScreen} />
+          <Stack.Screen name="InformesFaltantes" component={InformesFaltantesScreen} />
           <Stack.Screen name="PrecursoresAuxiliares" component={PrecursoresAuxiliaresScreen} />
           <Stack.Screen name="PrecursoresRegulares" component={PrecursoresRegularesScreen} />
           <Stack.Screen name="Irregulares" component={IrregularesScreen} />
@@ -46,9 +52,26 @@ const AppNavigator = () => {
 };
 
 export default function App() {
+  const [isReady, setIsReady] = React.useState(false);
+
   React.useEffect(() => {
-    initDatabase().then(() => console.log('SQLite Initialized'));
+    async function prepare() {
+      try {
+        await initDatabase();
+        console.log('SQLite Initialized');
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setIsReady(true);
+        await SplashScreen.hideAsync();
+      }
+    }
+    prepare();
   }, []);
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <ThemeProvider>

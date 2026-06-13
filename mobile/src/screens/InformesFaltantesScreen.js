@@ -122,7 +122,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
 };
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
-const InformesScreen = ({ navigation }) => {
+const InformesFaltantesScreen = ({ navigation }) => {
     const { colors } = useTheme();
     const st = getStyles(colors);
     const [month, setMonth] = useState(dayjs().subtract(1, 'month').format('YYYY-MM'));
@@ -130,7 +130,6 @@ const InformesScreen = ({ navigation }) => {
     const [selectedGroup, setSelectedGroup] = useState('');
     const [bulkData, setBulkData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isExcelModalVisible, setIsExcelModalVisible] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
     const [importMessage, setImportMessage] = useState('');
     const [isImporting, setIsImporting] = useState(false);
@@ -178,28 +177,31 @@ const InformesScreen = ({ navigation }) => {
             // Fetch auxiliares and existing informes locally
             const aux = await getPrecursoresAuxiliaresByMonth(serviceYear, monthStr);
 
-            const results = await Promise.all(sorted.map(async pub => {
+            const results = [];
+            for (const pub of sorted) {
                 const informes = await getInformesByPublicadorAndAnio(pub.id, serviceYear);
                 const ex = informes.find(i => i.mes.startsWith(month));
                 const isAux = aux.some(a => a.id_publicador === pub.id);
 
-                return {
-                    id_publicador: pub.id,
-                    nombre: `${pub.apellidos}, ${pub.nombre}`,
-                    sexo: pub.sexo,
-                    telefono: pub.telefono_movil,
-                    mes: month + '-01',
-                    mes_envio: mes_envio + '-01',
-                    predico_en_el_mes: ex ? ex.predico_en_el_mes : 0,
-                    horas: ex ? ex.horas : 0,
-                    horas_SS: ex ? ex.horas_SS : 0,
-                    cursos_biblicos: ex ? ex.cursos_biblicos : 0,
-                    id_base_tipo: pub.id_tipo_publicador,
-                    id_tipo_publicador: ex ? ex.id_tipo_publicador : (isAux ? 3 : (pub.id_tipo_publicador || 1)),
-                    notas: ex ? ex.notas : '',
-                    Estatus: pub.Estatus // Read from the pre-calculated field in SQLite
-                };
-            }));
+                if (!ex || !ex.predico_en_el_mes) {
+                    results.push({
+                        id_publicador: pub.id,
+                        nombre: `${pub.apellidos}, ${pub.nombre}`,
+                        sexo: pub.sexo,
+                        telefono: pub.telefono_movil,
+                        mes: month + '-01',
+                        mes_envio: mes_envio + '-01',
+                        predico_en_el_mes: ex ? ex.predico_en_el_mes : 0,
+                        horas: ex ? ex.horas : 0,
+                        horas_SS: ex ? ex.horas_SS : 0,
+                        cursos_biblicos: ex ? ex.cursos_biblicos : 0,
+                        id_base_tipo: pub.id_tipo_publicador,
+                        id_tipo_publicador: ex ? ex.id_tipo_publicador : (isAux ? 3 : (pub.id_tipo_publicador || 1)),
+                        notas: ex ? ex.notas : '',
+                        Estatus: pub.Estatus
+                    });
+                }
+            }
 
             setBulkData(results);
         } catch (e) {
@@ -226,6 +228,7 @@ const InformesScreen = ({ navigation }) => {
                 const payload = {
                     id_publicador: item.id_publicador,
                     mes: item.mes,
+                    mes_enviado: item.mes_envio,
                     predico_en_el_mes: item.predico_en_el_mes ? 1 : 0,
                     horas: parseInt(item.horas) || 0,
                     horas_SS: parseInt(item.horas_SS) || 0,
@@ -320,16 +323,10 @@ const InformesScreen = ({ navigation }) => {
         <View style={st.container}>
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
-                <Text style={st.headerTitle}>Informes de Predicación</Text>
+                <Text style={st.headerTitle}>Informes Faltantes</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
                     {bulkData.length > 0 ? (
                         <>
-                            <TouchableOpacity onPress={handleImportExcel} disabled={loading}>
-                                <Import size={24} color="#FFFFFF" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleShare} disabled={loading}>
-                                <Share2 size={24} color="#FFFFFF" />
-                            </TouchableOpacity>
                             <TouchableOpacity onPress={handleSave} disabled={loading}>
                                 <Save size={24} color={colors.primary} />
                             </TouchableOpacity>
@@ -499,4 +496,4 @@ const getStyles = (colors) => StyleSheet.create({
     },
 });
 
-export default InformesScreen;
+export default InformesFaltantesScreen;
