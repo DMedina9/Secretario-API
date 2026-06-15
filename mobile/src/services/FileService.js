@@ -6,6 +6,47 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const DOWNLOAD_FOLDER_KEY = '@download_folder_uri';
 
 /**
+ * Prompts the user to re-authorize the download directory.
+ * If authorized, saves the new directory Uri and returns it.
+ * Otherwise returns null.
+ */
+const reauthorizeDirectory = async () => {
+    return new Promise((resolve) => {
+        Alert.alert(
+            'Permiso Requerido',
+            'La aplicación no tiene permisos para acceder a la carpeta de descargas configurada o esta ya no existe. ¿Deseas seleccionar una carpeta de descargas ahora?',
+            [
+                {
+                    text: 'Cancelar',
+                    onPress: () => resolve(null),
+                    style: 'cancel'
+                },
+                {
+                    text: 'Seleccionar Carpeta',
+                    onPress: async () => {
+                        try {
+                            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                            if (permissions.granted) {
+                                await AsyncStorage.setItem(DOWNLOAD_FOLDER_KEY, permissions.directoryUri);
+                                Alert.alert('✅ Éxito', 'Carpeta de descargas configurada correctamente.');
+                                resolve(permissions.directoryUri);
+                            } else {
+                                resolve(null);
+                            }
+                        } catch (e) {
+                            console.error('Error requesting directory permissions:', e);
+                            Alert.alert('Error', 'No se pudo seleccionar la carpeta.');
+                            resolve(null);
+                        }
+                    }
+                }
+            ]
+        );
+    });
+};
+
+
+/**
  * Saves a file to the configured download folder (if on Android and configured)
  * or to the app's document directory, then opens the share dialog.
  * 
@@ -14,7 +55,7 @@ const DOWNLOAD_FOLDER_KEY = '@download_folder_uri';
  */
 export const saveAndShareFile = async (sourceUri, filename) => {
     try {
-        const folderUri = await AsyncStorage.getItem(DOWNLOAD_FOLDER_KEY);
+        let folderUri = await AsyncStorage.getItem(DOWNLOAD_FOLDER_KEY);
         let finalUri = sourceUri;
 
         if (Platform.OS === 'android' && folderUri) {
@@ -29,7 +70,19 @@ export const saveAndShareFile = async (sourceUri, filename) => {
                 // We leave finalUri = sourceUri so it shares the cached copy successfully.
                 console.log('File saved to SAF directory:', safUri);
             } catch (safError) {
-                console.error('Error saving with SAF, falling back to cache:', safError);
+                console.error('Error saving with SAF, asking for reauthorization:', safError);
+                const newFolderUri = await reauthorizeDirectory();
+                if (newFolderUri) {
+                    try {
+                        const fileContent = await FileSystem.readAsStringAsync(sourceUri, { encoding: FileSystem.EncodingType.Base64 });
+                        const mimeType = getMimeType(filename);
+                        const safUri = await FileSystem.StorageAccessFramework.createFileAsync(newFolderUri, filename, mimeType);
+                        await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
+                        console.log('File saved to SAF directory after retry:', safUri);
+                    } catch (retryError) {
+                        console.error('Retry SAF write failed in saveAndShareFile:', retryError);
+                    }
+                }
             }
         } else {
             // Save to project document directory as a "persistent" copy
@@ -59,16 +112,42 @@ export const saveAndShareFile = async (sourceUri, filename) => {
  */
 export const saveFileOnly = async (sourceUri, filename) => {
     try {
-        const folderUri = await AsyncStorage.getItem(DOWNLOAD_FOLDER_KEY);
+        let folderUri = await AsyncStorage.getItem(DOWNLOAD_FOLDER_KEY);
         
         if (Platform.OS === 'android' && folderUri) {
-            const fileContent = await FileSystem.readAsStringAsync(sourceUri, { encoding: FileSystem.EncodingType.Base64 });
-            const mimeType = getMimeType(filename);
-            
-            const safUri = await FileSystem.StorageAccessFramework.createFileAsync(folderUri, filename, mimeType);
-            await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
-            Alert.alert('✅ Guardado', `El archivo se ha guardado en tu carpeta de descargas:\n${filename}`);
-            return true;
+            try {
+                const fileContent = await FileSystem.readAsStringAsync(sourceUri, { encoding: FileSystem.EncodingType.Base64 });
+                const mimeType = getMimeType(filename);
+                
+                const safUri = await FileSystem.StorageAccessFramework.createFileAsync(folderUri, filename, mimeType);
+                await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
+                Alert.alert('✅ Guardado', `El archivo se ha guardado en tu carpeta de descargas:\n${filename}`);
+                return true;
+            } catch (safError) {
+                console.error('SAF write failed, asking for reauthorization:', safError);
+                const newFolderUri = await reauthorizeDirectory();
+                if (newFolderUri) {
+                    try {
+                        const fileContent = await FileSystem.readAsStringAsync(sourceUri, { encoding: FileSystem.EncodingType.Base64 });
+                        const mimeType = getMimeType(filename);
+                        const safUri = await FileSystem.StorageAccessFramework.createFileAsync(newFolderUri, filename, mimeType);
+                        await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
+                        Alert.alert('✅ Guardado', `El archivo se ha guardado en tu carpeta de descargas:\n${filename}`);
+                        return true;
+                    } catch (retryError) {
+                        console.error('Retry SAF write failed:', retryError);
+                    }
+                }
+                
+                // Fallback to internal app document directory if reauthorization failed or was cancelled
+                const projectDir = FileSystem.documentDirectory + filename;
+                await FileSystem.copyAsync({ from: sourceUri, to: projectDir });
+                Alert.alert(
+                    '⚠️ Guardado en Almacenamiento Interno',
+                    `No se pudo guardar en la carpeta seleccionada debido a un problema de permisos. El archivo se guardó de forma interna en la aplicación:\n${filename}`
+                );
+                return true;
+            }
         } else {
             // Save to project document directory as fallback
             const projectDir = FileSystem.documentDirectory + filename;
