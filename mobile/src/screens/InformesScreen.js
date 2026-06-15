@@ -135,7 +135,7 @@ const InformesScreen = ({ navigation }) => {
     const [importMessage, setImportMessage] = useState('');
     const [isImporting, setIsImporting] = useState(false);
 
-    const mes_envio = dayjs().subtract(1, 'month').format('YYYY-MM');
+    const mes_enviado = dayjs().subtract(1, 'month').format('YYYY-MM');
     useEffect(() => { loadGroups(); }, []);
 
     const loadGroups = async () => {
@@ -189,7 +189,7 @@ const InformesScreen = ({ navigation }) => {
                     sexo: pub.sexo,
                     telefono: pub.telefono_movil,
                     mes: month + '-01',
-                    mes_envio: mes_envio + '-01',
+                    mes_enviado: mes_enviado + '-01',
                     predico_en_el_mes: ex ? ex.predico_en_el_mes : 0,
                     horas: ex ? ex.horas : 0,
                     horas_SS: ex ? ex.horas_SS : 0,
@@ -361,11 +361,11 @@ const InformesScreen = ({ navigation }) => {
                 {/* Filters */}
                 <View style={st.filterCard}>
                     <View style={st.monthNavRow}>
-                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').subtract(1, 'month').format('YYYY-MM'))}>
+                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').subtract(1, 'month').format('YYYY-MM'))} disabled={month <= dayjs().subtract(1, 'month').format('YYYY-MM')}>
                             <ChevronLeft size={26} color={colors.text} />
                         </TouchableOpacity>
                         <Text style={st.monthLabel}>{dayjs(month + '-01').format('MMMM YYYY')}</Text>
-                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').add(1, 'month').format('YYYY-MM'))}>
+                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').add(1, 'month').format('YYYY-MM'))} disabled={month >= dayjs().subtract(1, 'month').format('YYYY-MM')}>
                             <ChevronRight size={26} color={colors.text} />
                         </TouchableOpacity>
                     </View>

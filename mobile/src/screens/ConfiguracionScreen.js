@@ -22,8 +22,7 @@ const ConfiguracionesSection = () => {
         { key: 'nombre_congregacion', label: 'Nombre de la Congregación', desc: 'Identidad de la congregación' },
         { key: 'correo_admin', label: 'Correo del Administrador', desc: 'Correo electrónico del administrador' },
         { key: 'total_territorios', label: 'Total de Territorios', desc: 'Cantidad total de territorios' },
-        { key: 'territorios_no_predicados', label: 'Territorios No Predicados', desc: 'Cantidad de territorios no predicados' },
-        { key: 'mes_informe', label: 'Mes de Informe', desc: 'Referencia global de informes' },
+        { key: 'territorios_no_predicados', label: 'Territorios No Predicados', desc: 'Cantidad de territorios no predicados' }
     ];
 
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -156,10 +155,10 @@ const GestionDatosSection = () => {
             };
 
             const jsonStr = JSON.stringify(backupData);
-            
+
             const backupFilename = `respaldo_secretario_${new Date().toISOString().split('T')[0]}.json`;
             const backupUri = `${FileSystem.cacheDirectory}${backupFilename}`;
-            
+
             await FileSystem.writeAsStringAsync(backupUri, jsonStr, { encoding: FileSystem.EncodingType.UTF8 });
             await FileService.saveAndShareFile(backupUri, backupFilename);
         } catch (error) {
@@ -299,7 +298,7 @@ const GestionDatosSection = () => {
         <View style={st.card}>
             <Text style={st.cardTitle}>📊 Gestión de Datos Local</Text>
             <Text style={st.cardSubtitle}>Respalda, restaura o importa tu información directamente en este dispositivo.</Text>
-            
+
             <Modal
                 visible={loading === 'restore' || loading === 'backup'}
                 transparent
@@ -327,17 +326,17 @@ const GestionDatosSection = () => {
                 <View style={st.modalOverlay}>
                     <View style={[st.modalContent, { width: '90%', maxHeight: '85%' }]}>
                         <Text style={st.modalTitle}>📊 Carga Inicial desde Excel</Text>
-                        
+
                         <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
                             <Text style={st.instructionHeading}>Instrucciones de llenado:</Text>
-                            
+
                             <Text style={st.instructionText}>
                                 1. **Descarga la plantilla**: Toca el botón de abajo para guardar o compartir la plantilla vacía en tu dispositivo.
                             </Text>
                             <Text style={st.instructionText}>
                                 2. **Hojas requeridas**: La plantilla contiene tres pestañas importantes que debes conservar sin cambiar sus nombres:
                             </Text>
-                            
+
                             <View style={st.bulletContainer}>
                                 <Text style={st.bulletText}>• **Publicadores**: Registro de personas. El campo **Nombre** debe tener el formato `Apellidos, Nombre` (ej: `Pérez, Juan`). El campo **Sexo** acepta `Hombre` o `Mujer`. Los privilegios admitidos son `Anciano` y `Siervo ministerial`. Los tipos de publicador son `Publicador`, `Precursor regular` o `Precursor auxiliar`.</Text>
                                 <Text style={st.bulletText}>• **Informes**: Historial mensual. Asegúrate de que los nombres coincidan exactamente con la hoja de Publicadores. El formato de **Mes** debe ser una fecha o texto `AAAA-MM-DD` (ej: `2025-01-01`).</Text>
@@ -347,7 +346,7 @@ const GestionDatosSection = () => {
                             <Text style={st.instructionText}>
                                 3. **Formatos**: No cambies los encabezados de las columnas. Las fechas deben ingresarse idealmente en formato `AAAA-MM-DD`. Los valores lógicos de Sí/No como "Ungido" o "Predicó en el mes" deben ingresarse como `TRUE` o `FALSE`.
                             </Text>
-                            
+
                             <Text style={st.instructionText}>
                                 4. **Importación**: Una vez que llenes el archivo, pulsa el botón **Seleccionar y Cargar** para proceder.
                             </Text>
@@ -462,7 +461,7 @@ const ArchivosSection = () => {
         <View style={st.card}>
             <Text style={st.cardTitle}>📁 Archivos y Descargas</Text>
             <Text style={st.cardSubtitle}>Configura dónde se guardarán los reportes y respaldos.</Text>
-            
+
             <View style={st.configRow}>
                 <View style={{ flex: 1 }}>
                     <Text style={st.configLabel}>Carpeta de Descargas</Text>
@@ -504,7 +503,7 @@ const MantenimientoSection = () => {
                             else if (type === 'asistencias') await Asistencias.destroy({ where: {}, truncate: true });
                             else if (type === 'publicadores') await Publicadores.destroy({ where: {}, truncate: true });
                             else if (type === 'precursores') await PrecursoresAuxiliares.destroy({ where: {}, truncate: true });
-                            
+
                             Alert.alert('✅ Hecho', `Registros de ${type} eliminados exitosamente.`);
                         } catch (error) {
                             console.error(error);

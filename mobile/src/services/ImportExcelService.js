@@ -149,47 +149,19 @@ export const generateTemplateXLSX = () => {
  * details and reports of the publishers in a specific group and month.
  */
 export const generateGroupReportsXLSX = async (group, month, bulkData) => {
-    // 1. Fetch all publishers in the selected group
-    const publicadores = await sequelize.query(`
-        SELECT
-            p.apellidos || ', ' || p.nombre AS Nombre,
-            p.nombre || ' ' || p.apellidos AS 'Nombre completo',
-            p.fecha_nacimiento AS 'Fecha de nacimiento',
-            p.fecha_bautismo AS 'Fecha de bautismo',
-            p.grupo AS Grupo,
-            CASE p.sup_grupo WHEN 1 THEN 'Sup' WHEN 2 THEN 'Aux' ELSE '' END AS 'Sup. Grupo',
-            CASE p.sexo WHEN 'H' THEN 'Hombre' WHEN 'M' THEN 'Mujer' ELSE '' END AS Sexo,
-            pr.descripcion AS Privilegio,
-            tp.descripcion AS 'Tipo Publicador',
-            CASE p.ungido WHEN 1 THEN 'TRUE' WHEN 0 THEN 'FALSE' ELSE '' END AS Ungido,
-            p.calle AS Calle,
-            p.num AS 'Núm',
-            p.colonia AS Colonia,
-            p.telefono_fijo AS 'Teléfono fijo',
-            p.telefono_movil AS 'Teléfono móvil',
-            p.contacto_emergencia AS 'Contacto de emergencia',
-            p.tel_contacto_emergencia AS 'Tel. Contacto de emergencia',
-            p.correo_contacto_emergencia AS 'Correo Contacto de emergencia'
-        FROM Publicadores p
-        LEFT JOIN Privilegios pr ON pr.id = p.id_privilegio
-        LEFT JOIN Tipos_Publicadores tp ON tp.id = p.id_tipo_publicador
-        WHERE p.grupo = ?
-        ORDER BY p.apellidos, p.nombre
-    `, { replacements: [group], type: QueryTypes.SELECT });
-
-    // 2. Fetch publisher type catalog to map ID to description
+    // Fetch publisher type catalog to map ID to description
     const tipos = await sequelize.query(`SELECT * FROM Tipos_Publicadores`, { type: QueryTypes.SELECT });
     const tipoMap = {};
     tipos.forEach(t => { tipoMap[t.id] = t.descripcion; });
 
-    // 3. Map bulkData to match "Informes" sheet structure
+    // Map bulkData to match "Informes" sheet structure
     const informes = bulkData.map(item => {
         const tipoDesc = tipoMap[item.id_tipo_publicador] || 'Publicador';
         return {
             "Nombre": item.nombre,
             "Tipo Publicador": tipoDesc,
             "Mes": item.mes,
-            "Mes enviado": item.mes_envio || '',
+            "Mes enviado": item.mes_enviado || '',
             "Predicó en el mes": item.predico_en_el_mes ? 'TRUE' : 'FALSE',
             "Cursos bíblicos": item.cursos_biblicos || 0,
             "Horas": item.horas || 0,
@@ -200,28 +172,13 @@ export const generateGroupReportsXLSX = async (group, month, bulkData) => {
 
     const wb = XLSX.utils.book_new();
 
-    const headersPub = [
-        "Nombre", "Nombre completo", "Fecha de nacimiento", "Fecha de bautismo",
-        "Grupo", "Sup. Grupo", "Sexo", "Privilegio", "Tipo Publicador", "Ungido",
-        "Calle", "Núm", "Colonia", "Teléfono fijo", "Teléfono móvil",
-        "Contacto de emergencia", "Tel. Contacto de emergencia", "Correo Contacto de emergencia"
-    ];
     const headersInf = [
         "Nombre", "Tipo Publicador", "Mes", "Mes enviado", "Predicó en el mes",
         "Cursos bíblicos", "Horas", "Notas", "Horas S. S. (PR)"
     ];
-    const headersAsis = [
-        "Fecha", "Asistentes", "Notas"
-    ];
-
-    const wsPub = XLSX.utils.json_to_sheet(publicadores, { header: headersPub });
-    XLSX.utils.book_append_sheet(wb, wsPub, "Publicadores");
 
     const wsInf = XLSX.utils.json_to_sheet(informes, { header: headersInf });
     XLSX.utils.book_append_sheet(wb, wsInf, "Informes");
-
-    const wsAsis = XLSX.utils.json_to_sheet([], { header: headersAsis });
-    XLSX.utils.book_append_sheet(wb, wsAsis, "Asistencias");
 
     const b64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
     return b64;
@@ -244,8 +201,11 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
     const workbook = XLSX.read(fileBase64, { type: 'base64', cellDates: true });
 
     // Verify minimum required sheets
-    if (!workbook.Sheets['Publicadores']) {
-        throw new Error('No se encontró la hoja "Publicadores" en el archivo Excel.');
+    const sheetPub = workbook.Sheets['Publicadores'];
+    const sheetInf = workbook.Sheets['Informes'];
+    const sheetAsis = workbook.Sheets['Asistencias'];
+    if (!sheetPub && !sheetInf && !sheetAsis) {
+        throw new Error('No se encontró ninguna hoja de datos en el archivo Excel.');
     }
 
     notify(15, "Inicializando catálogos...");
@@ -258,7 +218,6 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
     const TiposPublicadores = await sequelize.query(`SELECT * FROM Tipos_Publicadores`, { type: QueryTypes.SELECT });
 
     // ─── PART 1: PUBLICADORES ───
-    const sheetPub = workbook.Sheets['Publicadores'];
     let pubCount = 0;
     if (sheetPub) {
         notify(20, "Importando Publicadores...");
@@ -358,7 +317,6 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
 
     // ─── PART 2: INFORMES ───
     let infCount = 0;
-    const sheetInf = workbook.Sheets['Informes'];
     if (sheetInf) {
         notify(55, "Importando Informes...");
         const jsonInf = XLSX.utils.sheet_to_json(sheetInf);
@@ -433,7 +391,6 @@ export const importExcelFromUri = async (uri, onProgress = null) => {
 
     // ─── PART 3: ASISTENCIAS ───
     let asisCount = 0;
-    const sheetAsis = workbook.Sheets['Asistencias'];
     if (sheetAsis) {
         notify(80, "Importando Asistencias...");
         const jsonAsis = XLSX.utils.sheet_to_json(sheetAsis);

@@ -16,7 +16,7 @@ dayjs.locale('es');
 const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => {
     const { colors } = useTheme();
     const st = getStyles(colors);
-    const [fecha, setFecha] = useState(new Date());
+    const [fecha, setFecha] = useState(dayjs());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [asistentes, setAsistentes] = useState('');
     const [notas, setNotas] = useState('');
@@ -24,7 +24,7 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
 
     useEffect(() => {
         if (visible) {
-            setFecha(asistencia?.fecha ? dayjs(asistencia.fecha).toDate() : dayjs().toDate());
+            setFecha(asistencia?.fecha ? dayjs(asistencia.fecha) : dayjs());
             setAsistentes(asistencia?.asistentes?.toString() ?? '');
             setNotas(asistencia?.notas ?? '');
         }
@@ -37,13 +37,13 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
         }
         setSaving(true);
         try {
-            const payload = { 
+            const payload = {
                 id: asistencia?.id || null,
-                fecha: dayjs(fecha).format('YYYY-MM-DD'), 
-                asistentes: parseInt(asistentes, 10), 
-                notas 
+                fecha: fecha.format('YYYY-MM-DD'),
+                asistentes: parseInt(asistentes, 10),
+                notas
             };
-            
+
             const success = await saveAsistencia(payload);
             if (success) {
                 onSave();
@@ -66,7 +66,7 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
     };
 
     const onDateChange = (event, selectedDate) => {
-        const currentDate = selectedDate && dayjs(selectedDate).toDate() || fecha;
+        const currentDate = selectedDate && dayjs(selectedDate) || fecha;
         setFecha(currentDate);
         setShowDatePicker(false);
     };
@@ -85,13 +85,13 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
                             style={st.input}
                             onPress={() => setShowDatePicker(true)}
                         >
-                            <Text style={st.fechaText}>{fecha.toISOString().split('T')[0]}</Text>
+                            <Text style={st.fechaText}>{fecha.format('YYYY-MM-DD')}</Text>
                         </TouchableOpacity>
 
                         {showDatePicker && (
                             <DateTimePicker
                                 testID="dateTimePicker"
-                                value={fecha}
+                                value={fecha.toDate()}
                                 mode="date"
                                 is24Hour={true}
                                 display="default"
@@ -101,22 +101,22 @@ const AsistenciaModal = ({ visible, asistencia, onClose, onSave, onDelete }) => 
                     </View>
                     <View style={st.fieldGroup}>
                         <Text style={st.label}>Asistentes</Text>
-                        <TextInput 
-                            style={st.input} 
-                            value={asistentes} 
-                            onChangeText={setAsistentes} 
-                            keyboardType="numeric" 
+                        <TextInput
+                            style={st.input}
+                            value={asistentes}
+                            onChangeText={setAsistentes}
+                            keyboardType="numeric"
                             placeholderTextColor={colors.textSecondary}
                         />
                     </View>
                     <View style={st.fieldGroup}>
                         <Text style={st.label}>Notas</Text>
-                        <TextInput 
-                            style={[st.input, { minHeight: 64, textAlignVertical: 'top' }]} 
-                            value={notas || ''} 
-                            onChangeText={setNotas} 
+                        <TextInput
+                            style={[st.input, { minHeight: 64, textAlignVertical: 'top' }]}
+                            value={notas || ''}
+                            onChangeText={setNotas}
                             multiline
-                            numberOfLines={4} 
+                            numberOfLines={4}
                             placeholderTextColor={colors.textSecondary}
                         />
                     </View>
@@ -278,10 +278,10 @@ const AsistenciasScreen = ({ navigation }) => {
                 visible={modalVisible}
                 asistencia={selected}
                 onClose={() => { setModalVisible(false); setSelected(null); }}
-                onSave={async () => { 
-                    setModalVisible(false); 
-                    setSelected(null); 
-                    load(); 
+                onSave={async () => {
+                    setModalVisible(false);
+                    setSelected(null);
+                    load();
                 }}
                 onDelete={handleDelete}
             />

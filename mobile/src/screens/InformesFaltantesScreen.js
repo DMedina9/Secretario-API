@@ -125,7 +125,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
 const InformesFaltantesScreen = ({ navigation }) => {
     const { colors } = useTheme();
     const st = getStyles(colors);
-    const [month, setMonth] = useState(dayjs().subtract(1, 'month').format('YYYY-MM'));
+    const [month, setMonth] = useState(dayjs().subtract(2, 'month').format('YYYY-MM'));
     const [groups, setGroups] = useState([]);
     const [selectedGroup, setSelectedGroup] = useState('');
     const [bulkData, setBulkData] = useState([]);
@@ -134,7 +134,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
     const [importMessage, setImportMessage] = useState('');
     const [isImporting, setIsImporting] = useState(false);
 
-    const mes_envio = dayjs().subtract(1, 'month').format('YYYY-MM');
+    const mes_enviado = dayjs().subtract(1, 'month').format('YYYY-MM');
     useEffect(() => { loadGroups(); }, []);
 
     const loadGroups = async () => {
@@ -190,7 +190,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
                         sexo: pub.sexo,
                         telefono: pub.telefono_movil,
                         mes: month + '-01',
-                        mes_envio: mes_envio + '-01',
+                        mes_enviado: mes_enviado + '-01',
                         predico_en_el_mes: ex ? ex.predico_en_el_mes : 0,
                         horas: ex ? ex.horas : 0,
                         horas_SS: ex ? ex.horas_SS : 0,
@@ -228,7 +228,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
                 const payload = {
                     id_publicador: item.id_publicador,
                     mes: item.mes,
-                    mes_enviado: item.mes_envio,
+                    mes_enviado: mes_enviado,
                     predico_en_el_mes: item.predico_en_el_mes ? 1 : 0,
                     horas: parseInt(item.horas) || 0,
                     horas_SS: parseInt(item.horas_SS) || 0,
@@ -362,7 +362,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
                             <ChevronLeft size={26} color={colors.text} />
                         </TouchableOpacity>
                         <Text style={st.monthLabel}>{dayjs(month + '-01').format('MMMM YYYY')}</Text>
-                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').add(1, 'month').format('YYYY-MM'))}>
+                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').add(1, 'month').format('YYYY-MM'))} disabled={dayjs(month + '-01').add(2, 'month') > dayjs()}>
                             <ChevronRight size={26} color={colors.text} />
                         </TouchableOpacity>
                     </View>

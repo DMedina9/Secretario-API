@@ -19,7 +19,7 @@ const Dashboard = () => {
                     setApiStatus('Desconectado');
                     setStatusColor('var(--color-error)');
                 }
-            } catch (error) {
+            } catch {
                 setApiStatus('Error');
                 setStatusColor('var(--color-error)');
             }

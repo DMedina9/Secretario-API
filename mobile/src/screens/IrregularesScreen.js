@@ -37,10 +37,7 @@ const buildPdfHtml = (data, totals, monthLabel) => {
             <span class="estatus" style="color:${estatusColor}">${estatus}</span>
           </div>
           <div class="meta-row">
-            <span class="meta">Objetivo: <b>${item.meses_a_predicar}</b></span>
-            <span class="meta">Predicó: <b>${item.meses_predicados}</b></span>
-            <span class="meta">Faltantes: <b>${item.meses_faltantes}</b></span>
-            <span class="meta">Consec. sin predicar: <b>${item.consecutivos_sin_predicar}</b></span>
+            <span class="meta">Grupo: <b>${item.grupo}</b></span>
           </div>
           <div class="months-row">${monthRow(item.detalle_meses)}</div>
         </div>`;
@@ -146,18 +143,24 @@ const IrregularesScreen = ({ navigation }) => {
         setCurrentMonth(newMonth);
     };
 
+    const filteredData = statusFilter === 'todos'
+        ? data
+        : statusFilter === 'irregular'
+            ? data.filter(item => item.meses_predicados > 0)
+            : data.filter(item => item.meses_predicados === 0);
+
     const onShare = async () => {
-        if (!data.length) return;
+        if (!filteredData.length) return;
         setSharing(true);
         try {
             const monthLabel = dayjs(currentMonth).format('MMMM YYYY');
-            const totals = data.reduce((acc, item) => {
+            const totals = filteredData.reduce((acc, item) => {
                 if (item.meses_predicados > 0) acc.irregulares++;
                 else acc.inactivos++;
                 return acc;
             }, { irregulares: 0, inactivos: 0 });
 
-            const html = buildPdfHtml(data, totals, monthLabel);
+            const html = buildPdfHtml(filteredData, totals, monthLabel);
             const { uri: pdfUri } = await Print.printToFileAsync({ html, base64: false });
 
             const filename = `Irregulares_${dayjs(currentMonth).format('YYYY-MM')}.pdf`;
@@ -181,12 +184,6 @@ const IrregularesScreen = ({ navigation }) => {
         else acc.inactivos++;
         return acc;
     }, { irregulares: 0, inactivos: 0 });
-
-    const filteredData = statusFilter === 'todos'
-        ? data
-        : statusFilter === 'irregular'
-            ? data.filter(item => item.meses_predicados > 0)
-            : data.filter(item => item.meses_predicados === 0);
 
     return (
         <View style={st.container}>
@@ -222,9 +219,9 @@ const IrregularesScreen = ({ navigation }) => {
                     {/* Status filter chips */}
                     <View style={st.chipRow}>
                         {[
-                            { key: 'todos',     label: 'Todos',       count: data.length },
+                            { key: 'todos', label: 'Todos', count: data.length },
                             { key: 'irregular', label: 'Irregulares', count: totals.irregulares },
-                            { key: 'inactivo',  label: 'Inactivos',   count: totals.inactivos },
+                            { key: 'inactivo', label: 'Inactivos', count: totals.inactivos },
                         ].map(opt => (
                             <TouchableOpacity
                                 key={opt.key}
@@ -232,7 +229,7 @@ const IrregularesScreen = ({ navigation }) => {
                                     st.chip,
                                     statusFilter === opt.key && st.chipActive,
                                     opt.key === 'irregular' && statusFilter === opt.key && { backgroundColor: colors.warning, borderColor: colors.warning },
-                                    opt.key === 'inactivo'  && statusFilter === opt.key && { backgroundColor: colors.danger,  borderColor: colors.danger  },
+                                    opt.key === 'inactivo' && statusFilter === opt.key && { backgroundColor: colors.danger, borderColor: colors.danger },
                                 ]}
                                 onPress={() => setStatusFilter(opt.key)}
                             >
