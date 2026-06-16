@@ -83,8 +83,9 @@ export const getIrregulares = async (mes) => {
                 p.nombre,
                 p.apellidos,
                 p.nombre || ' ' || p.apellidos as publicador,
-                (	select min(mes)
-                	FROM Informes a
+                p.grupo,
+                (   select min(mes)
+                    FROM Informes a
                     WHERE a.id_publicador = p.id) AS inicio_predicacion,
                 CASE WHEN (
                     SELECT SUM(predico_en_el_mes)
@@ -168,6 +169,7 @@ export const getIrregulares = async (mes) => {
                 nombre: pub.nombre,
                 apellidos: pub.apellidos,
                 publicador: `${pub.nombre} ${pub.apellidos}`,
+                grupo: pub.grupo,
                 inicio_predicacion: started ? started.format('YYYY-MM-DD') : null,
                 meses_a_predicar: expectedMonths,
                 meses_predicados: predicados,
@@ -240,4 +242,34 @@ export const getPrecursoresAuxiliaresByMonth = async (mes) => {
             ${mes ? `AND pa.mes = :mes` : ''}
             ORDER BY pa.mes ASC, p.apellidos, p.nombre
         `, { type: QueryTypes.SELECT, replacements: { mes } });
+};
+
+export const deleteOldInformes = async () => {
+    let totalDeleted = 0;
+    const publicadores = await Publicadores.findAll({ attributes: ['id'] });
+
+    for (const publicador of publicadores) {
+        const ultimoInforme = await Informes.findOne({
+            where: { id_publicador: publicador.id },
+            order: [['mes', 'DESC']],
+            attributes: ['mes']
+        });
+
+        if (!ultimoInforme) continue;
+
+        const ultimaFecha = new Date(ultimoInforme.mes);
+        const fechaLimite = new Date(ultimaFecha.getFullYear() - 2, ultimaFecha.getMonth(), ultimaFecha.getDate());
+        const fechaLimiteStr = fechaLimite.toISOString().substring(0, 10);
+
+        const deleted = await Informes.destroy({
+            where: {
+                id_publicador: publicador.id,
+                mes: {
+                    [Op.lt]: fechaLimiteStr
+                }
+            }
+        });
+        totalDeleted += deleted;
+    }
+    return totalDeleted;
 };

@@ -305,7 +305,7 @@ const getStyles = (colors) => StyleSheet.create({
     calDayHeader: { width: '14.28%', alignItems: 'center', paddingVertical: 6 },
     calDayHeaderText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
     calCell: {
-        width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center',
+        marginTop: 2, marginBottom: 2, height: 40, width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center',
         borderRadius: 8, margin: 0,
     },
     calCellActive: { backgroundColor: colors.primary },

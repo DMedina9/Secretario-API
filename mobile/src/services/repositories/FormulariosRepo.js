@@ -1,5 +1,4 @@
 import { Publicadores, Informes, Asistencias, Configuracion, Privilegio, TipoPublicador, sequelize, QueryTypes } from '../models';
-import { Alert } from 'react-native';
 import dayjs from 'dayjs';
 
 // =====================================================================================
@@ -61,7 +60,7 @@ export const getS1 = async (month) => {
              WHERE (SELECT SUM(predico_en_el_mes)
                     FROM Informes i
                     WHERE i.id_publicador = p.id
-                      AND DATE(SUBSTR(i.mes, 1, 10)) BETWEEN DATE(?, '-5 months') AND DATE(?)
+                      AND DATE(i.mes) BETWEEN DATE(?, '-5 months') AND DATE(?)
                 ) > 0`,
             { replacements: [month, month], type: QueryTypes.SELECT }
         );

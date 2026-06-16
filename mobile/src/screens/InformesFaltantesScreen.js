@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle, Share2, Impo
 import * as FileSystem from 'expo-file-system/legacy';
 import FileService from '../services/FileService';
 import * as DocumentPicker from 'expo-document-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateGroupReportsXLSX, importExcelFromUri } from '../services/ImportExcelService';
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
 import { getInformesByPublicadorAndAnio, getPrecursoresAuxiliaresByMonth, saveInforme } from '../services/repositories/InformeRepo';
@@ -96,7 +97,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
                                             const horas = item.horas || 0;
                                             const horas_acreditadas = Math.max(0, Math.min(55 - horas, val));
                                             let notas = item.notas || '';
-                                            notas = `S.S. ${val} hrs. Acreditadas: ${horas_acreditadas} hrs.`;
+                                            notas = `S. S. ${val} hrs. Acreditadas: ${horas_acreditadas} hrs.`;
                                             onChange(index, 'horas_SS', val)
                                             onChange(index, 'notas', notas)
                                         }}
@@ -130,6 +131,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
     const [selectedGroup, setSelectedGroup] = useState('');
     const [bulkData, setBulkData] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isExcelModalVisible, setIsExcelModalVisible] = useState(false);
     const [importProgress, setImportProgress] = useState(0);
     const [importMessage, setImportMessage] = useState('');
     const [isImporting, setIsImporting] = useState(false);
@@ -147,15 +149,15 @@ const InformesFaltantesScreen = ({ navigation }) => {
         }
     };
 
-    const loadBulkData = async () => {
-        if (!month || !selectedGroup) {
+    const loadBulkData = async (month, group) => {
+        if (!month || !group) {
             Alert.alert('Aviso', 'Selecciona mes y grupo.');
             return;
         }
         setLoading(true);
         try {
             const allPubs = await getAllPublicadores();
-            const publicadores = allPubs.filter(p => p.grupo == selectedGroup);
+            const publicadores = allPubs.filter(p => p.grupo == group);
 
             if (!publicadores.length) {
                 Alert.alert('Aviso', 'No hay publicadores en este grupo.');
@@ -212,6 +214,19 @@ const InformesFaltantesScreen = ({ navigation }) => {
         }
     };
 
+    useEffect(() => {
+        const loadSelectedGroup = async () => {
+            const group = await AsyncStorage.getItem('@selected_group');
+            setSelectedGroup(group);
+        };
+        loadSelectedGroup();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedGroup || !month) return;
+        loadBulkData(month, selectedGroup);
+    }, [month, selectedGroup]);
+
     const handleFieldChange = (index, field, value) => {
         setBulkData(prev => {
             const next = [...prev];
@@ -245,7 +260,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
             }
             Alert.alert('✅ Guardado Local', `${bulkData.length} informes guardados localmente.`);
             setBulkData([]);
-            loadBulkData();
+            loadBulkData(month, selectedGroup);
         } catch (e) {
             console.error(e);
             Alert.alert('Error', 'Error al guardar informes localmente.');
@@ -300,7 +315,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
                                     `Importación completada con éxito:\n\n- Publicadores: ${response.publicadoresImportados}\n- Informes: ${response.informesImportados}\n- Asistencias: ${response.asistenciasImportadas}`
                                 );
                                 setIsExcelModalVisible(false);
-                                loadBulkData();
+                                loadBulkData(month, selectedGroup);
                             } catch (e) {
                                 console.error(e);
                                 Alert.alert('Error de Importación', e.message || 'Ocurrió un error al importar el archivo Excel.');
@@ -327,6 +342,12 @@ const InformesFaltantesScreen = ({ navigation }) => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 15 }}>
                     {bulkData.length > 0 ? (
                         <>
+                            <TouchableOpacity onPress={handleImportExcel} disabled={loading}>
+                                <Import size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleShare} disabled={loading}>
+                                <Share2 size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
                             <TouchableOpacity onPress={handleSave} disabled={loading}>
                                 <Save size={24} color={colors.primary} />
                             </TouchableOpacity>
@@ -362,7 +383,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
                             <ChevronLeft size={26} color={colors.text} />
                         </TouchableOpacity>
                         <Text style={st.monthLabel}>{dayjs(month + '-01').format('MMMM YYYY')}</Text>
-                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').add(1, 'month').format('YYYY-MM'))} disabled={dayjs(month + '-01').add(2, 'month') > dayjs()}>
+                        <TouchableOpacity onPress={() => setMonth(m => dayjs(m + '-01').add(1, 'month').format('YYYY-MM'))} disabled={month >= dayjs().subtract(2, 'month').format('YYYY-MM')}>
                             <ChevronRight size={26} color={colors.text} />
                         </TouchableOpacity>
                     </View>
@@ -372,13 +393,17 @@ const InformesFaltantesScreen = ({ navigation }) => {
                             <TouchableOpacity
                                 key={g}
                                 style={[st.groupChip, selectedGroup === g && st.groupChipActive]}
-                                onPress={() => setSelectedGroup(g)}
+                                onPress={() => {
+                                    setSelectedGroup(g);
+                                    loadBulkData(month, g);
+                                    AsyncStorage.setItem('@selected_group', g);
+                                }}
                             >
                                 <Text style={[st.groupChipText, selectedGroup === g && st.groupChipTextActive]}>{g}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
-                    <TouchableOpacity style={[st.applyBtn, loading && st.disabled]} onPress={loadBulkData} disabled={loading}>
+                    <TouchableOpacity style={[st.applyBtn, loading && st.disabled]} onPress={() => loadBulkData(month, selectedGroup)} disabled={loading}>
                         {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={st.applyBtnText}>Cargar Informes</Text>}
                     </TouchableOpacity>
                 </View>

@@ -281,11 +281,8 @@ const IrregularesScreen = ({ navigation }) => {
                                         </Text>
                                     </View>
                                     <View style={st.metaRow}>
-                                        <Text style={st.meta}>Objetivo: {item.meses_a_predicar}</Text>
-                                        <Text style={st.meta}>Predicó: {item.meses_predicados}</Text>
-                                        <Text style={st.meta}>Faltantes: {item.meses_faltantes}</Text>
+                                        <Text style={st.meta}>Grupo: {item.grupo}</Text>
                                     </View>
-                                    <Text style={st.meta}>Meses consecutivos sin predicar: {item.consecutivos_sin_predicar}</Text>
                                     <IrregularityChart item={item} colors={colors} st={st} />
                                 </View>
                             ))

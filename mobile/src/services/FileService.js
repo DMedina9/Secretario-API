@@ -1,6 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { Alert, Platform } from 'react-native';
+import * as IntentLauncher from 'expo-intent-launcher';
+import { Alert, Platform, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DOWNLOAD_FOLDER_KEY = '@download_folder_uri';
@@ -122,6 +123,19 @@ export const saveFileOnly = async (sourceUri, filename) => {
                 const safUri = await FileSystem.StorageAccessFramework.createFileAsync(folderUri, filename, mimeType);
                 await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
                 Alert.alert('✅ Guardado', `El archivo se ha guardado en tu carpeta de descargas:\n${filename}`);
+                // Intentar abrir el archivo con la aplicación por defecto (Android SAF uri)
+                try {
+                    if (Platform.OS === 'android') {
+                        await IntentLauncher.startActivityAsync(IntentLauncher.ACTION_VIEW, { data: safUri, type: mimeType });
+                    } else if (await Sharing.isAvailableAsync()) {
+                        // En iOS/otros, abrir mediante el diálogo de compartir si está disponible
+                        await Sharing.shareAsync(safUri);
+                    } else {
+                        await Linking.openURL(safUri);
+                    }
+                } catch (openErr) {
+                    console.error('Error al abrir el archivo tras guardar (SAF):', openErr);
+                }
                 return true;
             } catch (safError) {
                 console.error('SAF write failed, asking for reauthorization:', safError);
@@ -133,6 +147,17 @@ export const saveFileOnly = async (sourceUri, filename) => {
                         const safUri = await FileSystem.StorageAccessFramework.createFileAsync(newFolderUri, filename, mimeType);
                         await FileSystem.writeAsStringAsync(safUri, fileContent, { encoding: FileSystem.EncodingType.Base64 });
                         Alert.alert('✅ Guardado', `El archivo se ha guardado en tu carpeta de descargas:\n${filename}`);
+                        try {
+                            if (Platform.OS === 'android') {
+                                await IntentLauncher.startActivityAsync(IntentLauncher.ACTION_VIEW, { data: safUri, type: mimeType });
+                            } else if (await Sharing.isAvailableAsync()) {
+                                await Sharing.shareAsync(safUri);
+                            } else {
+                                await Linking.openURL(safUri);
+                            }
+                        } catch (openErr) {
+                            console.error('Error al abrir el archivo tras guardar (SAF retry):', openErr);
+                        }
                         return true;
                     } catch (retryError) {
                         console.error('Retry SAF write failed:', retryError);
@@ -146,6 +171,19 @@ export const saveFileOnly = async (sourceUri, filename) => {
                     '⚠️ Guardado en Almacenamiento Interno',
                     `No se pudo guardar en la carpeta seleccionada debido a un problema de permisos. El archivo se guardó de forma interna en la aplicación:\n${filename}`
                 );
+                // Intentar abrir el archivo guardado en el directorio de la app
+                try {
+                    if (Platform.OS === 'android') {
+                        const contentUri = await FileSystem.getContentUriAsync(projectDir);
+                        await IntentLauncher.startActivityAsync(IntentLauncher.ACTION_VIEW, { data: contentUri, type: getMimeType(filename) });
+                    } else if (await Sharing.isAvailableAsync()) {
+                        await Sharing.shareAsync(projectDir);
+                    } else {
+                        await Linking.openURL(projectDir);
+                    }
+                } catch (openErr) {
+                    console.error('Error al abrir el archivo tras guardar (interno):', openErr);
+                }
                 return true;
             }
         } else {
@@ -153,6 +191,18 @@ export const saveFileOnly = async (sourceUri, filename) => {
             const projectDir = FileSystem.documentDirectory + filename;
             await FileSystem.copyAsync({ from: sourceUri, to: projectDir });
             Alert.alert('✅ Guardado', `El archivo se ha guardado en el almacenamiento de la app:\n${filename}`);
+            try {
+                if (Platform.OS === 'android') {
+                    const contentUri = await FileSystem.getContentUriAsync(projectDir);
+                    await IntentLauncher.startActivityAsync(IntentLauncher.ACTION_VIEW, { data: contentUri, type: getMimeType(filename) });
+                } else if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(projectDir);
+                } else {
+                    await Linking.openURL(projectDir);
+                }
+            } catch (openErr) {
+                console.error('Error al abrir el archivo tras guardar (fallback):', openErr);
+            }
             return true;
         }
     } catch (error) {

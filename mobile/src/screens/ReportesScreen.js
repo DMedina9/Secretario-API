@@ -221,9 +221,10 @@ const VisualizadorTab = ({ anioServicio }) => {
                     getAllPublicadores(),
                     getTiposPublicador(),
                 ]);
-                setPublicadores(pubData);
+                const sortedPubs = [...pubData].sort((a, b) => a.apellidos.localeCompare(b.apellidos));
+                setPublicadores(sortedPubs);
                 setTiposPublicador(tipoData);
-                if (pubData.length > 0) setSelectedPublicadorId(String(pubData[0].id));
+                if (sortedPubs.length > 0) setSelectedPublicadorId(String(sortedPubs[0].id));
                 if (tipoData.length > 0) setSelectedTipoId(String(tipoData[0].id));
             } catch (e) {
                 console.error('Error cargando listas locales', e);
@@ -360,7 +361,7 @@ const VisualizadorTab = ({ anioServicio }) => {
                                 : <DropDownPicker
                                     open={openPublicador}
                                     value={selectedPublicadorId}
-                                    items={publicadores.map(p => ({ label: `${p.nombre} ${p.apellidos}`, value: String(p.id) }))}
+                                    items={publicadores.map(p => ({ label: `${p.apellidos}, ${p.nombre}`, value: String(p.id) }))}
                                     setOpen={setOpenPublicador}
                                     setValue={setSelectedPublicadorId}
                                     searchable={true}

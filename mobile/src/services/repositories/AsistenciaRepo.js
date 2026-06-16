@@ -1,5 +1,5 @@
 import { Asistencias, sequelize } from '../models';
-import { QueryTypes } from 'sequelize';
+import { QueryTypes, Op } from 'sequelize';
 
 export const getAllAsistencias = async () => {
     return await sequelize.query(
@@ -26,4 +26,19 @@ export const deleteAsistencia = async (id) => {
     const a = await Asistencias.findByPk(id);
     if (a) return await a.destroy();
     return false;
+};
+
+export const deleteOldAsistencias = async () => {
+    const today = new Date();
+    const twoYearsAgo = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+    const fechaLimite = twoYearsAgo.toISOString().substring(0, 10);
+    
+    const result = await Asistencias.destroy({
+        where: {
+            fecha: {
+                [Op.lt]: fechaLimite
+            }
+        }
+    });
+    return result;
 };

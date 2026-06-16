@@ -10,7 +10,7 @@ import 'dayjs/locale/es';
 import { ArrowLeft } from 'lucide-react-native';
 import { useAnioServicio } from '../contexts/AnioServicioContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { getS1, getS3, getS10 } from '../services/repositories/SecretarioRepo';
+import { getS1, getS3, getS10 } from '../services/repositories/FormulariosRepo';
 import { Privilegio, TipoPublicador } from '../services/models';
 
 dayjs.locale('es');
@@ -282,8 +282,8 @@ const ReporteS10View = () => {
     );
 };
 
-// ─── Secretario Screen ────────────────────────────────────────────────────────
-const SecretarioScreen = ({ navigation }) => {
+// ─── Formularios Screen ────────────────────────────────────────────────────────
+const FormulariosScreen = ({ navigation }) => {
     const { colors } = useTheme();
     const st = getStyles(colors);
     const [section, setSection] = useState('s1');
@@ -298,7 +298,7 @@ const SecretarioScreen = ({ navigation }) => {
         <View style={st.container}>
             <View style={st.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color="#FFFFFF" /></TouchableOpacity>
-                <Text style={st.headerTitle}>Secretario</Text>
+                <Text style={st.headerTitle}>Formularios</Text>
                 <View style={{ width: 24 }} />
             </View>
 
@@ -364,4 +364,4 @@ const getStyles = (colors) => StyleSheet.create({
     flexItem: { flex: 1, textAlign: 'center', fontSize: 14, color: colors.text },
 });
 
-export default SecretarioScreen;
+export default FormulariosScreen;

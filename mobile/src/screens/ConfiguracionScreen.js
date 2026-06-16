@@ -12,7 +12,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FileService from '../services/FileService';
 import { generateTemplateXLSX, importExcelFromUri } from '../services/ImportExcelService';
-
+import { deleteOldInformes } from '../services/repositories/InformeRepo';
+import { deleteOldAsistencias } from '../services/repositories/AsistenciaRepo';
 
 // ─── Sub-section: Configuraciones ─────────────────────────────────────────────
 const ConfiguracionesSection = () => {
@@ -20,7 +21,7 @@ const ConfiguracionesSection = () => {
     const st = getStyles(colors);
     const items = [
         { key: 'nombre_congregacion', label: 'Nombre de la Congregación', desc: 'Identidad de la congregación' },
-        { key: 'correo_admin', label: 'Correo del Administrador', desc: 'Correo electrónico del administrador' },
+        // { key: 'correo_admin', label: 'Correo del Administrador', desc: 'Correo electrónico del administrador' },
         { key: 'total_territorios', label: 'Total de Territorios', desc: 'Cantidad total de territorios' },
         { key: 'territorios_no_predicados', label: 'Territorios No Predicados', desc: 'Cantidad de territorios no predicados' }
     ];
@@ -74,7 +75,7 @@ const ConfiguracionesSection = () => {
     return (
         <View style={st.card}>
             <View style={st.headerRow}>
-                <Text style={st.cardTitle}>⚙️ Configuraciones del Sistema</Text>
+                <Text style={st.cardTitle}>ℹ️ Información de la Congregación</Text>
             </View>
             {items.map((item, i) => (
                 <TouchableOpacity key={i} style={st.configRow} onPress={() => handleEditConfig(item.key)}>
@@ -160,7 +161,7 @@ const GestionDatosSection = () => {
             const backupUri = `${FileSystem.cacheDirectory}${backupFilename}`;
 
             await FileSystem.writeAsStringAsync(backupUri, jsonStr, { encoding: FileSystem.EncodingType.UTF8 });
-            await FileService.saveAndShareFile(backupUri, backupFilename);
+            await FileService.saveOrShareFile(backupUri, backupFilename);
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'No se pudo crear el respaldo de los datos.');
@@ -240,7 +241,7 @@ const GestionDatosSection = () => {
             const filename = 'Plantilla_Carga_Inicial.xlsx';
             const fileUri = `${FileSystem.cacheDirectory}${filename}`;
             await FileSystem.writeAsStringAsync(fileUri, b64, { encoding: FileSystem.EncodingType.Base64 });
-            await FileService.saveAndShareFile(fileUri, filename);
+            await FileService.saveOrShareFile(fileUri, filename);
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'No se pudo generar o compartir la plantilla de Excel.');
@@ -500,7 +501,9 @@ const MantenimientoSection = () => {
                         setLoading(type);
                         try {
                             if (type === 'informes') await Informes.destroy({ where: {}, truncate: true });
+                            else if (type === 'informes-ant') await deleteOldInformes();
                             else if (type === 'asistencias') await Asistencias.destroy({ where: {}, truncate: true });
+                            else if (type === 'asistencias-ant') await deleteOldAsistencias();
                             else if (type === 'publicadores') await Publicadores.destroy({ where: {}, truncate: true });
                             else if (type === 'precursores') await PrecursoresAuxiliares.destroy({ where: {}, truncate: true });
 
@@ -519,7 +522,9 @@ const MantenimientoSection = () => {
 
     const actions = [
         { key: 'informes', label: 'Borrar Todos los Informes', color: '#ef4444' },
+        { key: 'informes-ant', label: 'Borrar Informes Antiguos', color: '#ef4444' },
         { key: 'asistencias', label: 'Borrar Todas las Asistencias', color: '#f97316' },
+        { key: 'asistencias-ant', label: 'Borrar Asistencias Antiguas', color: '#f97316' },
         { key: 'precursores', label: 'Borrar Precursores Auxiliares', color: '#3b82f6' },
         { key: 'publicadores', label: 'Borrar Todos los Publicadores', color: '#ef4444' },
     ];
@@ -593,7 +598,7 @@ const ConfiguracionScreen = ({ navigation }) => {
     const [section, setSection] = useState('configuraciones');
 
     const sections = [
-        { key: 'configuraciones', label: 'Config.', icon: <Settings size={16} /> },
+        { key: 'configuraciones', label: 'Congr.', icon: <Settings size={16} /> },
         { key: 'apariencia', label: 'Tema', icon: <Moon size={16} /> },
         { key: 'archivos', label: 'Archivos', icon: <Database size={16} /> },
         { key: 'gestion', label: 'Datos', icon: <Database size={16} /> },

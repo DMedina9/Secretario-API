@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Save, MessageCircle, Share2, Impo
 import * as FileSystem from 'expo-file-system/legacy';
 import FileService from '../services/FileService';
 import * as DocumentPicker from 'expo-document-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateGroupReportsXLSX, importExcelFromUri } from '../services/ImportExcelService';
 import { getAllPublicadores } from '../services/repositories/PublicadorRepo';
 import { getInformesByPublicadorAndAnio, getPrecursoresAuxiliaresByMonth, saveInforme } from '../services/repositories/InformeRepo';
@@ -96,7 +97,7 @@ const InformeRow = ({ item, index, data, onChange, month }) => {
                                             const horas = item.horas || 0;
                                             const horas_acreditadas = Math.max(0, Math.min(55 - horas, val));
                                             let notas = item.notas || '';
-                                            notas = `S.S. ${val} hrs. Acreditadas: ${horas_acreditadas} hrs.`;
+                                            notas = `S. S. ${val} hrs. Acreditadas: ${horas_acreditadas} hrs.`;
                                             onChange(index, 'horas_SS', val)
                                             onChange(index, 'notas', notas)
                                         }}
@@ -148,15 +149,15 @@ const InformesScreen = ({ navigation }) => {
         }
     };
 
-    const loadBulkData = async () => {
-        if (!month || !selectedGroup) {
+    const loadBulkData = async (month, group) => {
+        if (!month || !group) {
             Alert.alert('Aviso', 'Selecciona mes y grupo.');
             return;
         }
         setLoading(true);
         try {
             const allPubs = await getAllPublicadores();
-            const publicadores = allPubs.filter(p => p.grupo == selectedGroup);
+            const publicadores = allPubs.filter(p => p.grupo == group);
 
             if (!publicadores.length) {
                 Alert.alert('Aviso', 'No hay publicadores en este grupo.');
@@ -210,6 +211,19 @@ const InformesScreen = ({ navigation }) => {
         }
     };
 
+    useEffect(() => {
+        const loadSelectedGroup = async () => {
+            const group = await AsyncStorage.getItem('@selected_group');
+            setSelectedGroup(group);
+        };
+        loadSelectedGroup();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedGroup || !month) return;
+        loadBulkData(month, selectedGroup);
+    }, [month, selectedGroup]);
+
     const handleFieldChange = (index, field, value) => {
         setBulkData(prev => {
             const next = [...prev];
@@ -242,7 +256,7 @@ const InformesScreen = ({ navigation }) => {
             }
             Alert.alert('✅ Guardado Local', `${bulkData.length} informes guardados localmente.`);
             setBulkData([]);
-            loadBulkData();
+            loadBulkData(month, selectedGroup);
         } catch (e) {
             console.error(e);
             Alert.alert('Error', 'Error al guardar informes localmente.');
@@ -297,7 +311,7 @@ const InformesScreen = ({ navigation }) => {
                                     `Importación completada con éxito:\n\n- Publicadores: ${response.publicadoresImportados}\n- Informes: ${response.informesImportados}\n- Asistencias: ${response.asistenciasImportadas}`
                                 );
                                 setIsExcelModalVisible(false);
-                                loadBulkData();
+                                loadBulkData(month, selectedGroup);
                             } catch (e) {
                                 console.error(e);
                                 Alert.alert('Error de Importación', e.message || 'Ocurrió un error al importar el archivo Excel.');
@@ -375,13 +389,17 @@ const InformesScreen = ({ navigation }) => {
                             <TouchableOpacity
                                 key={g}
                                 style={[st.groupChip, selectedGroup === g && st.groupChipActive]}
-                                onPress={() => setSelectedGroup(g)}
+                                onPress={async () => {
+                                    setSelectedGroup(g);
+                                    loadBulkData(month, g);
+                                    await AsyncStorage.setItem('@selected_group', g);
+                                }}
                             >
                                 <Text style={[st.groupChipText, selectedGroup === g && st.groupChipTextActive]}>{g}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
-                    <TouchableOpacity style={[st.applyBtn, loading && st.disabled]} onPress={loadBulkData} disabled={loading}>
+                    <TouchableOpacity style={[st.applyBtn, loading && st.disabled]} onPress={() => loadBulkData(month, selectedGroup)} disabled={loading}>
                         {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={st.applyBtnText}>Cargar Informes</Text>}
                     </TouchableOpacity>
                 </View>

@@ -243,7 +243,7 @@ const EditModal = ({ publicador, onClose, onSaved }) => {
                 ciego: form.ciego ? 1 : 0,
                 encarcelado: form.encarcelado ? 1 : 0,
             };
-            
+
             // Save to LOCAL DATABASE ONLY
             const result = await savePublicador(payload);
             if (result) {
@@ -412,7 +412,7 @@ const PublicadoresScreen = ({ navigation }) => {
         try {
             const uri = await cardRef.current.capture();
             const filename = `Tarjeta_${selected.nombre}_${selected.apellidos}.png`;
-            await FileService.saveAndShareFile(uri, filename);
+            await FileService.saveOrShareFile(uri, filename);
         } catch {
             Alert.alert('Error', 'No se pudo compartir la tarjeta.');
         } finally {
@@ -590,10 +590,10 @@ const PublicadoresScreen = ({ navigation }) => {
             <EditModal
                 publicador={editing}
                 onClose={() => setEditing(null)}
-                onSaved={() => { 
-                    setEditing(null); 
-                    fetchPublicadores(); 
-                    Alert.alert('¡Listo!', editing?.id ? 'Publicador actualizado correctamente.' : 'Publicador agregado correctamente.'); 
+                onSaved={() => {
+                    setEditing(null);
+                    fetchPublicadores();
+                    Alert.alert('¡Listo!', editing?.id ? 'Publicador actualizado correctamente.' : 'Publicador agregado correctamente.');
                 }}
             />
         </View>
