@@ -228,7 +228,7 @@ const InformesFaltantesScreen = ({ navigation }) => {
                 const payload = {
                     id_publicador: item.id_publicador,
                     mes: item.mes,
-                    mes_enviado: mes_enviado,
+                    mes_enviado: mes_enviado + '-01',
                     predico_en_el_mes: item.predico_en_el_mes ? 1 : 0,
                     horas: parseInt(item.horas) || 0,
                     horas_SS: parseInt(item.horas_SS) || 0,

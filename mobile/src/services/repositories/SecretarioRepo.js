@@ -92,7 +92,7 @@ export const getS1 = async (month) => {
              FROM Informes i
              INNER JOIN Tipos_Publicadores tp ON tp.id = i.id_tipo_publicador
              WHERE i.predico_en_el_mes = 1
-               AND SUBSTR(i.mes, 1, 10) = ?
+               AND SUBSTR(i.mes_enviado, 1, 10) = ?
              GROUP BY tp.descripcion`,
             { replacements: [month], type: QueryTypes.SELECT }
         );
